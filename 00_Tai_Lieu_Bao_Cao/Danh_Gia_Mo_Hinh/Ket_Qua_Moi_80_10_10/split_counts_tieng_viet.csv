@@ -1,0 +1,91 @@
+﻿Tên loài tiếng Việt,Tên tiếng Anh (Gốc),Tập Train (80%),Tập Val (10%),Tập Test (10%),Tổng số ảnh
+Violet châu Phi,African Violet (Saintpaulia ionantha),269,34,34,337
+Nha đam,Aloe Vera,200,25,26,251
+Hồng môn,Anthurium (Anthurium andraeanum),363,45,46,454
+Cau vàng,Areca Palm (Dypsis lutescens),151,19,19,189
+Trầu bà chân vịt,Arrowhead Plant (Syngonium podophyllum),200,25,25,250
+Thiên môn đông cảnh,Asparagus Fern (Asparagus setaceus),135,17,17,169
+Trường sinh lá tròn,Baby Rubber Plant (Peperomia obtusifolia),198,25,25,248
+Cây nước mắt em bé,Baby Tears (Soleirolia soleirolii),176,22,22,220
+Thiên điểu,Bird of Paradise (Strelitzia reginae),144,18,18,180
+Dương xỉ tổ chim,Birds Nest Fern (Asplenium nidus),232,29,29,290
+Môn nhung đen,Black Velvet Alocasia (Alocasia reginula),144,18,18,180
+Dứa cảnh Neoregelia,Blushing Bromeliad (Neoregelia carolinae),159,20,20,199
+Dương xỉ Boston,Boston Fern (Nephrolepis exaltata),244,31,31,306
+Hoa rum,Calla Lily (Zantedeschia aethiopica),200,25,25,250
+Tỏi rừng,Cast Iron Plant (Aspidistra elatior),212,27,27,266
+Cây hạnh phúc,China Doll Plant (Radermachera sinica),160,20,20,200
+Ngân hậu Siam,Chinese Evergreen Siam (Aglaonema commutatum),200,25,25,250
+Dâm bụt,Chinese Hibiscus (Hibiscus rosa-sinensis),200,25,25,250
+Cỏ đồng tiền Pilea,Chinese Money Plant (Pilea peperomioides),305,38,39,382
+Xương rồng Giáng sinh,Christmas Cactus (Schlumbergera bridgesii),249,31,32,312
+Hoa cúc,Chrysanthemum,167,21,21,209
+Tía tô cảnh,Coleus (Coleus scutellarioides),196,25,25,246
+Kim ngân lượng,Coralberry (Ardisia crenata),175,22,22,219
+Thiết mộc lan,Corn Plant (Dracaena fragrans),198,25,25,248
+Vảy ốc,Creeping Fig (Ficus pumila),199,25,25,249
+Xương rồng bát tiên,Crown of Thorns (Euphorbia milii),199,25,25,249
+Đuôi công Ctenanthe,Ctenanthe,275,34,35,344
+Hoa thủy tiên,Daffodils (Narcissus spp.),336,42,43,421
+Trầu bà đuôi rồng,Dragon Tail (Epipremnum pinnatum),176,22,22,220
+Vạn niên thanh Dieffenbachia,Dumb Cane (Dieffenbachia spp.),432,54,55,541
+Thường xuân,English Ivy (Hedera helix),192,24,24,240
+Trúc mây,Fan Palm - Lady Palm (Rhapis excelsa),176,22,22,220
+Bàng Singapore,Fiddle Leaf Fig (Ficus lyrata),199,25,25,249
+Cẩm tú cầu,French Hydrangea (Hydrangea macrophylla),200,25,25,250
+Cô tòng,Garden Croton (Codiaeum variegatum),198,25,25,248
+Ráy khổng lồ,Giant Taro (Alocasia macrorrhizos),196,24,25,245
+Sanh bonsai,Ginseng Ficus (Ficus microcarpa),200,25,25,250
+Trúc đốm,Gold Dust Dracaena (Dracaena surculosa),160,20,20,200
+Trầu bà cuống lông,Hairy Philodendron (Philodendron squamiferum),144,18,18,180
+Môn lá màu,Heart of Jesus (Caladium bicolor),199,25,25,249
+Trầu bà lá tim,Heartleaf Philodendron (Philodendron cordatum),200,25,25,250
+Dạ lan hương,Hyacinth (Hyacinthus orientalis),254,32,32,318
+Đỗ quyên,Indian Azalea (Rhododendron simsii),200,25,25,250
+Thu hải đường chữ thập,Iron Cross begonia (Begonia masoniana),212,27,27,266
+Ngọc bích,Jade plant (Crassula ovata),282,35,36,353
+Cây sống đời,Kalanchoe,104,13,13,130
+Linh lan,Lily of the valley (Convallaria majalis),329,41,42,412
+Phất dụ mảnh,Madagascar Dragon Tree (Dracaena marginata),192,24,24,240
+Sen đá Echeveria elegans,Mexican Snowball (Echeveria elegans),200,25,25,250
+Kim ngân,Money Tree (Pachira aquatica),287,36,36,359
+Trầu bà lá xẻ Monstera,Monstera Deliciosa (Monstera deliciosa),437,55,55,547
+Lẻ bạn,Moses in the Cradle (Tradescantia spathacea),175,22,22,219
+Cẩm nhung,Nerve Plant (Fittonia albivenis),199,25,25,249
+Ráy thơm,Night-scented Lily (Alocasia odora),176,22,22,220
+Hoa lan,Orchid,187,23,24,234
+Cau tiểu trâm,Parlor Palm (Chamaedorea elegans),263,33,33,329
+Chuối mỏ két,Parrot Flower (Heliconia psittacorum),200,25,25,250
+Lan ý,Peace lily,308,38,39,385
+Bạc hà,Peppermint (Mentha piperita),199,25,25,249
+Trạng nguyên,Poinsettia (Euphorbia pulcherrima),244,31,31,306
+Cây chấm bi,Polka Dot Plant (Hypoestes phyllostachya),272,34,35,341
+Cây chân voi,Ponytail Palm (Beaucarnea recurvata),157,20,20,197
+Dong vằn Maranta,Prayer Plant (Maranta leuconeura),320,40,40,400
+Dương xỉ chân thỏ,Rabbit Foot Fern (Davallia fejeensis),160,20,20,200
+Trường sinh giọt nước,Raindrop Peperomia (Peperomia polybotrya),116,14,15,145
+Đuôi công lá dài,Rattlesnake Plant (Calathea lancifolia),252,31,32,315
+Trầu bà đỏ,Red-leaf Philodendron (Philodendron erubescens),200,25,25,250
+Đuôi công hồng,Rose-painted Calathea (Calathea roseopicta),157,20,20,197
+Đuôi công lá tròn,Round-leaf Calathea (Calathea orbifolia),158,20,20,198
+Đa búp đỏ,Rubber Plant (Ficus elastica),232,29,30,291
+Vạn tuế,Sago Palm (Cycas revoluta),161,20,21,202
+Ngũ gia bì,Schefflera,260,33,33,326
+Trầu bà bạc,Silver Pothos (Scindapsus pictus),175,22,22,219
+Lưỡi hổ,Snake plant (Sanseviera),316,40,40,396
+Trúc bách hợp,Song of India (Dracaena reflexa),168,21,21,210
+Dây nhện,Spider Plant (Chlorophytum comosum),200,25,25,250
+Dương xỉ sừng hươu,Staghorn Fern (Platycerium bifurcatum),200,25,25,250
+Sen đá chuỗi ngọc,String of Pearls (Senecio rowleyanus),199,25,25,249
+Trầu bà lỗ,Swiss Cheese Vine (Monstera adansonii),199,25,25,249
+Trầu bà thanh xuân,Tree Philodendron (Philodendron bipinnatifidum),199,25,25,249
+Hoa tulip,Tulip,272,34,34,340
+Cây bắt ruồi,Venus Flytrap,159,20,20,199
+Trường sinh dưa hấu,Watermelon Peperomia (Peperomia argyreia),160,20,20,200
+Si,Weeping Fig (Ficus benjamina),199,25,25,249
+Thiên điểu trắng,White Bird of Paradise (Strelitzia nicolai),200,25,25,250
+Tùng la hán,Yew Plum Pine (Podocarpus macrophyllus),200,25,25,250
+Cây Yucca,Yucca,52,7,7,66
+Kim tiền,ZZ Plant (Zamioculcas zamiifolia),350,44,44,438
+Sen đá móng rồng,Zebra Haworthia (Haworthiopsis attenuata),199,25,25,249
+Cây ngựa vằn Aphelandra,Zebra Plant (Aphelandra squarrosa),159,20,20,199

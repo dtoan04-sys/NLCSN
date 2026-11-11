@@ -1,0 +1,48 @@
+{
+  "pdm": "ChuanPDM.pdm",
+  "pdm_sha256": "4c738ed46628f526e0f4420e93cd8101e5557a7d5bf28f8fc2df0a8369d29c14",
+  "dbms": "Microsoft SQL Server 2017",
+  "table_counts": {
+    "NGUOI_DUNG": 10,
+    "DANH_MUC": 50,
+    "CHUONG_TRINH_GIAM_GIA": 50,
+    "THOI_DIEM": 180,
+    "TIM_ANH": 60,
+    "LOAI_CAY": 90,
+    "GIO_HANG": 69,
+    "DIA_CHI_NGUOI_DUNG": 50,
+    "SAN_PHAM": 90,
+    "KET_QUA_NHAN_DIEN": 180,
+    "DON_HANG": 60,
+    "CHI_TIET_GIO_HANG": 129,
+    "HINH_ANH_SAN_PHAM": 180,
+    "DANH_GIA_SAN_PHAM": 60,
+    "LICH_SU_GIA_SAN_PHAM": 180
+  },
+  "total_rows": 1438,
+  "plant_labels": 90,
+  "checks_passed": [
+    "Đủ 15 bảng; mỗi bảng >=50 dòng, riêng NGUOI_DUNG 10 dòng.",
+    "90 MALOAICAY duy nhất, CLASS_ID = MALOAICAY - 1.",
+    "Khóa chính, khóa ngoại, khóa ghép và quan hệ 0..1 hợp lệ trong bản kiểm thử quan hệ SQLite.",
+    "Chuỗi không vượt độ dài cột PDM.",
+    "Tổng tiền đơn khớp số lượng x đơn giá, giảm giá và phí vận chuyển.",
+    "Mỗi đơn sử dụng một giỏ của đúng người mua; mỗi đánh giá thuộc sản phẩm có trong đơn.",
+    "Mỗi người một địa chỉ mặc định; mỗi sản phẩm một ảnh chính; mỗi khách một giỏ đang mua.",
+    "Chương trình còn lượt, đúng thời hạn; số lượt dùng khớp đơn; điểm top-3 giảm dần, trong [0,1].",
+    "Giá hiệu lực dùng khoảng [NGAYBATDAU, NGAYKETTHUC); các khoảng của một sản phẩm không chồng lấn."
+  ],
+  "validation_method": "Python + SQLite foreign-key relational mirror; not executed on a live SQL Server instance",
+  "data_kind": "Plant reference summaries + synthetic shop data",
+  "images": "Relative demo paths only; no real photos included",
+  "generated_date": "2026-10-14",
+  "source_profiles": 90,
+  "source_note": "Sources identified at species, genus or representative level; dataset images were not botanically revalidated.",
+  "syntax_validation": "SQLGlot parsed 85 CREATE/ALTER/INSERT statements as T-SQL; SQL Server procedural wrapper not executed.",
+  "actual_sql_insert_validation": {
+    "rows_roundtripped": 1438,
+    "value_mismatches": 0,
+    "foreign_key_errors": 0,
+    "method": "Actual generated SQL INSERT statements parsed as T-SQL, adapted to SQLite Unicode literals, executed against PK/FK/check mirror, compared to every JSON value."
+  }
+}

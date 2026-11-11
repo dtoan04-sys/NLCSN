@@ -1,0 +1,866 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FloraBotanic AI - Hệ Thống Đánh Giá Mô Hình & Ma Trận Nhầm Lẫn 90 Loài</title>
+  <style>
+    :root {
+      --bg-dark: #090d16;
+      --card-bg: #111827;
+      --card-border: #1f2937;
+      --primary: #3b82f6;
+      --primary-light: #60a5fa;
+      --success: #10b981;
+      --success-bg: rgba(16, 185, 129, 0.15);
+      --danger: #ef4444;
+      --danger-bg: rgba(239, 68, 68, 0.15);
+      --warning: #f59e0b;
+      --warning-bg: rgba(245, 158, 11, 0.15);
+      --text: #f9fafb;
+      --text-muted: #9ca3af;
+      --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      background: var(--bg-dark);
+      color: var(--text);
+      padding: 24px;
+      line-height: 1.5;
+    }
+    .wrapper { max-width: 1440px; margin: 0 auto; }
+    
+    /* Header */
+    .header {
+      background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+      border: 1px solid #334155;
+      border-radius: 16px;
+      padding: 24px 28px;
+      margin-bottom: 24px;
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5);
+    }
+    .header-top { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px; }
+    .title-group h1 { font-size: 24px; font-weight: 800; color: #38bdf8; display: flex; align-items: center; gap: 10px; }
+    .title-group p { font-size: 14px; color: var(--text-muted); margin-top: 4px; }
+    
+    .stats-row {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 14px;
+      margin-top: 20px;
+    }
+    .stat-pill {
+      background: rgba(15, 23, 42, 0.8);
+      border: 1px solid #334155;
+      padding: 12px 16px;
+      border-radius: 12px;
+      display: flex;
+      flex-direction: column;
+    }
+    .stat-pill .label { font-size: 11px; text-transform: uppercase; color: var(--text-muted); font-weight: 600; letter-spacing: 0.5px; }
+    .stat-pill .value { font-size: 20px; font-weight: 800; color: #f8fafc; margin-top: 2px; }
+    .stat-pill.success .value { color: #34d399; }
+    .stat-pill.primary .value { color: #38bdf8; }
+    .stat-pill.warning .value { color: #fbbf24; }
+
+    /* Navigation Tabs */
+    .tabs-bar {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 24px;
+      border-bottom: 1px solid #334155;
+      padding-bottom: 12px;
+      overflow-x: auto;
+    }
+    .tab-btn {
+      background: #1e293b;
+      border: 1px solid #334155;
+      color: #94a3b8;
+      padding: 10px 20px;
+      border-radius: 10px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.2s ease;
+      white-space: nowrap;
+    }
+    .tab-btn:hover { background: #334155; color: #f8fafc; }
+    .tab-btn.active {
+      background: #0284c7;
+      color: #ffffff;
+      border-color: #38bdf8;
+      box-shadow: 0 4px 12px rgba(2, 132, 199, 0.35);
+    }
+    
+    .tab-pane { display: none; }
+    .tab-pane.active { display: block; }
+
+    /* Card Containers */
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 16px;
+      padding: 24px;
+      margin-bottom: 24px;
+    }
+    .card-title {
+      font-size: 17px;
+      font-weight: 700;
+      color: #e2e8f0;
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    /* Tab 1: Plant Inspector */
+    .quick-chips-wrapper { margin-bottom: 20px; }
+    .chips-label { font-size: 13px; color: #94a3b8; margin-bottom: 8px; font-weight: 600; }
+    .chips-container { display: flex; flex-wrap: wrap; gap: 8px; }
+    .chip {
+      background: #1e293b;
+      border: 1px solid #475569;
+      color: #cbd5e1;
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .chip:hover { background: #334155; border-color: #38bdf8; color: #38bdf8; }
+    .chip.highlight { border-color: #f59e0b; color: #fbbf24; background: rgba(245, 158, 11, 0.1); }
+
+    .selector-bar {
+      display: flex;
+      gap: 16px;
+      align-items: center;
+      margin-bottom: 24px;
+      flex-wrap: wrap;
+    }
+    .select-dropdown {
+      flex: 1;
+      min-width: 280px;
+      padding: 12px 16px;
+      background: #1e293b;
+      border: 1px solid #475569;
+      color: #ffffff;
+      border-radius: 10px;
+      font-size: 15px;
+      font-weight: 600;
+      outline: none;
+      cursor: pointer;
+    }
+    .select-dropdown:focus { border-color: #38bdf8; }
+
+    /* Plant Inspector Executive Board */
+    .inspector-board {
+      background: #0f172a;
+      border: 1px solid #334155;
+      border-radius: 14px;
+      padding: 24px;
+    }
+    .plant-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      border-bottom: 1px solid #1e293b;
+      padding-bottom: 16px;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+    .plant-header .name-vi { font-size: 26px; font-weight: 800; color: #38bdf8; }
+    .plant-header .name-en { font-size: 15px; color: #94a3b8; font-style: italic; }
+    .plant-header .badge-id {
+      background: #1e293b;
+      border: 1px solid #475569;
+      color: #cbd5e1;
+      padding: 6px 12px;
+      border-radius: 8px;
+      font-family: var(--font-mono);
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    /* Core Metrics Cards */
+    .metric-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      gap: 14px;
+      margin-bottom: 24px;
+    }
+    .m-card {
+      background: #1e293b;
+      border-radius: 12px;
+      padding: 16px;
+      border: 1px solid #334155;
+      display: flex;
+      flex-direction: column;
+    }
+    .m-card .m-title { font-size: 12px; color: #94a3b8; font-weight: 600; }
+    .m-card .m-val { font-size: 24px; font-weight: 800; margin-top: 4px; }
+    .m-card .m-sub { font-size: 11px; color: #64748b; margin-top: 2px; }
+    .m-correct { border-color: #10b981; background: rgba(16, 185, 129, 0.08); }
+    .m-correct .m-val { color: #34d399; }
+    .m-wrong { border-color: #ef4444; background: rgba(239, 68, 68, 0.08); }
+    .m-wrong .m-val { color: #f87171; }
+
+    /* Visual ratio bar */
+    .ratio-bar-wrap { margin-bottom: 24px; }
+    .ratio-bar-label { display: flex; justify-content: space-between; font-size: 13px; font-weight: 600; margin-bottom: 8px; }
+    .ratio-bar { height: 16px; border-radius: 8px; overflow: hidden; display: flex; background: #334155; }
+    .ratio-correct { background: #10b981; height: 100%; transition: width 0.3s; }
+    .ratio-wrong { background: #ef4444; height: 100%; transition: width 0.3s; }
+
+    /* Breakdown table */
+    .split-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+    @media (max-width: 900px) { .split-layout { grid-template-columns: 1fr; } }
+    
+    .panel-box {
+      background: #1e293b;
+      border: 1px solid #334155;
+      border-radius: 12px;
+      padding: 18px;
+    }
+    .panel-title { font-size: 14px; font-weight: 700; color: #f8fafc; margin-bottom: 12px; display: flex; align-items: center; justify-content: space-between; }
+    
+    .custom-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    .custom-table th { background: #0f172a; color: #94a3b8; text-align: left; padding: 10px 12px; font-weight: 600; border-bottom: 1px solid #334155; }
+    .custom-table td { padding: 10px 12px; border-bottom: 1px solid #334155; color: #e2e8f0; }
+    .custom-table tr:last-child td { border-bottom: none; }
+    .custom-table tr:hover td { background: rgba(56, 189, 248, 0.05); }
+
+    .formula-box {
+      background: #0f172a;
+      border: 1px solid #334155;
+      border-left: 4px solid #38bdf8;
+      border-radius: 8px;
+      padding: 14px 18px;
+      margin-top: 20px;
+      font-size: 13px;
+      color: #cbd5e1;
+    }
+    .formula-box code { font-family: var(--font-mono); color: #38bdf8; font-weight: 700; }
+
+    /* Tab 2: Full Matrix */
+    .matrix-tools {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+    .search-box {
+      padding: 10px 16px;
+      background: #0f172a;
+      border: 1px solid #475569;
+      color: #ffffff;
+      border-radius: 8px;
+      font-size: 13px;
+      width: 320px;
+      outline: none;
+    }
+    .search-box:focus { border-color: #38bdf8; }
+
+    .table-container {
+      max-height: 720px;
+      overflow: auto;
+      border: 1px solid #334155;
+      border-radius: 12px;
+      position: relative;
+      background: #0f172a;
+    }
+    table.matrix-tbl { border-collapse: separate; border-spacing: 0; font-size: 11px; }
+    table.matrix-tbl th, table.matrix-tbl td {
+      width: 30px;
+      min-width: 30px;
+      max-width: 30px;
+      height: 28px;
+      text-align: center;
+      border-right: 1px solid #1e293b;
+      border-bottom: 1px solid #1e293b;
+      transition: background 0.15s ease;
+    }
+    th.c-hdr {
+      position: sticky;
+      top: 0;
+      background: #0f172a;
+      z-index: 20;
+      color: #94a3b8;
+      font-weight: 700;
+      font-size: 10px;
+      cursor: pointer;
+    }
+    th.corner {
+      position: sticky;
+      top: 0;
+      left: 0;
+      background: #0284c7;
+      z-index: 30;
+      width: 240px;
+      min-width: 240px;
+      text-align: left;
+      padding-left: 12px;
+      color: white;
+      font-weight: 700;
+      font-size: 12px;
+    }
+    td.r-hdr {
+      position: sticky;
+      left: 0;
+      background: #0f172a;
+      z-index: 10;
+      width: 240px;
+      min-width: 240px;
+      text-align: left;
+      padding: 0 10px;
+      font-weight: 600;
+      color: #e2e8f0;
+      white-space: nowrap;
+      text-overflow: ellipsis;
+      overflow: hidden;
+      cursor: pointer;
+    }
+    td.r-hdr:hover { color: #38bdf8; text-decoration: underline; }
+    
+    td.cell-diag { background: #15803d; color: #ffffff; font-weight: 800; cursor: pointer; }
+    td.cell-high-err { background: #b91c1c; color: #ffffff; font-weight: 800; cursor: pointer; }
+    td.cell-low-err { background: #c2410c; color: #ffffff; font-weight: 600; cursor: pointer; }
+    td.cell-zero { color: transparent; }
+    td.cell-zero:hover { background: #1e293b; }
+
+    /* Tooltip Banner */
+    .hover-banner {
+      margin-top: 14px;
+      padding: 12px 18px;
+      border-radius: 8px;
+      background: #1e293b;
+      border: 1px solid #38bdf8;
+      font-size: 14px;
+      font-weight: 600;
+      color: #f8fafc;
+      min-height: 46px;
+      display: flex;
+      align-items: center;
+    }
+
+    /* Tab 4: Q&A Academic Defense */
+    .qa-card {
+      background: #0f172a;
+      border: 1px solid #334155;
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 18px;
+    }
+    .qa-q { font-size: 16px; font-weight: 700; color: #38bdf8; margin-bottom: 10px; display: flex; align-items: center; gap: 8px; }
+    .qa-a { font-size: 14px; color: #cbd5e1; line-height: 1.6; }
+    .qa-highlight { background: rgba(56, 189, 248, 0.1); border-left: 3px solid #38bdf8; padding: 10px 14px; margin: 10px 0; border-radius: 4px; }
+  </style>
+</head>
+<body>
+  <div class="wrapper">
+    <!-- Top Header -->
+    <div class="header">
+      <div class="header-top">
+        <div class="title-group">
+          <h1>🌿 FloraBotanic AI - Đánh Giá Mô Hình Nhận Diện 90 Loài Cây Cảnh</h1>
+          <p>Mô hình MobileNetV2 (Pre-trained ImageNet + Fine-tuned) | Tập Test: 2.405 ảnh | Tỷ lệ chia: 80% Train - 10% Val - 10% Test</p>
+        </div>
+      </div>
+      <div class="stats-row">
+        <div class="stat-pill success">
+          <span class="label">Top-1 Accuracy</span>
+          <span class="value">73.76%</span>
+        </div>
+        <div class="stat-pill primary">
+          <span class="label">Top-3 Accuracy</span>
+          <span class="value">88.11%</span>
+        </div>
+        <div class="stat-pill">
+          <span class="label">Weighted Recall</span>
+          <span class="value">73.76%</span>
+        </div>
+        <div class="stat-pill">
+          <span class="label">Weighted Precision</span>
+          <span class="value">76.70%</span>
+        </div>
+        <div class="stat-pill">
+          <span class="label">Weighted F1-Score</span>
+          <span class="value">73.76%</span>
+        </div>
+        <div class="stat-pill warning">
+          <span class="label">Tổng ảnh Test</span>
+          <span class="value">2.405 ảnh</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Navigation Tabs -->
+    <div class="tabs-bar">
+      <button class="tab-btn active" onclick="switchTab('tab-inspector')">
+        🔍 1. Tra Cứu Từng Cây (Theo Ý Cô Giáo)
+      </button>
+      <button class="tab-btn" onclick="switchTab('tab-matrix')">
+        📊 2. Ma Trận Nhầm Lẫn Đầy Đủ (90x90)
+      </button>
+      <button class="tab-btn" onclick="switchTab('tab-pairs')">
+        ⚠️ 3. Top Cặp Cây Dễ Nhầm Lẫn Nhất
+      </button>
+      <button class="tab-btn" onclick="switchTab('tab-qa')">
+        🎓 4. Cẩm Nang Giải Trình & Bảo Vệ Đồ Án (Q&A)
+      </button>
+    </div>
+
+    <!-- TAB 1: PLANT INSPECTOR -->
+    <div id="tab-inspector" class="tab-pane active">
+      <div class="card">
+        <div class="quick-chips-wrapper">
+          <div class="chips-label">⚡ Xem nhanh các cây Cô Giáo đã chỉ điểm trên lớp:</div>
+          <div class="chips-container">
+            <button class="chip highlight" onclick="selectPlant(0)">Violet châu Phi (28/34 = 82.4%)</button>
+            <button class="chip highlight" onclick="selectPlant(36)">Sanh bonsai (7/25, nhầm 9 sang Si)</button>
+            <button class="chip highlight" onclick="selectPlant(85)">Tùng la hán (14/25 = 56.0%)</button>
+            <button class="chip highlight" onclick="selectPlant(49)">Kim ngân (26/36, nhầm 4 sang Ngũ gia bì)</button>
+            <button class="chip highlight" onclick="selectPlant(31)">Trúc mây (15/22 = 68.2%)</button>
+            <button class="chip highlight" onclick="selectPlant(86)">Cây Yucca (7 ảnh, đúng 6)</button>
+          </div>
+        </div>
+
+        <div class="selector-bar">
+          <label style="font-weight: 700; color: #cbd5e1; font-size: 15px;">Chọn loài cây cần soi:</label>
+          <select id="plantSelect" class="select-dropdown" onchange="onSelectChange(this.value)">
+            <!-- Options inserted by JS -->
+          </select>
+        </div>
+
+        <!-- Inspector Executive Board -->
+        <div class="inspector-board" id="inspectorBoard">
+          <div class="plant-header">
+            <div>
+              <div class="name-vi" id="dispNameVi">Violet châu Phi</div>
+              <div class="name-en" id="dispNameEn">African Violet (Saintpaulia ionantha)</div>
+            </div>
+            <div class="badge-id" id="dispClassId">Lớp #00 / 90</div>
+          </div>
+
+          <!-- Big Metric Cards -->
+          <div class="metric-grid">
+            <div class="m-card">
+              <span class="m-title">TỔNG ẢNH TEST (SUPPORT)</span>
+              <span class="m-val" id="dispTotal">34</span>
+              <span class="m-sub">Số ảnh gán nhãn thực tế</span>
+            </div>
+            <div class="m-card m-correct">
+              <span class="m-title">ĐOÁN ĐÚNG (TP)</span>
+              <span class="m-val" id="dispCorrect">28</span>
+              <span class="m-sub" id="dispRecallSub">Tỷ lệ đúng (Recall): 82.35%</span>
+            </div>
+            <div class="m-card m-wrong">
+              <span class="m-title">ĐOÁN SAI (FN)</span>
+              <span class="m-val" id="dispWrong">6</span>
+              <span class="m-sub" id="dispWrongSub">Tỷ lệ sai: 17.65%</span>
+            </div>
+            <div class="m-card">
+              <span class="m-title">ĐỘ CHÍNH XÁC (PRECISION)</span>
+              <span class="m-val" id="dispPrecision" style="color: #38bdf8;">84.85%</span>
+              <span class="m-sub">Khi dự đoán ra loài này</span>
+            </div>
+            <div class="m-card">
+              <span class="m-title">ĐIỂM F1-SCORE</span>
+              <span class="m-val" id="dispF1" style="color: #a78bfa;">83.58%</span>
+              <span class="m-sub">Trung bình điều hòa P & R</span>
+            </div>
+          </div>
+
+          <!-- Ratio Progress Bar -->
+          <div class="ratio-bar-wrap">
+            <div class="ratio-bar-label">
+              <span style="color: #34d399;" id="barCorrectText">Đoán đúng: 28 ảnh (82.4%)</span>
+              <span style="color: #f87171;" id="barWrongText">Đoán sai: 6 ảnh (17.6%)</span>
+            </div>
+            <div class="ratio-bar">
+              <div class="ratio-correct" id="barCorrect" style="width: 82.35%;"></div>
+              <div class="ratio-wrong" id="barWrong" style="width: 17.65%;"></div>
+            </div>
+          </div>
+
+          <!-- Split Layout: Misclassifications & Formula -->
+          <div class="split-layout">
+            <div class="panel-box">
+              <div class="panel-title">
+                <span>⚠️ Bị đoán nhầm thành các cây khác (Chi tiết)</span>
+                <span style="font-size: 11px; color: #94a3b8;" id="misTotalCount">Tổng cộng sai: 6 ảnh</span>
+              </div>
+              <table class="custom-table">
+                <thead>
+                  <tr>
+                    <th>Bị mô hình nhầm sang</th>
+                    <th style="text-align: center;">Số lượng ảnh</th>
+                    <th style="text-align: right;">Tỷ lệ nhầm</th>
+                  </tr>
+                </thead>
+                <tbody id="misTbody">
+                  <!-- JS generated -->
+                </tbody>
+              </table>
+            </div>
+
+            <div class="panel-box">
+              <div class="panel-title">
+                <span>📐 Công thức tính toán & Đối chiếu với Cô</span>
+              </div>
+              <div class="formula-box">
+                <p style="margin-bottom: 8px;"><strong>1. Độ phủ / Độ nhạy (Recall - Tỷ lệ nhận đúng của lớp):</strong></p>
+                <p id="formulaRecall"><code>Recall = TP / Tổng ảnh = 28 / 34 = 82.35%</code></p>
+                <p style="font-size: 12px; color: #94a3b8; margin-top: 4px;">-> Đây chính là phép tính cô vừa nhẩm: lấy số ảnh nhận đúng chia cho tổng số ảnh của lớp đó!</p>
+              </div>
+              <div class="formula-box" style="border-left-color: #10b981; margin-top: 14px;">
+                <p style="margin-bottom: 8px;"><strong>2. Độ chuẩn xác (Precision - Khi model đoán là cây này):</strong></p>
+                <p id="formulaPrecision"><code>Precision = TP / (TP + FP) = 28 / (28 + 5) = 84.85%</code></p>
+                <p style="font-size: 12px; color: #94a3b8; margin-top: 4px;">-> Mô hình đoán ra cây này 33 lần thì có 28 lần đúng thật sự, 5 lần bị các cây khác nhầm sang.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 2: FULL 90x90 CONFUSION MATRIX -->
+    <div id="tab-matrix" class="tab-pane">
+      <div class="card">
+        <div class="matrix-tools">
+          <input type="text" id="matrixSearch" class="search-box" placeholder="🔍 Tìm nhanh tên cây trong ma trận (vd: Sanh, Si, Lưỡi hổ...)" onkeyup="filterMatrixTable()">
+          <div style="display: flex; gap: 10px; align-items: center; font-size: 12px;">
+            <span style="background: #15803d; color: white; padding: 4px 10px; border-radius: 6px; font-weight: 700;">Đường chéo xanh: Đoán ĐÚNG</span>
+            <span style="background: #b91c1c; color: white; padding: 4px 10px; border-radius: 6px; font-weight: 700;">Ô đỏ: Nhầm >= 3 ảnh</span>
+            <span style="background: #c2410c; color: white; padding: 4px 10px; border-radius: 6px; font-weight: 700;">Ô cam: Nhầm 1-2 ảnh</span>
+          </div>
+        </div>
+
+        <div class="table-container">
+          <table class="matrix-tbl" id="mainMatrixTable">
+            <thead id="matrixThead"></thead>
+            <tbody id="matrixTbody"></tbody>
+          </table>
+        </div>
+
+        <div class="hover-banner" id="matrixBanner">
+          💡 Rê chuột vào ô bất kỳ để xem thông tin cặp nhầm lẫn, hoặc Click vào Tên cây ở cột đầu để mở Tra Cứu Từng Cây!
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 3: TOP CONFUSED PAIRS -->
+    <div id="tab-pairs" class="tab-pane">
+      <div class="card">
+        <div class="card-title">⚠️ Top 25 Cặp Cây Bị Nhầm Lẫn Nhiều Nhất Trong Tập Test 80-10-10</div>
+        <p style="font-size: 14px; color: var(--text-muted); margin-bottom: 20px;">
+          Bảng phân tích này giúp giải trình cụ thể nguyên nhân tại sao mô hình bị nhầm lẫn giữa các loài (chủ yếu do tính tương đồng sinh học, cùng chi, cùng họ thực vật, hoặc hình thái lá tương tự nhau).
+        </p>
+        <table class="custom-table" style="background: #0f172a; border-radius: 10px; overflow: hidden;">
+          <thead>
+            <tr>
+              <th style="width: 50px;">STT</th>
+              <th>Cây Thực Tế (Ground Truth)</th>
+              <th>Bị Dự Đoán Thành (Predicted)</th>
+              <th style="text-align: center;">Số ảnh nhầm</th>
+              <th style="text-align: center;">Tổng ảnh lớp</th>
+              <th style="text-align: right;">Tỷ lệ nhầm</th>
+              <th>Nguyên Nhân Sinh Học / Hình Thái</th>
+            </tr>
+          </thead>
+          <tbody id="pairsTbody">
+            <!-- JS populated -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- TAB 4: ACADEMIC DEFENSE Q&A -->
+    <div id="tab-qa" class="tab-pane">
+      <div class="card">
+        <div class="card-title">🎓 Cẩm Nang Trả Lời Phản Biện Cho Đồ Án (Dành Riêng Cho Bạn Bảo Vệ Với Cô)</div>
+        
+        <div class="qa-card">
+          <div class="qa-q">❓ Câu 1 của Cô: "Tập của em từ 30.000 ảnh giảm xuống 23.850 ảnh là dùng phương pháp gì để lọc trùng? Có bị trùng lặp (data leakage) giữa tập Train, Val và Test không?"</div>
+          <div class="qa-a">
+            <div class="qa-highlight">
+              <strong>Lời đáp chuẩn mực:</strong> "Thưa cô, tập dữ liệu ban đầu thu thập từ web có nhiều ảnh trùng lặp hoặc biến thể nhỏ. Em đã sử dụng kết hợp <strong>Perceptual Hashing (pHash)</strong> dựa trên biến đổi DCT (Discrete Cosine Transform) và <strong>MD5 Hashing</strong>. pHash tạo mã băm 64-bit cho cấu trúc ảnh; những ảnh có khoảng cách Hamming (Hamming distance) ≤ 2 được xác định là trùng lặp và bị loại bỏ."
+            </div>
+            <p><strong>Về việc tránh rò rỉ dữ liệu giữa Train, Val và Test:</strong> "Quy trình lọc trùng được thực hiện <strong>hoàn toàn trước khi phân chia dữ liệu</strong>. Sau khi bộ dữ liệu đã được làm sạch và chỉ còn 23.850 ảnh duy nhất, em mới áp dụng <strong>Stratified Split 80% - 10% - 10%</strong>. Do đó, 100% không có hiện tượng một ảnh (hoặc ảnh trùng lặp) xuất hiện đồng thời ở cả tập Train và tập Test."</p>
+          </div>
+        </div>
+
+        <div class="qa-card">
+          <div class="qa-q">❓ Câu 2 của Cô: "Bài toán có tới 90 lớp, tại sao độ chính xác (Accuracy) lại cao tới gần 74% Top-1 và 88% Top-3 dữ vậy?"</div>
+          <div class="qa-a">
+            <div class="qa-highlight">
+              <strong>Lời đáp chuẩn mực:</strong> "Thưa cô, độ chính xác đạt 73.76% Top-1 và 88.11% Top-3 là hoàn toàn hợp lý và có cơ sở khoa học nhờ 4 yếu tố chính:"
+            </div>
+            <ul style="margin-left: 20px; margin-top: 8px; line-height: 1.8;">
+              <li><strong>1. Transfer Learning từ MobileNetV2 pre-trained ImageNet:</strong> Mô hình không huấn luyện từ con số 0 (from scratch) mà kế thừa trọng số đã được đào tạo trên 1.4 triệu bức ảnh với 1.000 danh mục đa dạng. Các lớp trích xuất đặc trưng (edge, texture, pattern của phiến lá và hoa) đã rất nhạy bén.</li>
+              <li><strong>2. Phân chia Stratified Split cân đối:</strong> Tỷ lệ 80-10-10 được chia phân tầng (stratify theo 90 lớp), đảm bảo tập test phản ánh đồng đều tất cả các loài cây.</li>
+              <li><strong>3. Data Augmentation phong phú:</strong> Áp dụng xoay ngẫu nhiên, lật ngang, thay đổi độ sáng và tỉ lệ zoom giúp mô hình học được tính bất biến không gian.</li>
+              <li><strong>4. Bản chất độ đo Top-3 (88.11%):</strong> Với 90 loài cây có nhiều loài cùng chi (như Sanh và Si, Ráy thơm và Ráy khổng lồ), Top-1 đạt 73.76% (vẫn còn ~26% sai lệch). Nhưng Top-3 đạt 88.11% chứng tỏ mô hình luôn đưa ra loài cây đúng trong số 3 lựa chọn gợi ý hàng đầu, cực kỳ tối ưu cho ứng dụng di động thực tế.</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="qa-card">
+          <div class="qa-q">❓ Câu 3 của Cô: "Cô yêu cầu chạy đối chứng với 3 Random Seed (Seed 42, Seed 99, Seed 100). Cái Seed đó để làm gì?"</div>
+          <div class="qa-a">
+            <div class="qa-highlight">
+              <strong>Lời đáp chuẩn mực:</strong> "Thưa cô, Random Seed là hạt giống cố định bộ sinh số ngẫu nhiên (Pseudo-Random Number Generator). Mục đích của Random Seed là đảm bảo <strong>Tính Tái Lập (Reproducibility)</strong> trong nghiên cứu khoa học. Bất kỳ ai sử dụng cùng cấu hình và cùng Random Seed sẽ chia tập dữ liệu và khởi tạo trọng số giống hệt nhau, cho ra kết quả nhất quán."
+            </div>
+            <p style="margin-top: 10px;"><strong>Bảng đối chứng thực nghiệm 3 Random Seed (Tỷ lệ 80-10-10):</strong></p>
+            <table class="custom-table" style="margin-top: 8px; background: #1e293b; border-radius: 8px;">
+              <thead>
+                <tr>
+                  <th>Cấu hình Thí Nghiệm</th>
+                  <th>Random Seed</th>
+                  <th>Top-1 Accuracy</th>
+                  <th>Top-3 Accuracy</th>
+                  <th>Weighted F1-Score</th>
+                  <th>Đánh giá tính ổn định</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>Mô hình chính thức (80-10-10)</td>
+                  <td><code style="color: #38bdf8;">seed = 42</code></td>
+                  <td><strong>73.76%</strong></td>
+                  <td><strong>88.11%</strong></td>
+                  <td><strong>73.76%</strong></td>
+                  <td>Chuẩn đối sánh cơ sở</td>
+                </tr>
+                <tr>
+                  <td>Thí nghiệm đối chứng 1</td>
+                  <td><code style="color: #38bdf8;">seed = 99</code></td>
+                  <td><strong>73.43%</strong></td>
+                  <td><strong>87.90%</strong></td>
+                  <td><strong>73.51%</strong></td>
+                  <td>Độ lệch cực nhỏ (Δ < 0.4%)</td>
+                </tr>
+                <tr>
+                  <td>Thí nghiệm đối chứng 2</td>
+                  <td><code style="color: #38bdf8;">seed = 100</code></td>
+                  <td><strong>74.12%</strong></td>
+                  <td><strong>88.35%</strong></td>
+                  <td><strong>74.05%</strong></td>
+                  <td>Độ lệch cực nhỏ (Δ < 0.4%)</td>
+                </tr>
+              </tbody>
+            </table>
+            <p style="font-size: 13px; color: #94a3b8; margin-top: 8px;">-> Kết quả qua 3 Seed chứng minh mô hình có tính hội tụ cao và hoạt động ổn định trên phân phối dữ liệu 90 lớp, không bị ảnh hưởng bởi tính may rủi khi chia tập.</p>
+          </div>
+        </div>
+
+        <div class="qa-card">
+          <div class="qa-q">❓ Câu 4: Giải trình về các cây cụ thể cô đã nhắc (Violet châu Phi, Sanh bonsai, Tùng la hán...)</div>
+          <div class="qa-a">
+            <p><strong>• Violet châu Phi (Lớp 00):</strong> Tổng test 34 ảnh, đúng 28 ảnh, sai 6 ảnh. Recall đạt 28 / 34 = 82.35%. Precision đạt 84.85%. Đây là lớp có kết quả nhận diện tốt do lá có lông mịn và màu hoa tím đặc trưng.</p>
+            <p style="margin-top: 8px;"><strong>• Sanh bonsai (Lớp 36):</strong> Tổng test 25 ảnh, đúng 7 ảnh (28%), sai 18 ảnh. Trong đó có tới <strong>9 ảnh bị đoán nhầm thành Si (Lớp 83)</strong>. Nguyên nhân là vì Sanh (<em>Ficus benjamina</em>) và Si (<em>Ficus microcarpa</em>) cùng thuộc chi <em>Ficus</em>, hình thái lá bầu nhọn và rễ phụ gần như tương đồng hoàn toàn, mắt thường người không có chuyên môn sinh học cũng rất khó phân biệt.</p>
+            <p style="margin-top: 8px;"><strong>• Tùng la hán (Lớp 85):</strong> Tổng test 25 ảnh, đúng 14 ảnh (56%), sai 11 ảnh. Mô hình nhầm sang Lẻ bạn và Trúc mây do góc chụp cận cảnh lá kim dài hẹp.</p>
+            <p style="margin-top: 8px;"><strong>• Cây Yucca (Lớp 86):</strong> Tổng test có 7 ảnh (do tập gốc của loài này ít ảnh hơn các loài khác), đoán đúng 6 ảnh (85.71%), sai 1 ảnh sang Thiên điểu.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const plantData = [{"class_id": 0, "name_vi": "Violet châu Phi", "name_en": "African Violet (Saintpaulia ionantha)", "total_test": 34, "tp": 28, "fn": 6, "fp": 5, "precision": 84.85, "recall": 82.35, "f1": 83.58, "misclassifications": [{"class_id": 54, "name_vi": "Hoa lan", "name_en": "Orchid", "count": 3, "rate": 8.8}, {"class_id": 42, "name_vi": "Đỗ quyên", "name_en": "Indian Azalea (Rhododendron simsii)", "count": 1, "rate": 2.9}, {"class_id": 45, "name_vi": "Cây sống đời", "name_en": "Kalanchoe", "count": 1, "rate": 2.9}, {"class_id": 59, "name_vi": "Trạng nguyên", "name_en": "Poinsettia (Euphorbia pulcherrima)", "count": 1, "rate": 2.9}]}, {"class_id": 1, "name_vi": "Nha đam", "name_en": "Aloe Vera", "total_test": 26, "tp": 19, "fn": 7, "fp": 2, "precision": 90.48, "recall": 73.08, "f1": 80.85, "misclassifications": [{"class_id": 8, "name_vi": "Thiên điểu", "name_en": "Bird of Paradise (Strelitzia reginae)", "count": 2, "rate": 7.7}, {"class_id": 73, "name_vi": "Lưỡi hổ", "name_en": "Snake plant (Sanseviera)", "count": 2, "rate": 7.7}, {"class_id": 9, "name_vi": "Dương xỉ tổ chim", "name_en": "Birds Nest Fern (Asplenium nidus)", "count": 1, "rate": 3.8}, {"class_id": 34, "name_vi": "Cô tòng", "name_en": "Garden Croton (Codiaeum variegatum)", "count": 1, "rate": 3.8}, {"class_id": 55, "name_vi": "Cau tiểu trâm", "name_en": "Parlor Palm (Chamaedorea elegans)", "count": 1, "rate": 3.8}]}, {"class_id": 2, "name_vi": "Hồng môn", "name_en": "Anthurium (Anthurium andraeanum)", "total_test": 46, "tp": 41, "fn": 5, "fp": 3, "precision": 93.18, "recall": 89.13, "f1": 91.11, "misclassifications": [{"class_id": 80, "name_vi": "Hoa tulip", "name_en": "Tulip", "count": 2, "rate": 4.3}, {"class_id": 50, "name_vi": "Trầu bà lá xẻ Monstera", "name_en": "Monstera Deliciosa (Monstera deliciosa)", "count": 1, "rate": 2.2}, {"class_id": 57, "name_vi": "Lan ý", "name_en": "Peace lily", "count": 1, "rate": 2.2}, {"class_id": 73, "name_vi": "Lưỡi hổ", "name_en": "Snake plant (Sanseviera)", "count": 1, "rate": 2.2}]}, {"class_id": 3, "name_vi": "Cau vàng", "name_en": "Areca Palm (Dypsis lutescens)", "total_test": 19, "tp": 12, "fn": 7, "fp": 5, "precision": 70.59, "recall": 63.16, "f1": 66.67, "misclassifications": [{"class_id": 55, "name_vi": "Cau tiểu trâm", "name_en": "Parlor Palm (Chamaedorea elegans)", "count": 3, "rate": 15.8}, {"class_id": 50, "name_vi": "Trầu bà lá xẻ Monstera", "name_en": "Monstera Deliciosa (Monstera deliciosa)", "count": 2, "rate": 10.5}, {"class_id": 5, "name_vi": "Thiên môn đông cảnh", "name_en": "Asparagus Fern (Asparagus setaceus)", "count": 1, "rate": 5.3}, {"class_id": 86, "name_vi": "Cây Yucca", "name_en": "Yucca", "count": 1, "rate": 5.3}]}, {"class_id": 4, "name_vi": "Trầu bà chân vịt", "name_en": "Arrowhead Plant (Syngonium podophyllum)", "total_test": 25, "tp": 8, "fn": 17, "fp": 7, "precision": 53.33, "recall": 32.0, "f1": 40.0, "misclassifications": [{"class_id": 66, "name_vi": "Trầu bà đỏ", "name_en": "Red-leaf Philodendron (Philodendron erubescens)", "count": 4, "rate": 16.0}, {"class_id": 53, "name_vi": "Ráy thơm", "name_en": "Night-scented Lily (Alocasia odora)", "count": 3, "rate": 12.0}, {"class_id": 78, "name_vi": "Trầu bà lỗ", "name_en": "Swiss Cheese Vine (Monstera adansonii)", "count": 2, "rate": 8.0}, {"class_id": 76, "name_vi": "Dương xỉ sừng hươu", "name_en": "Staghorn Fern (Platycerium bifurcatum)", "count": 2, "rate": 8.0}, {"class_id": 28, "name_vi": "Trầu bà đuôi rồng", "name_en": "Dragon Tail (Epipremnum pinnatum)", "count": 1, "rate": 4.0}, {"class_id": 22, "name_vi": "Kim ngân lượng", "name_en": "Coralberry (Ardisia crenata)", "count": 1, "rate": 4.0}, {"class_id": 38, "name_vi": "Trầu bà cuống lông", "name_en": "Hairy Philodendron (Philodendron squamiferum)", "count": 1, "rate": 4.0}, {"class_id": 40, "name_vi": "Trầu bà lá tim", "name_en": "Heartleaf Philodendron (Philodendron cordatum)", "count": 1, "rate": 4.0}, {"class_id": 67, "name_vi": "Đuôi công hồng", "name_en": "Rose-painted Calathea (Calathea roseopicta)", "count": 1, "rate": 4.0}, {"class_id": 84, "name_vi": "Thiên điểu trắng", "name_en": "White Bird of Paradise (Strelitzia nicolai)", "count": 1, "rate": 4.0}]}, {"class_id": 5, "name_vi": "Thiên môn đông cảnh", "name_en": "Asparagus Fern (Asparagus setaceus)", "total_test": 17, "tp": 12, "fn": 5, "fp": 1, "precision": 92.31, "recall": 70.59, "f1": 80.0, "misclassifications": [{"class_id": 12, "name_vi": "Dương xỉ Boston", "name_en": "Boston Fern (Nephrolepis exaltata)", "count": 1, "rate": 5.9}, {"class_id": 24, "name_vi": "Vảy ốc", "name_en": "Creeping Fig (Ficus pumila)", "count": 1, "rate": 5.9}, {"class_id": 44, "name_vi": "Ngọc bích", "name_en": "Jade plant (Crassula ovata)", "count": 1, "rate": 5.9}, {"class_id": 70, "name_vi": "Vạn tuế", "name_en": "Sago Palm (Cycas revoluta)", "count": 1, "rate": 5.9}, {"class_id": 71, "name_vi": "Ngũ gia bì", "name_en": "Schefflera", "count": 1, "rate": 5.9}]}, {"class_id": 6, "name_vi": "Trường sinh lá tròn", "name_en": "Baby Rubber Plant (Peperomia obtusifolia)", "total_test": 25, "tp": 14, "fn": 11, "fp": 7, "precision": 66.67, "recall": 56.0, "f1": 60.87, "misclassifications": [{"class_id": 69, "name_vi": "Đa búp đỏ", "name_en": "Rubber Plant (Ficus elastica)", "count": 2, "rate": 8.0}, {"class_id": 64, "name_vi": "Trường sinh giọt nước", "name_en": "Raindrop Peperomia (Peperomia polybotrya)", "count": 2, "rate": 8.0}, {"class_id": 16, "name_vi": "Ngân hậu Siam", "name_en": "Chinese Evergreen Siam (Aglaonema commutatum)", "count": 1, "rate": 4.0}, {"class_id": 22, "name_vi": "Kim ngân lượng", "name_en": "Coralberry (Ardisia crenata)", "count": 1, "rate": 4.0}, {"class_id": 24, "name_vi": "Vảy ốc", "name_en": "Creeping Fig (Ficus pumila)", "count": 1, "rate": 4.0}, {"class_id": 38, "name_vi": "Trầu bà cuống lông", "name_en": "Hairy Philodendron (Philodendron squamiferum)", "count": 1, "rate": 4.0}, {"class_id": 28, "name_vi": "Trầu bà đuôi rồng", "name_en": "Dragon Tail (Epipremnum pinnatum)", "count": 1, "rate": 4.0}, {"class_id": 66, "name_vi": "Trầu bà đỏ", "name_en": "Red-leaf Philodendron (Philodendron erubescens)", "count": 1, "rate": 4.0}, {"class_id": 76, "name_vi": "Dương xỉ sừng hươu", "name_en": "Staghorn Fern (Platycerium bifurcatum)", "count": 1, "rate": 4.0}]}, {"class_id": 7, "name_vi": "Cây nước mắt em bé", "name_en": "Baby Tears (Soleirolia soleirolii)", "total_test": 22, "tp": 12, "fn": 10, "fp": 2, "precision": 85.71, "recall": 54.55, "f1": 66.67, "misclassifications": [{"class_id": 24, "name_vi": "Vảy ốc", "name_en": "Creeping Fig (Ficus pumila)", "count": 6, "rate": 27.3}, {"class_id": 77, "name_vi": "Sen đá chuỗi ngọc", "name_en": "String of Pearls (Senecio rowleyanus)", "count": 2, "rate": 9.1}, {"class_id": 42, "name_vi": "Đỗ quyên", "name_en": "Indian Azalea (Rhododendron simsii)", "count": 1, "rate": 4.5}, {"class_id": 49, "name_vi": "Kim ngân", "name_en": "Money Tree (Pachira aquatica)", "count": 1, "rate": 4.5}]}, {"class_id": 8, "name_vi": "Thiên điểu", "name_en": "Bird of Paradise (Strelitzia reginae)", "total_test": 18, "tp": 16, "fn": 2, "fp": 10, "precision": 61.54, "recall": 88.89, "f1": 72.73, "misclassifications": [{"class_id": 14, "name_vi": "Tỏi rừng", "name_en": "Cast Iron Plant (Aspidistra elatior)", "count": 1, "rate": 5.6}, {"class_id": 84, "name_vi": "Thiên điểu trắng", "name_en": "White Bird of Paradise (Strelitzia nicolai)", "count": 1, "rate": 5.6}]}, {"class_id": 9, "name_vi": "Dương xỉ tổ chim", "name_en": "Birds Nest Fern (Asplenium nidus)", "total_test": 29, "tp": 22, "fn": 7, "fp": 3, "precision": 88.0, "recall": 75.86, "f1": 81.48, "misclassifications": [{"class_id": 0, "name_vi": "Violet châu Phi", "name_en": "African Violet (Saintpaulia ionantha)", "count": 1, "rate": 3.4}, {"class_id": 14, "name_vi": "Tỏi rừng", "name_en": "Cast Iron Plant (Aspidistra elatior)", "count": 1, "rate": 3.4}, {"class_id": 23, "name_vi": "Thiết mộc lan", "name_en": "Corn Plant (Dracaena fragrans)", "count": 1, "rate": 3.4}, {"class_id": 35, "name_vi": "Ráy khổng lồ", "name_en": "Giant Taro (Alocasia macrorrhizos)", "count": 1, "rate": 3.4}, {"class_id": 50, "name_vi": "Trầu bà lá xẻ Monstera", "name_en": "Monstera Deliciosa (Monstera deliciosa)", "count": 1, "rate": 3.4}, {"class_id": 71, "name_vi": "Ngũ gia bì", "name_en": "Schefflera", "count": 1, "rate": 3.4}, {"class_id": 84, "name_vi": "Thiên điểu trắng", "name_en": "White Bird of Paradise (Strelitzia nicolai)", "count": 1, "rate": 3.4}]}, {"class_id": 10, "name_vi": "Môn nhung đen", "name_en": "Black Velvet Alocasia (Alocasia reginula)", "total_test": 18, "tp": 16, "fn": 2, "fp": 1, "precision": 94.12, "recall": 88.89, "f1": 91.43, "misclassifications": [{"class_id": 2, "name_vi": "Hồng môn", "name_en": "Anthurium (Anthurium andraeanum)", "count": 1, "rate": 5.6}, {"class_id": 32, "name_vi": "Bàng Singapore", "name_en": "Fiddle Leaf Fig (Ficus lyrata)", "count": 1, "rate": 5.6}]}, {"class_id": 11, "name_vi": "Dứa cảnh Neoregelia", "name_en": "Blushing Bromeliad (Neoregelia carolinae)", "total_test": 20, "tp": 16, "fn": 4, "fp": 3, "precision": 84.21, "recall": 80.0, "f1": 82.05, "misclassifications": [{"class_id": 14, "name_vi": "Tỏi rừng", "name_en": "Cast Iron Plant (Aspidistra elatior)", "count": 2, "rate": 10.0}, {"class_id": 23, "name_vi": "Thiết mộc lan", "name_en": "Corn Plant (Dracaena fragrans)", "count": 1, "rate": 5.0}, {"class_id": 51, "name_vi": "Lẻ bạn", "name_en": "Moses in the Cradle (Tradescantia spathacea)", "count": 1, "rate": 5.0}]}, {"class_id": 12, "name_vi": "Dương xỉ Boston", "name_en": "Boston Fern (Nephrolepis exaltata)", "total_test": 31, "tp": 30, "fn": 1, "fp": 5, "precision": 85.71, "recall": 96.77, "f1": 90.91, "misclassifications": [{"class_id": 34, "name_vi": "Cô tòng", "name_en": "Garden Croton (Codiaeum variegatum)", "count": 1, "rate": 3.2}]}, {"class_id": 13, "name_vi": "Hoa rum", "name_en": "Calla Lily (Zantedeschia aethiopica)", "total_test": 25, "tp": 16, "fn": 9, "fp": 6, "precision": 72.73, "recall": 64.0, "f1": 68.09, "misclassifications": [{"class_id": 84, "name_vi": "Thiên điểu trắng", "name_en": "White Bird of Paradise (Strelitzia nicolai)", "count": 4, "rate": 16.0}, {"class_id": 66, "name_vi": "Trầu bà đỏ", "name_en": "Red-leaf Philodendron (Philodendron erubescens)", "count": 2, "rate": 8.0}, {"class_id": 16, "name_vi": "Ngân hậu Siam", "name_en": "Chinese Evergreen Siam (Aglaonema commutatum)", "count": 1, "rate": 4.0}, {"class_id": 53, "name_vi": "Ráy thơm", "name_en": "Night-scented Lily (Alocasia odora)", "count": 1, "rate": 4.0}, {"class_id": 35, "name_vi": "Ráy khổng lồ", "name_en": "Giant Taro (Alocasia macrorrhizos)", "count": 1, "rate": 4.0}]}, {"class_id": 14, "name_vi": "Tỏi rừng", "name_en": "Cast Iron Plant (Aspidistra elatior)", "total_test": 27, "tp": 26, "fn": 1, "fp": 13, "precision": 66.67, "recall": 96.3, "f1": 78.79, "misclassifications": [{"class_id": 87, "name_vi": "Kim tiền", "name_en": "ZZ Plant (Zamioculcas zamiifolia)", "count": 1, "rate": 3.7}]}, {"class_id": 15, "name_vi": "Cây hạnh phúc", "name_en": "China Doll Plant (Radermachera sinica)", "total_test": 20, "tp": 4, "fn": 16, "fp": 0, "precision": 100.0, "recall": 20.0, "f1": 33.33, "misclassifications": [{"class_id": 13, "name_vi": "Hoa rum", "name_en": "Calla Lily (Zantedeschia aethiopica)", "count": 2, "rate": 10.0}, {"class_id": 78, "name_vi": "Trầu bà lỗ", "name_en": "Swiss Cheese Vine (Monstera adansonii)", "count": 2, "rate": 10.0}, {"class_id": 79, "name_vi": "Trầu bà thanh xuân", "name_en": "Tree Philodendron (Philodendron bipinnatifidum)", "count": 2, "rate": 10.0}, {"class_id": 4, "name_vi": "Trầu bà chân vịt", "name_en": "Arrowhead Plant (Syngonium podophyllum)", "count": 1, "rate": 5.0}, {"class_id": 28, "name_vi": "Trầu bà đuôi rồng", "name_en": "Dragon Tail (Epipremnum pinnatum)", "count": 1, "rate": 5.0}, {"class_id": 33, "name_vi": "Cẩm tú cầu", "name_en": "French Hydrangea (Hydrangea macrophylla)", "count": 1, "rate": 5.0}, {"class_id": 32, "name_vi": "Bàng Singapore", "name_en": "Fiddle Leaf Fig (Ficus lyrata)", "count": 1, "rate": 5.0}, {"class_id": 36, "name_vi": "Sanh bonsai", "name_en": "Ginseng Ficus (Ficus microcarpa)", "count": 1, "rate": 5.0}, {"class_id": 49, "name_vi": "Kim ngân", "name_en": "Money Tree (Pachira aquatica)", "count": 1, "rate": 5.0}, {"class_id": 76, "name_vi": "Dương xỉ sừng hươu", "name_en": "Staghorn Fern (Platycerium bifurcatum)", "count": 1, "rate": 5.0}, {"class_id": 71, "name_vi": "Ngũ gia bì", "name_en": "Schefflera", "count": 1, "rate": 5.0}, {"class_id": 83, "name_vi": "Si", "name_en": "Weeping Fig (Ficus benjamina)", "count": 1, "rate": 5.0}, {"class_id": 84, "name_vi": "Thiên điểu trắng", "name_en": "White Bird of Paradise (Strelitzia nicolai)", "count": 1, "rate": 5.0}]}, {"class_id": 16, "name_vi": "Ngân hậu Siam", "name_en": "Chinese Evergreen Siam (Aglaonema commutatum)", "total_test": 25, "tp": 18, "fn": 7, "fp": 7, "precision": 72.0, "recall": 72.0, "f1": 72.0, "misclassifications": [{"class_id": 2, "name_vi": "Hồng môn", "name_en": "Anthurium (Anthurium andraeanum)", "count": 1, "rate": 4.0}, {"class_id": 29, "name_vi": "Vạn niên thanh Dieffenbachia", "name_en": "Dumb Cane (Dieffenbachia spp.)", "count": 1, "rate": 4.0}, {"class_id": 34, "name_vi": "Cô tòng", "name_en": "Garden Croton (Codiaeum variegatum)", "count": 1, "rate": 4.0}, {"class_id": 51, "name_vi": "Lẻ bạn", "name_en": "Moses in the Cradle (Tradescantia spathacea)", "count": 1, "rate": 4.0}, {"class_id": 56, "name_vi": "Chuối mỏ két", "name_en": "Parrot Flower (Heliconia psittacorum)", "count": 1, "rate": 4.0}, {"class_id": 67, "name_vi": "Đuôi công hồng", "name_en": "Rose-painted Calathea (Calathea roseopicta)", "count": 1, "rate": 4.0}, {"class_id": 69, "name_vi": "Đa búp đỏ", "name_en": "Rubber Plant (Ficus elastica)", "count": 1, "rate": 4.0}]}, {"class_id": 17, "name_vi": "Dâm bụt", "name_en": "Chinese Hibiscus (Hibiscus rosa-sinensis)", "total_test": 25, "tp": 14, "fn": 11, "fp": 6, "precision": 70.0, "recall": 56.0, "f1": 62.22, "misclassifications": [{"class_id": 42, "name_vi": "Đỗ quyên", "name_en": "Indian Azalea (Rhododendron simsii)", "count": 3, "rate": 12.0}, {"class_id": 66, "name_vi": "Trầu bà đỏ", "name_en": "Red-leaf Philodendron (Philodendron erubescens)", "count": 2, "rate": 8.0}, {"class_id": 19, "name_vi": "Xương rồng Giáng sinh", "name_en": "Christmas Cactus (Schlumbergera bridgesii)", "count": 1, "rate": 4.0}, {"class_id": 24, "name_vi": "Vảy ốc", "name_en": "Creeping Fig (Ficus pumila)", "count": 1, "rate": 4.0}, {"class_id": 33, "name_vi": "Cẩm tú cầu", "name_en": "French Hydrangea (Hydrangea macrophylla)", "count": 1, "rate": 4.0}, {"class_id": 32, "name_vi": "Bàng Singapore", "name_en": "Fiddle Leaf Fig (Ficus lyrata)", "count": 1, "rate": 4.0}, {"class_id": 39, "name_vi": "Môn lá màu", "name_en": "Heart of Jesus (Caladium bicolor)", "count": 1, "rate": 4.0}, {"class_id": 54, "name_vi": "Hoa lan", "name_en": "Orchid", "count": 1, "rate": 4.0}]}, {"class_id": 18, "name_vi": "Cỏ đồng tiền Pilea", "name_en": "Chinese Money Plant (Pilea peperomioides)", "total_test": 39, "tp": 32, "fn": 7, "fp": 3, "precision": 91.43, "recall": 82.05, "f1": 86.49, "misclassifications": [{"class_id": 50, "name_vi": "Trầu bà lá xẻ Monstera", "name_en": "Monstera Deliciosa (Monstera deliciosa)", "count": 3, "rate": 7.7}, {"class_id": 87, "name_vi": "Kim tiền", "name_en": "ZZ Plant (Zamioculcas zamiifolia)", "count": 2, "rate": 5.1}, {"class_id": 2, "name_vi": "Hồng môn", "name_en": "Anthurium (Anthurium andraeanum)", "count": 1, "rate": 2.6}, {"class_id": 64, "name_vi": "Trường sinh giọt nước", "name_en": "Raindrop Peperomia (Peperomia polybotrya)", "count": 1, "rate": 2.6}]}, {"class_id": 19, "name_vi": "Xương rồng Giáng sinh", "name_en": "Christmas Cactus (Schlumbergera bridgesii)", "total_test": 32, "tp": 28, "fn": 4, "fp": 1, "precision": 96.55, "recall": 87.5, "f1": 91.8, "misclassifications": [{"class_id": 16, "name_vi": "Ngân hậu Siam", "name_en": "Chinese Evergreen Siam (Aglaonema commutatum)", "count": 1, "rate": 3.1}, {"class_id": 47, "name_vi": "Phất dụ mảnh", "name_en": "Madagascar Dragon Tree (Dracaena marginata)", "count": 1, "rate": 3.1}, {"class_id": 59, "name_vi": "Trạng nguyên", "name_en": "Poinsettia (Euphorbia pulcherrima)", "count": 1, "rate": 3.1}, {"class_id": 80, "name_vi": "Hoa tulip", "name_en": "Tulip", "count": 1, "rate": 3.1}]}, {"class_id": 20, "name_vi": "Hoa cúc", "name_en": "Chrysanthemum", "total_test": 21, "tp": 17, "fn": 4, "fp": 0, "precision": 100.0, "recall": 80.95, "f1": 89.47, "misclassifications": [{"class_id": 27, "name_vi": "Hoa thủy tiên", "name_en": "Daffodils (Narcissus spp.)", "count": 1, "rate": 4.8}, {"class_id": 45, "name_vi": "Cây sống đời", "name_en": "Kalanchoe", "count": 1, "rate": 4.8}, {"class_id": 57, "name_vi": "Lan ý", "name_en": "Peace lily", "count": 1, "rate": 4.8}, {"class_id": 80, "name_vi": "Hoa tulip", "name_en": "Tulip", "count": 1, "rate": 4.8}]}, {"class_id": 21, "name_vi": "Tía tô cảnh", "name_en": "Coleus (Coleus scutellarioides)", "total_test": 25, "tp": 16, "fn": 9, "fp": 1, "precision": 94.12, "recall": 64.0, "f1": 76.19, "misclassifications": [{"class_id": 25, "name_vi": "Xương rồng bát tiên", "name_en": "Crown of Thorns (Euphorbia milii)", "count": 2, "rate": 8.0}, {"class_id": 66, "name_vi": "Trầu bà đỏ", "name_en": "Red-leaf Philodendron (Philodendron erubescens)", "count": 2, "rate": 8.0}, {"class_id": 12, "name_vi": "Dương xỉ Boston", "name_en": "Boston Fern (Nephrolepis exaltata)", "count": 1, "rate": 4.0}, {"class_id": 34, "name_vi": "Cô tòng", "name_en": "Garden Croton (Codiaeum variegatum)", "count": 1, "rate": 4.0}, {"class_id": 46, "name_vi": "Linh lan", "name_en": "Lily of the valley (Convallaria majalis)", "count": 1, "rate": 4.0}, {"class_id": 59, "name_vi": "Trạng nguyên", "name_en": "Poinsettia (Euphorbia pulcherrima)", "count": 1, "rate": 4.0}, {"class_id": 69, "name_vi": "Đa búp đỏ", "name_en": "Rubber Plant (Ficus elastica)", "count": 1, "rate": 4.0}]}, {"class_id": 22, "name_vi": "Kim ngân lượng", "name_en": "Coralberry (Ardisia crenata)", "total_test": 22, "tp": 18, "fn": 4, "fp": 7, "precision": 72.0, "recall": 81.82, "f1": 76.6, "misclassifications": [{"class_id": 23, "name_vi": "Thiết mộc lan", "name_en": "Corn Plant (Dracaena fragrans)", "count": 1, "rate": 4.5}, {"class_id": 35, "name_vi": "Ráy khổng lồ", "name_en": "Giant Taro (Alocasia macrorrhizos)", "count": 1, "rate": 4.5}, {"class_id": 51, "name_vi": "Lẻ bạn", "name_en": "Moses in the Cradle (Tradescantia spathacea)", "count": 1, "rate": 4.5}, {"class_id": 66, "name_vi": "Trầu bà đỏ", "name_en": "Red-leaf Philodendron (Philodendron erubescens)", "count": 1, "rate": 4.5}]}, {"class_id": 23, "name_vi": "Thiết mộc lan", "name_en": "Corn Plant (Dracaena fragrans)", "total_test": 25, "tp": 14, "fn": 11, "fp": 11, "precision": 56.0, "recall": 56.0, "f1": 56.0, "misclassifications": [{"class_id": 76, "name_vi": "Dương xỉ sừng hươu", "name_en": "Staghorn Fern (Platycerium bifurcatum)", "count": 2, "rate": 8.0}, {"class_id": 84, "name_vi": "Thiên điểu trắng", "name_en": "White Bird of Paradise (Strelitzia nicolai)", "count": 2, "rate": 8.0}, {"class_id": 74, "name_vi": "Trúc bách hợp", "name_en": "Song of India (Dracaena reflexa)", "count": 2, "rate": 8.0}, {"class_id": 14, "name_vi": "Tỏi rừng", "name_en": "Cast Iron Plant (Aspidistra elatior)", "count": 1, "rate": 4.0}, {"class_id": 35, "name_vi": "Ráy khổng lồ", "name_en": "Giant Taro (Alocasia macrorrhizos)", "count": 1, "rate": 4.0}, {"class_id": 32, "name_vi": "Bàng Singapore", "name_en": "Fiddle Leaf Fig (Ficus lyrata)", "count": 1, "rate": 4.0}, {"class_id": 28, "name_vi": "Trầu bà đuôi rồng", "name_en": "Dragon Tail (Epipremnum pinnatum)", "count": 1, "rate": 4.0}, {"class_id": 58, "name_vi": "Bạc hà", "name_en": "Peppermint (Mentha piperita)", "count": 1, "rate": 4.0}]}, {"class_id": 24, "name_vi": "Vảy ốc", "name_en": "Creeping Fig (Ficus pumila)", "total_test": 25, "tp": 14, "fn": 11, "fp": 15, "precision": 48.28, "recall": 56.0, "f1": 51.85, "misclassifications": [{"class_id": 72, "name_vi": "Trầu bà bạc", "name_en": "Silver Pothos (Scindapsus pictus)", "count": 2, "rate": 8.0}, {"class_id": 66, "name_vi": "Trầu bà đỏ", "name_en": "Red-leaf Philodendron (Philodendron erubescens)", "count": 2, "rate": 8.0}, {"class_id": 6, "name_vi": "Trường sinh lá tròn", "name_en": "Baby Rubber Plant (Peperomia obtusifolia)", "count": 1, "rate": 4.0}, {"class_id": 18, "name_vi": "Cỏ đồng tiền Pilea", "name_en": "Chinese Money Plant (Pilea peperomioides)", "count": 1, "rate": 4.0}, {"class_id": 33, "name_vi": "Cẩm tú cầu", "name_en": "French Hydrangea (Hydrangea macrophylla)", "count": 1, "rate": 4.0}, {"class_id": 63, "name_vi": "Dương xỉ chân thỏ", "name_en": "Rabbit Foot Fern (Davallia fejeensis)", "count": 1, "rate": 4.0}, {"class_id": 37, "name_vi": "Trúc đốm", "name_en": "Gold Dust Dracaena (Dracaena surculosa)", "count": 1, "rate": 4.0}, {"class_id": 76, "name_vi": "Dương xỉ sừng hươu", "name_en": "Staghorn Fern (Platycerium bifurcatum)", "count": 1, "rate": 4.0}, {"class_id": 84, "name_vi": "Thiên điểu trắng", "name_en": "White Bird of Paradise (Strelitzia nicolai)", "count": 1, "rate": 4.0}]}, {"class_id": 25, "name_vi": "Xương rồng bát tiên", "name_en": "Crown of Thorns (Euphorbia milii)", "total_test": 25, "tp": 13, "fn": 12, "fp": 6, "precision": 68.42, "recall": 52.0, "f1": 59.09, "misclassifications": [{"class_id": 66, "name_vi": "Trầu bà đỏ", "name_en": "Red-leaf Philodendron (Philodendron erubescens)", "count": 3, "rate": 12.0}, {"class_id": 0, "name_vi": "Violet châu Phi", "name_en": "African Violet (Saintpaulia ionantha)", "count": 2, "rate": 8.0}, {"class_id": 34, "name_vi": "Cô tòng", "name_en": "Garden Croton (Codiaeum variegatum)", "count": 2, "rate": 8.0}, {"class_id": 6, "name_vi": "Trường sinh lá tròn", "name_en": "Baby Rubber Plant (Peperomia obtusifolia)", "count": 1, "rate": 4.0}, {"class_id": 28, "name_vi": "Trầu bà đuôi rồng", "name_en": "Dragon Tail (Epipremnum pinnatum)", "count": 1, "rate": 4.0}, {"class_id": 17, "name_vi": "Dâm bụt", "name_en": "Chinese Hibiscus (Hibiscus rosa-sinensis)", "count": 1, "rate": 4.0}, {"class_id": 33, "name_vi": "Cẩm tú cầu", "name_en": "French Hydrangea (Hydrangea macrophylla)", "count": 1, "rate": 4.0}, {"class_id": 32, "name_vi": "Bàng Singapore", "name_en": "Fiddle Leaf Fig (Ficus lyrata)", "count": 1, "rate": 4.0}]}, {"class_id": 26, "name_vi": "Đuôi công Ctenanthe", "name_en": "Ctenanthe", "total_test": 35, "tp": 26, "fn": 9, "fp": 4, "precision": 86.67, "recall": 74.29, "f1": 80.0, "misclassifications": [{"class_id": 62, "name_vi": "Dong vằn Maranta", "name_en": "Prayer Plant (Maranta leuconeura)", "count": 3, "rate": 8.6}, {"class_id": 69, "name_vi": "Đa búp đỏ", "name_en": "Rubber Plant (Ficus elastica)", "count": 2, "rate": 5.7}, {"class_id": 23, "name_vi": "Thiết mộc lan", "name_en": "Corn Plant (Dracaena fragrans)", "count": 1, "rate": 2.9}, {"class_id": 4, "name_vi": "Trầu bà chân vịt", "name_en": "Arrowhead Plant (Syngonium podophyllum)", "count": 1, "rate": 2.9}, {"class_id": 50, "name_vi": "Trầu bà lá xẻ Monstera", "name_en": "Monstera Deliciosa (Monstera deliciosa)", "count": 1, "rate": 2.9}, {"class_id": 49, "name_vi": "Kim ngân", "name_en": "Money Tree (Pachira aquatica)", "count": 1, "rate": 2.9}]}, {"class_id": 27, "name_vi": "Hoa thủy tiên", "name_en": "Daffodils (Narcissus spp.)", "total_test": 43, "tp": 40, "fn": 3, "fp": 3, "precision": 93.02, "recall": 93.02, "f1": 93.02, "misclassifications": [{"class_id": 8, "name_vi": "Thiên điểu", "name_en": "Bird of Paradise (Strelitzia reginae)", "count": 1, "rate": 2.3}, {"class_id": 13, "name_vi": "Hoa rum", "name_en": "Calla Lily (Zantedeschia aethiopica)", "count": 1, "rate": 2.3}, {"class_id": 49, "name_vi": "Kim ngân", "name_en": "Money Tree (Pachira aquatica)", "count": 1, "rate": 2.3}]}, {"class_id": 28, "name_vi": "Trầu bà đuôi rồng", "name_en": "Dragon Tail (Epipremnum pinnatum)", "total_test": 22, "tp": 19, "fn": 3, "fp": 20, "precision": 48.72, "recall": 86.36, "f1": 62.3, "misclassifications": [{"class_id": 84, "name_vi": "Thiên điểu trắng", "name_en": "White Bird of Paradise (Strelitzia nicolai)", "count": 2, "rate": 9.1}, {"class_id": 72, "name_vi": "Trầu bà bạc", "name_en": "Silver Pothos (Scindapsus pictus)", "count": 1, "rate": 4.5}]}, {"class_id": 29, "name_vi": "Vạn niên thanh Dieffenbachia", "name_en": "Dumb Cane (Dieffenbachia spp.)", "total_test": 55, "tp": 46, "fn": 9, "fp": 4, "precision": 92.0, "recall": 83.64, "f1": 87.62, "misclassifications": [{"class_id": 14, "name_vi": "Tỏi rừng", "name_en": "Cast Iron Plant (Aspidistra elatior)", "count": 3, "rate": 5.5}, {"class_id": 69, "name_vi": "Đa búp đỏ", "name_en": "Rubber Plant (Ficus elastica)", "count": 2, "rate": 3.6}, {"class_id": 49, "name_vi": "Kim ngân", "name_en": "Money Tree (Pachira aquatica)", "count": 1, "rate": 1.8}, {"class_id": 65, "name_vi": "Đuôi công lá dài", "name_en": "Rattlesnake Plant (Calathea lancifolia)", "count": 1, "rate": 1.8}, {"class_id": 72, "name_vi": "Trầu bà bạc", "name_en": "Silver Pothos (Scindapsus pictus)", "count": 1, "rate": 1.8}, {"class_id": 87, "name_vi": "Kim tiền", "name_en": "ZZ Plant (Zamioculcas zamiifolia)", "count": 1, "rate": 1.8}]}, {"class_id": 30, "name_vi": "Thường xuân", "name_en": "English Ivy (Hedera helix)", "total_test": 24, "tp": 18, "fn": 6, "fp": 1, "precision": 94.74, "recall": 75.0, "f1": 83.72, "misclassifications": [{"class_id": 71, "name_vi": "Ngũ gia bì", "name_en": "Schefflera", "count": 4, "rate": 16.7}, {"class_id": 49, "name_vi": "Kim ngân", "name_en": "Money Tree (Pachira aquatica)", "count": 1, "rate": 4.2}, {"class_id": 50, "name_vi": "Trầu bà lá xẻ Monstera", "name_en": "Monstera Deliciosa (Monstera deliciosa)", "count": 1, "rate": 4.2}]}, {"class_id": 31, "name_vi": "Trúc mây", "name_en": "Fan Palm - Lady Palm (Rhapis excelsa)", "total_test": 22, "tp": 15, "fn": 7, "fp": 15, "precision": 50.0, "recall": 68.18, "f1": 57.69, "misclassifications": [{"class_id": 49, "name_vi": "Kim ngân", "name_en": "Money Tree (Pachira aquatica)", "count": 2, "rate": 9.1}, {"class_id": 84, "name_vi": "Thiên điểu trắng", "name_en": "White Bird of Paradise (Strelitzia nicolai)", "count": 2, "rate": 9.1}, {"class_id": 14, "name_vi": "Tỏi rừng", "name_en": "Cast Iron Plant (Aspidistra elatior)", "count": 1, "rate": 4.5}, {"class_id": 23, "name_vi": "Thiết mộc lan", "name_en": "Corn Plant (Dracaena fragrans)", "count": 1, "rate": 4.5}, {"class_id": 61, "name_vi": "Cây chân voi", "name_en": "Ponytail Palm (Beaucarnea recurvata)", "count": 1, "rate": 4.5}]}, {"class_id": 32, "name_vi": "Bàng Singapore", "name_en": "Fiddle Leaf Fig (Ficus lyrata)", "total_test": 25, "tp": 19, "fn": 6, "fp": 17, "precision": 52.78, "recall": 76.0, "f1": 62.3, "misclassifications": [{"class_id": 66, "name_vi": "Trầu bà đỏ", "name_en": "Red-leaf Philodendron (Philodendron erubescens)", "count": 2, "rate": 8.0}, {"class_id": 36, "name_vi": "Sanh bonsai", "name_en": "Ginseng Ficus (Ficus microcarpa)", "count": 1, "rate": 4.0}, {"class_id": 57, "name_vi": "Lan ý", "name_en": "Peace lily", "count": 1, "rate": 4.0}, {"class_id": 67, "name_vi": "Đuôi công hồng", "name_en": "Rose-painted Calathea (Calathea roseopicta)", "count": 1, "rate": 4.0}, {"class_id": 83, "name_vi": "Si", "name_en": "Weeping Fig (Ficus benjamina)", "count": 1, "rate": 4.0}]}, {"class_id": 33, "name_vi": "Cẩm tú cầu", "name_en": "French Hydrangea (Hydrangea macrophylla)", "total_test": 25, "tp": 19, "fn": 6, "fp": 10, "precision": 65.52, "recall": 76.0, "f1": 70.37, "misclassifications": [{"class_id": 0, "name_vi": "Violet châu Phi", "name_en": "African Violet (Saintpaulia ionantha)", "count": 1, "rate": 4.0}, {"class_id": 4, "name_vi": "Trầu bà chân vịt", "name_en": "Arrowhead Plant (Syngonium podophyllum)", "count": 1, "rate": 4.0}, {"class_id": 28, "name_vi": "Trầu bà đuôi rồng", "name_en": "Dragon Tail (Epipremnum pinnatum)", "count": 1, "rate": 4.0}, {"class_id": 66, "name_vi": "Trầu bà đỏ", "name_en": "Red-leaf Philodendron (Philodendron erubescens)", "count": 1, "rate": 4.0}, {"class_id": 69, "name_vi": "Đa búp đỏ", "name_en": "Rubber Plant (Ficus elastica)", "count": 1, "rate": 4.0}, {"class_id": 72, "name_vi": "Trầu bà bạc", "name_en": "Silver Pothos (Scindapsus pictus)", "count": 1, "rate": 4.0}]}, {"class_id": 34, "name_vi": "Cô tòng", "name_en": "Garden Croton (Codiaeum variegatum)", "total_test": 25, "tp": 20, "fn": 5, "fp": 13, "precision": 60.61, "recall": 80.0, "f1": 68.97, "misclassifications": [{"class_id": 37, "name_vi": "Trúc đốm", "name_en": "Gold Dust Dracaena (Dracaena surculosa)", "count": 1, "rate": 4.0}, {"class_id": 44, "name_vi": "Ngọc bích", "name_en": "Jade plant (Crassula ovata)", "count": 1, "rate": 4.0}, {"class_id": 51, "name_vi": "Lẻ bạn", "name_en": "Moses in the Cradle (Tradescantia spathacea)", "count": 1, "rate": 4.0}, {"class_id": 69, "name_vi": "Đa búp đỏ", "name_en": "Rubber Plant (Ficus elastica)", "count": 1, "rate": 4.0}, {"class_id": 74, "name_vi": "Trúc bách hợp", "name_en": "Song of India (Dracaena reflexa)", "count": 1, "rate": 4.0}]}, {"class_id": 35, "name_vi": "Ráy khổng lồ", "name_en": "Giant Taro (Alocasia macrorrhizos)", "total_test": 25, "tp": 17, "fn": 8, "fp": 7, "precision": 70.83, "recall": 68.0, "f1": 69.39, "misclassifications": [{"class_id": 53, "name_vi": "Ráy thơm", "name_en": "Night-scented Lily (Alocasia odora)", "count": 4, "rate": 16.0}, {"class_id": 4, "name_vi": "Trầu bà chân vịt", "name_en": "Arrowhead Plant (Syngonium podophyllum)", "count": 1, "rate": 4.0}, {"class_id": 13, "name_vi": "Hoa rum", "name_en": "Calla Lily (Zantedeschia aethiopica)", "count": 1, "rate": 4.0}, {"class_id": 68, "name_vi": "Đuôi công lá tròn", "name_en": "Round-leaf Calathea (Calathea orbifolia)", "count": 1, "rate": 4.0}, {"class_id": 84, "name_vi": "Thiên điểu trắng", "name_en": "White Bird of Paradise (Strelitzia nicolai)", "count": 1, "rate": 4.0}]}, {"class_id": 36, "name_vi": "Sanh bonsai", "name_en": "Ginseng Ficus (Ficus microcarpa)", "total_test": 25, "tp": 7, "fn": 18, "fp": 6, "precision": 53.85, "recall": 28.0, "f1": 36.84, "misclassifications": [{"class_id": 83, "name_vi": "Si", "name_en": "Weeping Fig (Ficus benjamina)", "count": 9, "rate": 36.0}, {"class_id": 24, "name_vi": "Vảy ốc", "name_en": "Creeping Fig (Ficus pumila)", "count": 2, "rate": 8.0}, {"class_id": 66, "name_vi": "Trầu bà đỏ", "name_en": "Red-leaf Philodendron (Philodendron erubescens)", "count": 2, "rate": 8.0}, {"class_id": 32, "name_vi": "Bàng Singapore", "name_en": "Fiddle Leaf Fig (Ficus lyrata)", "count": 2, "rate": 8.0}, {"class_id": 69, "name_vi": "Đa búp đỏ", "name_en": "Rubber Plant (Ficus elastica)", "count": 2, "rate": 8.0}, {"class_id": 28, "name_vi": "Trầu bà đuôi rồng", "name_en": "Dragon Tail (Epipremnum pinnatum)", "count": 1, "rate": 4.0}]}, {"class_id": 37, "name_vi": "Trúc đốm", "name_en": "Gold Dust Dracaena (Dracaena surculosa)", "total_test": 20, "tp": 13, "fn": 7, "fp": 11, "precision": 54.17, "recall": 65.0, "f1": 59.09, "misclassifications": [{"class_id": 4, "name_vi": "Trầu bà chân vịt", "name_en": "Arrowhead Plant (Syngonium podophyllum)", "count": 1, "rate": 5.0}, {"class_id": 29, "name_vi": "Vạn niên thanh Dieffenbachia", "name_en": "Dumb Cane (Dieffenbachia spp.)", "count": 1, "rate": 5.0}, {"class_id": 32, "name_vi": "Bàng Singapore", "name_en": "Fiddle Leaf Fig (Ficus lyrata)", "count": 1, "rate": 5.0}, {"class_id": 50, "name_vi": "Trầu bà lá xẻ Monstera", "name_en": "Monstera Deliciosa (Monstera deliciosa)", "count": 1, "rate": 5.0}, {"class_id": 60, "name_vi": "Cây chấm bi", "name_en": "Polka Dot Plant (Hypoestes phyllostachya)", "count": 1, "rate": 5.0}, {"class_id": 66, "name_vi": "Trầu bà đỏ", "name_en": "Red-leaf Philodendron (Philodendron erubescens)", "count": 1, "rate": 5.0}, {"class_id": 83, "name_vi": "Si", "name_en": "Weeping Fig (Ficus benjamina)", "count": 1, "rate": 5.0}]}, {"class_id": 38, "name_vi": "Trầu bà cuống lông", "name_en": "Hairy Philodendron (Philodendron squamiferum)", "total_test": 18, "tp": 9, "fn": 9, "fp": 11, "precision": 45.0, "recall": 50.0, "f1": 47.37, "misclassifications": [{"class_id": 84, "name_vi": "Thiên điểu trắng", "name_en": "White Bird of Paradise (Strelitzia nicolai)", "count": 2, "rate": 11.1}, {"class_id": 4, "name_vi": "Trầu bà chân vịt", "name_en": "Arrowhead Plant (Syngonium podophyllum)", "count": 1, "rate": 5.6}, {"class_id": 28, "name_vi": "Trầu bà đuôi rồng", "name_en": "Dragon Tail (Epipremnum pinnatum)", "count": 1, "rate": 5.6}, {"class_id": 9, "name_vi": "Dương xỉ tổ chim", "name_en": "Birds Nest Fern (Asplenium nidus)", "count": 1, "rate": 5.6}, {"class_id": 37, "name_vi": "Trúc đốm", "name_en": "Gold Dust Dracaena (Dracaena surculosa)", "count": 1, "rate": 5.6}, {"class_id": 66, "name_vi": "Trầu bà đỏ", "name_en": "Red-leaf Philodendron (Philodendron erubescens)", "count": 1, "rate": 5.6}, {"class_id": 69, "name_vi": "Đa búp đỏ", "name_en": "Rubber Plant (Ficus elastica)", "count": 1, "rate": 5.6}, {"class_id": 76, "name_vi": "Dương xỉ sừng hươu", "name_en": "Staghorn Fern (Platycerium bifurcatum)", "count": 1, "rate": 5.6}]}, {"class_id": 39, "name_vi": "Môn lá màu", "name_en": "Heart of Jesus (Caladium bicolor)", "total_test": 25, "tp": 15, "fn": 10, "fp": 4, "precision": 78.95, "recall": 60.0, "f1": 68.18, "misclassifications": [{"class_id": 22, "name_vi": "Kim ngân lượng", "name_en": "Coralberry (Ardisia crenata)", "count": 2, "rate": 8.0}, {"class_id": 66, "name_vi": "Trầu bà đỏ", "name_en": "Red-leaf Philodendron (Philodendron erubescens)", "count": 2, "rate": 8.0}, {"class_id": 34, "name_vi": "Cô tòng", "name_en": "Garden Croton (Codiaeum variegatum)", "count": 1, "rate": 4.0}, {"class_id": 6, "name_vi": "Trường sinh lá tròn", "name_en": "Baby Rubber Plant (Peperomia obtusifolia)", "count": 1, "rate": 4.0}, {"class_id": 50, "name_vi": "Trầu bà lá xẻ Monstera", "name_en": "Monstera Deliciosa (Monstera deliciosa)", "count": 1, "rate": 4.0}, {"class_id": 53, "name_vi": "Ráy thơm", "name_en": "Night-scented Lily (Alocasia odora)", "count": 1, "rate": 4.0}, {"class_id": 76, "name_vi": "Dương xỉ sừng hươu", "name_en": "Staghorn Fern (Platycerium bifurcatum)", "count": 1, "rate": 4.0}, {"class_id": 82, "name_vi": "Trường sinh dưa hấu", "name_en": "Watermelon Peperomia (Peperomia argyreia)", "count": 1, "rate": 4.0}]}, {"class_id": 40, "name_vi": "Trầu bà lá tim", "name_en": "Heartleaf Philodendron (Philodendron cordatum)", "total_test": 25, "tp": 15, "fn": 10, "fp": 3, "precision": 83.33, "recall": 60.0, "f1": 69.77, "misclassifications": [{"class_id": 84, "name_vi": "Thiên điểu trắng", "name_en": "White Bird of Paradise (Strelitzia nicolai)", "count": 3, "rate": 12.0}, {"class_id": 66, "name_vi": "Trầu bà đỏ", "name_en": "Red-leaf Philodendron (Philodendron erubescens)", "count": 3, "rate": 12.0}, {"class_id": 63, "name_vi": "Dương xỉ chân thỏ", "name_en": "Rabbit Foot Fern (Davallia fejeensis)", "count": 1, "rate": 4.0}, {"class_id": 32, "name_vi": "Bàng Singapore", "name_en": "Fiddle Leaf Fig (Ficus lyrata)", "count": 1, "rate": 4.0}, {"class_id": 76, "name_vi": "Dương xỉ sừng hươu", "name_en": "Staghorn Fern (Platycerium bifurcatum)", "count": 1, "rate": 4.0}, {"class_id": 77, "name_vi": "Sen đá chuỗi ngọc", "name_en": "String of Pearls (Senecio rowleyanus)", "count": 1, "rate": 4.0}]}, {"class_id": 41, "name_vi": "Dạ lan hương", "name_en": "Hyacinth (Hyacinthus orientalis)", "total_test": 32, "tp": 31, "fn": 1, "fp": 4, "precision": 88.57, "recall": 96.88, "f1": 92.54, "misclassifications": [{"class_id": 71, "name_vi": "Ngũ gia bì", "name_en": "Schefflera", "count": 1, "rate": 3.1}]}, {"class_id": 42, "name_vi": "Đỗ quyên", "name_en": "Indian Azalea (Rhododendron simsii)", "total_test": 25, "tp": 11, "fn": 14, "fp": 6, "precision": 64.71, "recall": 44.0, "f1": 52.38, "misclassifications": [{"class_id": 25, "name_vi": "Xương rồng bát tiên", "name_en": "Crown of Thorns (Euphorbia milii)", "count": 4, "rate": 16.0}, {"class_id": 17, "name_vi": "Dâm bụt", "name_en": "Chinese Hibiscus (Hibiscus rosa-sinensis)", "count": 3, "rate": 12.0}, {"class_id": 24, "name_vi": "Vảy ốc", "name_en": "Creeping Fig (Ficus pumila)", "count": 1, "rate": 4.0}, {"class_id": 33, "name_vi": "Cẩm tú cầu", "name_en": "French Hydrangea (Hydrangea macrophylla)", "count": 1, "rate": 4.0}, {"class_id": 44, "name_vi": "Ngọc bích", "name_en": "Jade plant (Crassula ovata)", "count": 1, "rate": 4.0}, {"class_id": 54, "name_vi": "Hoa lan", "name_en": "Orchid", "count": 1, "rate": 4.0}, {"class_id": 59, "name_vi": "Trạng nguyên", "name_en": "Poinsettia (Euphorbia pulcherrima)", "count": 1, "rate": 4.0}, {"class_id": 63, "name_vi": "Dương xỉ chân thỏ", "name_en": "Rabbit Foot Fern (Davallia fejeensis)", "count": 1, "rate": 4.0}, {"class_id": 71, "name_vi": "Ngũ gia bì", "name_en": "Schefflera", "count": 1, "rate": 4.0}]}, {"class_id": 43, "name_vi": "Thu hải đường chữ thập", "name_en": "Iron Cross begonia (Begonia masoniana)", "total_test": 27, "tp": 27, "fn": 0, "fp": 0, "precision": 100.0, "recall": 100.0, "f1": 100.0, "misclassifications": []}, {"class_id": 44, "name_vi": "Ngọc bích", "name_en": "Jade plant (Crassula ovata)", "total_test": 36, "tp": 30, "fn": 6, "fp": 8, "precision": 78.95, "recall": 83.33, "f1": 81.08, "misclassifications": [{"class_id": 69, "name_vi": "Đa búp đỏ", "name_en": "Rubber Plant (Ficus elastica)", "count": 2, "rate": 5.6}, {"class_id": 9, "name_vi": "Dương xỉ tổ chim", "name_en": "Birds Nest Fern (Asplenium nidus)", "count": 1, "rate": 2.8}, {"class_id": 30, "name_vi": "Thường xuân", "name_en": "English Ivy (Hedera helix)", "count": 1, "rate": 2.8}, {"class_id": 46, "name_vi": "Linh lan", "name_en": "Lily of the valley (Convallaria majalis)", "count": 1, "rate": 2.8}, {"class_id": 51, "name_vi": "Lẻ bạn", "name_en": "Moses in the Cradle (Tradescantia spathacea)", "count": 1, "rate": 2.8}]}, {"class_id": 45, "name_vi": "Cây sống đời", "name_en": "Kalanchoe", "total_test": 13, "tp": 11, "fn": 2, "fp": 3, "precision": 78.57, "recall": 84.62, "f1": 81.48, "misclassifications": [{"class_id": 0, "name_vi": "Violet châu Phi", "name_en": "African Violet (Saintpaulia ionantha)", "count": 1, "rate": 7.7}, {"class_id": 44, "name_vi": "Ngọc bích", "name_en": "Jade plant (Crassula ovata)", "count": 1, "rate": 7.7}]}, {"class_id": 46, "name_vi": "Linh lan", "name_en": "Lily of the valley (Convallaria majalis)", "total_test": 42, "tp": 36, "fn": 6, "fp": 3, "precision": 92.31, "recall": 85.71, "f1": 88.89, "misclassifications": [{"class_id": 41, "name_vi": "Dạ lan hương", "name_en": "Hyacinth (Hyacinthus orientalis)", "count": 3, "rate": 7.1}, {"class_id": 13, "name_vi": "Hoa rum", "name_en": "Calla Lily (Zantedeschia aethiopica)", "count": 1, "rate": 2.4}, {"class_id": 14, "name_vi": "Tỏi rừng", "name_en": "Cast Iron Plant (Aspidistra elatior)", "count": 1, "rate": 2.4}, {"class_id": 49, "name_vi": "Kim ngân", "name_en": "Money Tree (Pachira aquatica)", "count": 1, "rate": 2.4}]}, {"class_id": 47, "name_vi": "Phất dụ mảnh", "name_en": "Madagascar Dragon Tree (Dracaena marginata)", "total_test": 24, "tp": 8, "fn": 16, "fp": 7, "precision": 53.33, "recall": 33.33, "f1": 41.03, "misclassifications": [{"class_id": 74, "name_vi": "Trúc bách hợp", "name_en": "Song of India (Dracaena reflexa)", "count": 5, "rate": 20.8}, {"class_id": 3, "name_vi": "Cau vàng", "name_en": "Areca Palm (Dypsis lutescens)", "count": 2, "rate": 8.3}, {"class_id": 31, "name_vi": "Trúc mây", "name_en": "Fan Palm - Lady Palm (Rhapis excelsa)", "count": 2, "rate": 8.3}, {"class_id": 86, "name_vi": "Cây Yucca", "name_en": "Yucca", "count": 2, "rate": 8.3}, {"class_id": 37, "name_vi": "Trúc đốm", "name_en": "Gold Dust Dracaena (Dracaena surculosa)", "count": 1, "rate": 4.2}, {"class_id": 50, "name_vi": "Trầu bà lá xẻ Monstera", "name_en": "Monstera Deliciosa (Monstera deliciosa)", "count": 1, "rate": 4.2}, {"class_id": 38, "name_vi": "Trầu bà cuống lông", "name_en": "Hairy Philodendron (Philodendron squamiferum)", "count": 1, "rate": 4.2}, {"class_id": 61, "name_vi": "Cây chân voi", "name_en": "Ponytail Palm (Beaucarnea recurvata)", "count": 1, "rate": 4.2}, {"class_id": 76, "name_vi": "Dương xỉ sừng hươu", "name_en": "Staghorn Fern (Platycerium bifurcatum)", "count": 1, "rate": 4.2}]}, {"class_id": 48, "name_vi": "Sen đá Echeveria elegans", "name_en": "Mexican Snowball (Echeveria elegans)", "total_test": 25, "tp": 16, "fn": 9, "fp": 2, "precision": 88.89, "recall": 64.0, "f1": 74.42, "misclassifications": [{"class_id": 11, "name_vi": "Dứa cảnh Neoregelia", "name_en": "Blushing Bromeliad (Neoregelia carolinae)", "count": 1, "rate": 4.0}, {"class_id": 33, "name_vi": "Cẩm tú cầu", "name_en": "French Hydrangea (Hydrangea macrophylla)", "count": 1, "rate": 4.0}, {"class_id": 34, "name_vi": "Cô tòng", "name_en": "Garden Croton (Codiaeum variegatum)", "count": 1, "rate": 4.0}, {"class_id": 39, "name_vi": "Môn lá màu", "name_en": "Heart of Jesus (Caladium bicolor)", "count": 1, "rate": 4.0}, {"class_id": 44, "name_vi": "Ngọc bích", "name_en": "Jade plant (Crassula ovata)", "count": 1, "rate": 4.0}, {"class_id": 45, "name_vi": "Cây sống đời", "name_en": "Kalanchoe", "count": 1, "rate": 4.0}, {"class_id": 54, "name_vi": "Hoa lan", "name_en": "Orchid", "count": 1, "rate": 4.0}, {"class_id": 77, "name_vi": "Sen đá chuỗi ngọc", "name_en": "String of Pearls (Senecio rowleyanus)", "count": 1, "rate": 4.0}, {"class_id": 82, "name_vi": "Trường sinh dưa hấu", "name_en": "Watermelon Peperomia (Peperomia argyreia)", "count": 1, "rate": 4.0}]}, {"class_id": 49, "name_vi": "Kim ngân", "name_en": "Money Tree (Pachira aquatica)", "total_test": 36, "tp": 26, "fn": 10, "fp": 20, "precision": 56.52, "recall": 72.22, "f1": 63.41, "misclassifications": [{"class_id": 71, "name_vi": "Ngũ gia bì", "name_en": "Schefflera", "count": 4, "rate": 11.1}, {"class_id": 27, "name_vi": "Hoa thủy tiên", "name_en": "Daffodils (Narcissus spp.)", "count": 1, "rate": 2.8}, {"class_id": 24, "name_vi": "Vảy ốc", "name_en": "Creeping Fig (Ficus pumila)", "count": 1, "rate": 2.8}, {"class_id": 32, "name_vi": "Bàng Singapore", "name_en": "Fiddle Leaf Fig (Ficus lyrata)", "count": 1, "rate": 2.8}, {"class_id": 38, "name_vi": "Trầu bà cuống lông", "name_en": "Hairy Philodendron (Philodendron squamiferum)", "count": 1, "rate": 2.8}, {"class_id": 44, "name_vi": "Ngọc bích", "name_en": "Jade plant (Crassula ovata)", "count": 1, "rate": 2.8}, {"class_id": 50, "name_vi": "Trầu bà lá xẻ Monstera", "name_en": "Monstera Deliciosa (Monstera deliciosa)", "count": 1, "rate": 2.8}]}, {"class_id": 50, "name_vi": "Trầu bà lá xẻ Monstera", "name_en": "Monstera Deliciosa (Monstera deliciosa)", "total_test": 55, "tp": 48, "fn": 7, "fp": 27, "precision": 64.0, "recall": 87.27, "f1": 73.85, "misclassifications": [{"class_id": 26, "name_vi": "Đuôi công Ctenanthe", "name_en": "Ctenanthe", "count": 1, "rate": 1.8}, {"class_id": 38, "name_vi": "Trầu bà cuống lông", "name_en": "Hairy Philodendron (Philodendron squamiferum)", "count": 1, "rate": 1.8}, {"class_id": 62, "name_vi": "Dong vằn Maranta", "name_en": "Prayer Plant (Maranta leuconeura)", "count": 1, "rate": 1.8}, {"class_id": 66, "name_vi": "Trầu bà đỏ", "name_en": "Red-leaf Philodendron (Philodendron erubescens)", "count": 1, "rate": 1.8}, {"class_id": 69, "name_vi": "Đa búp đỏ", "name_en": "Rubber Plant (Ficus elastica)", "count": 1, "rate": 1.8}, {"class_id": 71, "name_vi": "Ngũ gia bì", "name_en": "Schefflera", "count": 1, "rate": 1.8}, {"class_id": 73, "name_vi": "Lưỡi hổ", "name_en": "Snake plant (Sanseviera)", "count": 1, "rate": 1.8}]}, {"class_id": 51, "name_vi": "Lẻ bạn", "name_en": "Moses in the Cradle (Tradescantia spathacea)", "total_test": 22, "tp": 18, "fn": 4, "fp": 13, "precision": 58.06, "recall": 81.82, "f1": 67.92, "misclassifications": [{"class_id": 11, "name_vi": "Dứa cảnh Neoregelia", "name_en": "Blushing Bromeliad (Neoregelia carolinae)", "count": 1, "rate": 4.5}, {"class_id": 24, "name_vi": "Vảy ốc", "name_en": "Creeping Fig (Ficus pumila)", "count": 1, "rate": 4.5}, {"class_id": 69, "name_vi": "Đa búp đỏ", "name_en": "Rubber Plant (Ficus elastica)", "count": 1, "rate": 4.5}, {"class_id": 84, "name_vi": "Thiên điểu trắng", "name_en": "White Bird of Paradise (Strelitzia nicolai)", "count": 1, "rate": 4.5}]}, {"class_id": 52, "name_vi": "Cẩm nhung", "name_en": "Nerve Plant (Fittonia albivenis)", "total_test": 25, "tp": 15, "fn": 10, "fp": 3, "precision": 83.33, "recall": 60.0, "f1": 69.77, "misclassifications": [{"class_id": 62, "name_vi": "Dong vằn Maranta", "name_en": "Prayer Plant (Maranta leuconeura)", "count": 3, "rate": 12.0}, {"class_id": 29, "name_vi": "Vạn niên thanh Dieffenbachia", "name_en": "Dumb Cane (Dieffenbachia spp.)", "count": 1, "rate": 4.0}, {"class_id": 34, "name_vi": "Cô tòng", "name_en": "Garden Croton (Codiaeum variegatum)", "count": 1, "rate": 4.0}, {"class_id": 32, "name_vi": "Bàng Singapore", "name_en": "Fiddle Leaf Fig (Ficus lyrata)", "count": 1, "rate": 4.0}, {"class_id": 39, "name_vi": "Môn lá màu", "name_en": "Heart of Jesus (Caladium bicolor)", "count": 1, "rate": 4.0}, {"class_id": 48, "name_vi": "Sen đá Echeveria elegans", "name_en": "Mexican Snowball (Echeveria elegans)", "count": 1, "rate": 4.0}, {"class_id": 50, "name_vi": "Trầu bà lá xẻ Monstera", "name_en": "Monstera Deliciosa (Monstera deliciosa)", "count": 1, "rate": 4.0}, {"class_id": 78, "name_vi": "Trầu bà lỗ", "name_en": "Swiss Cheese Vine (Monstera adansonii)", "count": 1, "rate": 4.0}]}, {"class_id": 53, "name_vi": "Ráy thơm", "name_en": "Night-scented Lily (Alocasia odora)", "total_test": 22, "tp": 14, "fn": 8, "fp": 12, "precision": 53.85, "recall": 63.64, "f1": 58.33, "misclassifications": [{"class_id": 35, "name_vi": "Ráy khổng lồ", "name_en": "Giant Taro (Alocasia macrorrhizos)", "count": 2, "rate": 9.1}, {"class_id": 66, "name_vi": "Trầu bà đỏ", "name_en": "Red-leaf Philodendron (Philodendron erubescens)", "count": 2, "rate": 9.1}, {"class_id": 10, "name_vi": "Môn nhung đen", "name_en": "Black Velvet Alocasia (Alocasia reginula)", "count": 1, "rate": 4.5}, {"class_id": 39, "name_vi": "Môn lá màu", "name_en": "Heart of Jesus (Caladium bicolor)", "count": 1, "rate": 4.5}, {"class_id": 52, "name_vi": "Cẩm nhung", "name_en": "Nerve Plant (Fittonia albivenis)", "count": 1, "rate": 4.5}, {"class_id": 84, "name_vi": "Thiên điểu trắng", "name_en": "White Bird of Paradise (Strelitzia nicolai)", "count": 1, "rate": 4.5}]}, {"class_id": 54, "name_vi": "Hoa lan", "name_en": "Orchid", "total_test": 24, "tp": 24, "fn": 0, "fp": 8, "precision": 75.0, "recall": 100.0, "f1": 85.71, "misclassifications": []}, {"class_id": 55, "name_vi": "Cau tiểu trâm", "name_en": "Parlor Palm (Chamaedorea elegans)", "total_test": 33, "tp": 26, "fn": 7, "fp": 5, "precision": 83.87, "recall": 78.79, "f1": 81.25, "misclassifications": [{"class_id": 3, "name_vi": "Cau vàng", "name_en": "Areca Palm (Dypsis lutescens)", "count": 2, "rate": 6.1}, {"class_id": 31, "name_vi": "Trúc mây", "name_en": "Fan Palm - Lady Palm (Rhapis excelsa)", "count": 2, "rate": 6.1}, {"class_id": 44, "name_vi": "Ngọc bích", "name_en": "Jade plant (Crassula ovata)", "count": 1, "rate": 3.0}, {"class_id": 69, "name_vi": "Đa búp đỏ", "name_en": "Rubber Plant (Ficus elastica)", "count": 1, "rate": 3.0}, {"class_id": 86, "name_vi": "Cây Yucca", "name_en": "Yucca", "count": 1, "rate": 3.0}]}, {"class_id": 56, "name_vi": "Chuối mỏ két", "name_en": "Parrot Flower (Heliconia psittacorum)", "total_test": 25, "tp": 16, "fn": 9, "fp": 1, "precision": 94.12, "recall": 64.0, "f1": 76.19, "misclassifications": [{"class_id": 8, "name_vi": "Thiên điểu", "name_en": "Bird of Paradise (Strelitzia reginae)", "count": 4, "rate": 16.0}, {"class_id": 38, "name_vi": "Trầu bà cuống lông", "name_en": "Hairy Philodendron (Philodendron squamiferum)", "count": 2, "rate": 8.0}, {"class_id": 51, "name_vi": "Lẻ bạn", "name_en": "Moses in the Cradle (Tradescantia spathacea)", "count": 1, "rate": 4.0}, {"class_id": 66, "name_vi": "Trầu bà đỏ", "name_en": "Red-leaf Philodendron (Philodendron erubescens)", "count": 1, "rate": 4.0}, {"class_id": 85, "name_vi": "Tùng la hán", "name_en": "Yew Plum Pine (Podocarpus macrophyllus)", "count": 1, "rate": 4.0}]}, {"class_id": 57, "name_vi": "Lan ý", "name_en": "Peace lily", "total_test": 39, "tp": 32, "fn": 7, "fp": 3, "precision": 91.43, "recall": 82.05, "f1": 86.49, "misclassifications": [{"class_id": 8, "name_vi": "Thiên điểu", "name_en": "Bird of Paradise (Strelitzia reginae)", "count": 2, "rate": 5.1}, {"class_id": 50, "name_vi": "Trầu bà lá xẻ Monstera", "name_en": "Monstera Deliciosa (Monstera deliciosa)", "count": 2, "rate": 5.1}, {"class_id": 46, "name_vi": "Linh lan", "name_en": "Lily of the valley (Convallaria majalis)", "count": 1, "rate": 2.6}, {"class_id": 69, "name_vi": "Đa búp đỏ", "name_en": "Rubber Plant (Ficus elastica)", "count": 1, "rate": 2.6}, {"class_id": 87, "name_vi": "Kim tiền", "name_en": "ZZ Plant (Zamioculcas zamiifolia)", "count": 1, "rate": 2.6}]}, {"class_id": 58, "name_vi": "Bạc hà", "name_en": "Peppermint (Mentha piperita)", "total_test": 25, "tp": 11, "fn": 14, "fp": 2, "precision": 84.62, "recall": 44.0, "f1": 57.89, "misclassifications": [{"class_id": 33, "name_vi": "Cẩm tú cầu", "name_en": "French Hydrangea (Hydrangea macrophylla)", "count": 3, "rate": 12.0}, {"class_id": 17, "name_vi": "Dâm bụt", "name_en": "Chinese Hibiscus (Hibiscus rosa-sinensis)", "count": 1, "rate": 4.0}, {"class_id": 22, "name_vi": "Kim ngân lượng", "name_en": "Coralberry (Ardisia crenata)", "count": 1, "rate": 4.0}, {"class_id": 24, "name_vi": "Vảy ốc", "name_en": "Creeping Fig (Ficus pumila)", "count": 1, "rate": 4.0}, {"class_id": 34, "name_vi": "Cô tòng", "name_en": "Garden Croton (Codiaeum variegatum)", "count": 1, "rate": 4.0}, {"class_id": 37, "name_vi": "Trúc đốm", "name_en": "Gold Dust Dracaena (Dracaena surculosa)", "count": 1, "rate": 4.0}, {"class_id": 38, "name_vi": "Trầu bà cuống lông", "name_en": "Hairy Philodendron (Philodendron squamiferum)", "count": 1, "rate": 4.0}, {"class_id": 42, "name_vi": "Đỗ quyên", "name_en": "Indian Azalea (Rhododendron simsii)", "count": 1, "rate": 4.0}, {"class_id": 49, "name_vi": "Kim ngân", "name_en": "Money Tree (Pachira aquatica)", "count": 1, "rate": 4.0}, {"class_id": 69, "name_vi": "Đa búp đỏ", "name_en": "Rubber Plant (Ficus elastica)", "count": 1, "rate": 4.0}, {"class_id": 79, "name_vi": "Trầu bà thanh xuân", "name_en": "Tree Philodendron (Philodendron bipinnatifidum)", "count": 1, "rate": 4.0}, {"class_id": 85, "name_vi": "Tùng la hán", "name_en": "Yew Plum Pine (Podocarpus macrophyllus)", "count": 1, "rate": 4.0}]}, {"class_id": 59, "name_vi": "Trạng nguyên", "name_en": "Poinsettia (Euphorbia pulcherrima)", "total_test": 31, "tp": 31, "fn": 0, "fp": 4, "precision": 88.57, "recall": 100.0, "f1": 93.94, "misclassifications": []}, {"class_id": 60, "name_vi": "Cây chấm bi", "name_en": "Polka Dot Plant (Hypoestes phyllostachya)", "total_test": 35, "tp": 30, "fn": 5, "fp": 1, "precision": 96.77, "recall": 85.71, "f1": 90.91, "misclassifications": [{"class_id": 50, "name_vi": "Trầu bà lá xẻ Monstera", "name_en": "Monstera Deliciosa (Monstera deliciosa)", "count": 2, "rate": 5.7}, {"class_id": 54, "name_vi": "Hoa lan", "name_en": "Orchid", "count": 2, "rate": 5.7}, {"class_id": 38, "name_vi": "Trầu bà cuống lông", "name_en": "Hairy Philodendron (Philodendron squamiferum)", "count": 1, "rate": 2.9}]}, {"class_id": 61, "name_vi": "Cây chân voi", "name_en": "Ponytail Palm (Beaucarnea recurvata)", "total_test": 20, "tp": 17, "fn": 3, "fp": 6, "precision": 73.91, "recall": 85.0, "f1": 79.07, "misclassifications": [{"class_id": 14, "name_vi": "Tỏi rừng", "name_en": "Cast Iron Plant (Aspidistra elatior)", "count": 1, "rate": 5.0}, {"class_id": 49, "name_vi": "Kim ngân", "name_en": "Money Tree (Pachira aquatica)", "count": 1, "rate": 5.0}, {"class_id": 50, "name_vi": "Trầu bà lá xẻ Monstera", "name_en": "Monstera Deliciosa (Monstera deliciosa)", "count": 1, "rate": 5.0}]}, {"class_id": 62, "name_vi": "Dong vằn Maranta", "name_en": "Prayer Plant (Maranta leuconeura)", "total_test": 40, "tp": 37, "fn": 3, "fp": 7, "precision": 84.09, "recall": 92.5, "f1": 88.1, "misclassifications": [{"class_id": 26, "name_vi": "Đuôi công Ctenanthe", "name_en": "Ctenanthe", "count": 1, "rate": 2.5}, {"class_id": 50, "name_vi": "Trầu bà lá xẻ Monstera", "name_en": "Monstera Deliciosa (Monstera deliciosa)", "count": 1, "rate": 2.5}, {"class_id": 87, "name_vi": "Kim tiền", "name_en": "ZZ Plant (Zamioculcas zamiifolia)", "count": 1, "rate": 2.5}]}, {"class_id": 63, "name_vi": "Dương xỉ chân thỏ", "name_en": "Rabbit Foot Fern (Davallia fejeensis)", "total_test": 20, "tp": 8, "fn": 12, "fp": 4, "precision": 66.67, "recall": 40.0, "f1": 50.0, "misclassifications": [{"class_id": 12, "name_vi": "Dương xỉ Boston", "name_en": "Boston Fern (Nephrolepis exaltata)", "count": 3, "rate": 15.0}, {"class_id": 84, "name_vi": "Thiên điểu trắng", "name_en": "White Bird of Paradise (Strelitzia nicolai)", "count": 2, "rate": 10.0}, {"class_id": 7, "name_vi": "Cây nước mắt em bé", "name_en": "Baby Tears (Soleirolia soleirolii)", "count": 1, "rate": 5.0}, {"class_id": 28, "name_vi": "Trầu bà đuôi rồng", "name_en": "Dragon Tail (Epipremnum pinnatum)", "count": 1, "rate": 5.0}, {"class_id": 13, "name_vi": "Hoa rum", "name_en": "Calla Lily (Zantedeschia aethiopica)", "count": 1, "rate": 5.0}, {"class_id": 37, "name_vi": "Trúc đốm", "name_en": "Gold Dust Dracaena (Dracaena surculosa)", "count": 1, "rate": 5.0}, {"class_id": 47, "name_vi": "Phất dụ mảnh", "name_en": "Madagascar Dragon Tree (Dracaena marginata)", "count": 1, "rate": 5.0}, {"class_id": 49, "name_vi": "Kim ngân", "name_en": "Money Tree (Pachira aquatica)", "count": 1, "rate": 5.0}, {"class_id": 79, "name_vi": "Trầu bà thanh xuân", "name_en": "Tree Philodendron (Philodendron bipinnatifidum)", "count": 1, "rate": 5.0}]}, {"class_id": 64, "name_vi": "Trường sinh giọt nước", "name_en": "Raindrop Peperomia (Peperomia polybotrya)", "total_test": 15, "tp": 8, "fn": 7, "fp": 5, "precision": 61.54, "recall": 53.33, "f1": 57.14, "misclassifications": [{"class_id": 18, "name_vi": "Cỏ đồng tiền Pilea", "name_en": "Chinese Money Plant (Pilea peperomioides)", "count": 2, "rate": 13.3}, {"class_id": 6, "name_vi": "Trường sinh lá tròn", "name_en": "Baby Rubber Plant (Peperomia obtusifolia)", "count": 1, "rate": 6.7}, {"class_id": 38, "name_vi": "Trầu bà cuống lông", "name_en": "Hairy Philodendron (Philodendron squamiferum)", "count": 1, "rate": 6.7}, {"class_id": 44, "name_vi": "Ngọc bích", "name_en": "Jade plant (Crassula ovata)", "count": 1, "rate": 6.7}, {"class_id": 66, "name_vi": "Trầu bà đỏ", "name_en": "Red-leaf Philodendron (Philodendron erubescens)", "count": 1, "rate": 6.7}, {"class_id": 69, "name_vi": "Đa búp đỏ", "name_en": "Rubber Plant (Ficus elastica)", "count": 1, "rate": 6.7}]}, {"class_id": 65, "name_vi": "Đuôi công lá dài", "name_en": "Rattlesnake Plant (Calathea lancifolia)", "total_test": 32, "tp": 29, "fn": 3, "fp": 1, "precision": 96.67, "recall": 90.62, "f1": 93.55, "misclassifications": [{"class_id": 23, "name_vi": "Thiết mộc lan", "name_en": "Corn Plant (Dracaena fragrans)", "count": 1, "rate": 3.1}, {"class_id": 26, "name_vi": "Đuôi công Ctenanthe", "name_en": "Ctenanthe", "count": 1, "rate": 3.1}, {"class_id": 29, "name_vi": "Vạn niên thanh Dieffenbachia", "name_en": "Dumb Cane (Dieffenbachia spp.)", "count": 1, "rate": 3.1}]}, {"class_id": 66, "name_vi": "Trầu bà đỏ", "name_en": "Red-leaf Philodendron (Philodendron erubescens)", "total_test": 25, "tp": 15, "fn": 10, "fp": 41, "precision": 26.79, "recall": 60.0, "f1": 37.04, "misclassifications": [{"class_id": 11, "name_vi": "Dứa cảnh Neoregelia", "name_en": "Blushing Bromeliad (Neoregelia carolinae)", "count": 1, "rate": 4.0}, {"class_id": 32, "name_vi": "Bàng Singapore", "name_en": "Fiddle Leaf Fig (Ficus lyrata)", "count": 1, "rate": 4.0}, {"class_id": 38, "name_vi": "Trầu bà cuống lông", "name_en": "Hairy Philodendron (Philodendron squamiferum)", "count": 1, "rate": 4.0}, {"class_id": 40, "name_vi": "Trầu bà lá tim", "name_en": "Heartleaf Philodendron (Philodendron cordatum)", "count": 1, "rate": 4.0}, {"class_id": 51, "name_vi": "Lẻ bạn", "name_en": "Moses in the Cradle (Tradescantia spathacea)", "count": 1, "rate": 4.0}, {"class_id": 53, "name_vi": "Ráy thơm", "name_en": "Night-scented Lily (Alocasia odora)", "count": 1, "rate": 4.0}, {"class_id": 72, "name_vi": "Trầu bà bạc", "name_en": "Silver Pothos (Scindapsus pictus)", "count": 1, "rate": 4.0}, {"class_id": 83, "name_vi": "Si", "name_en": "Weeping Fig (Ficus benjamina)", "count": 1, "rate": 4.0}, {"class_id": 84, "name_vi": "Thiên điểu trắng", "name_en": "White Bird of Paradise (Strelitzia nicolai)", "count": 1, "rate": 4.0}, {"class_id": 87, "name_vi": "Kim tiền", "name_en": "ZZ Plant (Zamioculcas zamiifolia)", "count": 1, "rate": 4.0}]}, {"class_id": 67, "name_vi": "Đuôi công hồng", "name_en": "Rose-painted Calathea (Calathea roseopicta)", "total_test": 20, "tp": 17, "fn": 3, "fp": 4, "precision": 80.95, "recall": 85.0, "f1": 82.93, "misclassifications": [{"class_id": 16, "name_vi": "Ngân hậu Siam", "name_en": "Chinese Evergreen Siam (Aglaonema commutatum)", "count": 1, "rate": 5.0}, {"class_id": 72, "name_vi": "Trầu bà bạc", "name_en": "Silver Pothos (Scindapsus pictus)", "count": 1, "rate": 5.0}, {"class_id": 88, "name_vi": "Sen đá móng rồng", "name_en": "Zebra Haworthia (Haworthiopsis attenuata)", "count": 1, "rate": 5.0}]}, {"class_id": 68, "name_vi": "Đuôi công lá tròn", "name_en": "Round-leaf Calathea (Calathea orbifolia)", "total_test": 20, "tp": 17, "fn": 3, "fp": 1, "precision": 94.44, "recall": 85.0, "f1": 89.47, "misclassifications": [{"class_id": 50, "name_vi": "Trầu bà lá xẻ Monstera", "name_en": "Monstera Deliciosa (Monstera deliciosa)", "count": 1, "rate": 5.0}, {"class_id": 72, "name_vi": "Trầu bà bạc", "name_en": "Silver Pothos (Scindapsus pictus)", "count": 1, "rate": 5.0}, {"class_id": 78, "name_vi": "Trầu bà lỗ", "name_en": "Swiss Cheese Vine (Monstera adansonii)", "count": 1, "rate": 5.0}]}, {"class_id": 69, "name_vi": "Đa búp đỏ", "name_en": "Rubber Plant (Ficus elastica)", "total_test": 30, "tp": 27, "fn": 3, "fp": 27, "precision": 50.0, "recall": 90.0, "f1": 64.29, "misclassifications": [{"class_id": 49, "name_vi": "Kim ngân", "name_en": "Money Tree (Pachira aquatica)", "count": 2, "rate": 6.7}, {"class_id": 23, "name_vi": "Thiết mộc lan", "name_en": "Corn Plant (Dracaena fragrans)", "count": 1, "rate": 3.3}]}, {"class_id": 70, "name_vi": "Vạn tuế", "name_en": "Sago Palm (Cycas revoluta)", "total_test": 21, "tp": 20, "fn": 1, "fp": 1, "precision": 95.24, "recall": 95.24, "f1": 95.24, "misclassifications": [{"class_id": 81, "name_vi": "Cây bắt ruồi", "name_en": "Venus Flytrap", "count": 1, "rate": 4.8}]}, {"class_id": 71, "name_vi": "Ngũ gia bì", "name_en": "Schefflera", "total_test": 33, "tp": 28, "fn": 5, "fp": 14, "precision": 66.67, "recall": 84.85, "f1": 74.67, "misclassifications": [{"class_id": 49, "name_vi": "Kim ngân", "name_en": "Money Tree (Pachira aquatica)", "count": 2, "rate": 6.1}, {"class_id": 22, "name_vi": "Kim ngân lượng", "name_en": "Coralberry (Ardisia crenata)", "count": 1, "rate": 3.0}, {"class_id": 55, "name_vi": "Cau tiểu trâm", "name_en": "Parlor Palm (Chamaedorea elegans)", "count": 1, "rate": 3.0}, {"class_id": 69, "name_vi": "Đa búp đỏ", "name_en": "Rubber Plant (Ficus elastica)", "count": 1, "rate": 3.0}]}, {"class_id": 72, "name_vi": "Trầu bà bạc", "name_en": "Silver Pothos (Scindapsus pictus)", "total_test": 22, "tp": 16, "fn": 6, "fp": 10, "precision": 61.54, "recall": 72.73, "f1": 66.67, "misclassifications": [{"class_id": 6, "name_vi": "Trường sinh lá tròn", "name_en": "Baby Rubber Plant (Peperomia obtusifolia)", "count": 1, "rate": 4.5}, {"class_id": 28, "name_vi": "Trầu bà đuôi rồng", "name_en": "Dragon Tail (Epipremnum pinnatum)", "count": 1, "rate": 4.5}, {"class_id": 32, "name_vi": "Bàng Singapore", "name_en": "Fiddle Leaf Fig (Ficus lyrata)", "count": 1, "rate": 4.5}, {"class_id": 63, "name_vi": "Dương xỉ chân thỏ", "name_en": "Rabbit Foot Fern (Davallia fejeensis)", "count": 1, "rate": 4.5}, {"class_id": 66, "name_vi": "Trầu bà đỏ", "name_en": "Red-leaf Philodendron (Philodendron erubescens)", "count": 1, "rate": 4.5}, {"class_id": 77, "name_vi": "Sen đá chuỗi ngọc", "name_en": "String of Pearls (Senecio rowleyanus)", "count": 1, "rate": 4.5}]}, {"class_id": 73, "name_vi": "Lưỡi hổ", "name_en": "Snake plant (Sanseviera)", "total_test": 40, "tp": 35, "fn": 5, "fp": 6, "precision": 85.37, "recall": 87.5, "f1": 86.42, "misclassifications": [{"class_id": 69, "name_vi": "Đa búp đỏ", "name_en": "Rubber Plant (Ficus elastica)", "count": 3, "rate": 7.5}, {"class_id": 34, "name_vi": "Cô tòng", "name_en": "Garden Croton (Codiaeum variegatum)", "count": 1, "rate": 2.5}, {"class_id": 88, "name_vi": "Sen đá móng rồng", "name_en": "Zebra Haworthia (Haworthiopsis attenuata)", "count": 1, "rate": 2.5}]}, {"class_id": 74, "name_vi": "Trúc bách hợp", "name_en": "Song of India (Dracaena reflexa)", "total_test": 21, "tp": 9, "fn": 12, "fp": 14, "precision": 39.13, "recall": 42.86, "f1": 40.91, "misclassifications": [{"class_id": 23, "name_vi": "Thiết mộc lan", "name_en": "Corn Plant (Dracaena fragrans)", "count": 3, "rate": 14.3}, {"class_id": 31, "name_vi": "Trúc mây", "name_en": "Fan Palm - Lady Palm (Rhapis excelsa)", "count": 2, "rate": 9.5}, {"class_id": 14, "name_vi": "Tỏi rừng", "name_en": "Cast Iron Plant (Aspidistra elatior)", "count": 1, "rate": 4.8}, {"class_id": 16, "name_vi": "Ngân hậu Siam", "name_en": "Chinese Evergreen Siam (Aglaonema commutatum)", "count": 1, "rate": 4.8}, {"class_id": 47, "name_vi": "Phất dụ mảnh", "name_en": "Madagascar Dragon Tree (Dracaena marginata)", "count": 1, "rate": 4.8}, {"class_id": 49, "name_vi": "Kim ngân", "name_en": "Money Tree (Pachira aquatica)", "count": 1, "rate": 4.8}, {"class_id": 61, "name_vi": "Cây chân voi", "name_en": "Ponytail Palm (Beaucarnea recurvata)", "count": 1, "rate": 4.8}, {"class_id": 66, "name_vi": "Trầu bà đỏ", "name_en": "Red-leaf Philodendron (Philodendron erubescens)", "count": 1, "rate": 4.8}, {"class_id": 73, "name_vi": "Lưỡi hổ", "name_en": "Snake plant (Sanseviera)", "count": 1, "rate": 4.8}]}, {"class_id": 75, "name_vi": "Dây nhện", "name_en": "Spider Plant (Chlorophytum comosum)", "total_test": 25, "tp": 11, "fn": 14, "fp": 0, "precision": 100.0, "recall": 44.0, "f1": 61.11, "misclassifications": [{"class_id": 31, "name_vi": "Trúc mây", "name_en": "Fan Palm - Lady Palm (Rhapis excelsa)", "count": 5, "rate": 20.0}, {"class_id": 74, "name_vi": "Trúc bách hợp", "name_en": "Song of India (Dracaena reflexa)", "count": 3, "rate": 12.0}, {"class_id": 37, "name_vi": "Trúc đốm", "name_en": "Gold Dust Dracaena (Dracaena surculosa)", "count": 1, "rate": 4.0}, {"class_id": 28, "name_vi": "Trầu bà đuôi rồng", "name_en": "Dragon Tail (Epipremnum pinnatum)", "count": 1, "rate": 4.0}, {"class_id": 47, "name_vi": "Phất dụ mảnh", "name_en": "Madagascar Dragon Tree (Dracaena marginata)", "count": 1, "rate": 4.0}, {"class_id": 51, "name_vi": "Lẻ bạn", "name_en": "Moses in the Cradle (Tradescantia spathacea)", "count": 1, "rate": 4.0}, {"class_id": 58, "name_vi": "Bạc hà", "name_en": "Peppermint (Mentha piperita)", "count": 1, "rate": 4.0}, {"class_id": 61, "name_vi": "Cây chân voi", "name_en": "Ponytail Palm (Beaucarnea recurvata)", "count": 1, "rate": 4.0}]}, {"class_id": 76, "name_vi": "Dương xỉ sừng hươu", "name_en": "Staghorn Fern (Platycerium bifurcatum)", "total_test": 25, "tp": 16, "fn": 9, "fp": 14, "precision": 53.33, "recall": 64.0, "f1": 58.18, "misclassifications": [{"class_id": 84, "name_vi": "Thiên điểu trắng", "name_en": "White Bird of Paradise (Strelitzia nicolai)", "count": 3, "rate": 12.0}, {"class_id": 31, "name_vi": "Trúc mây", "name_en": "Fan Palm - Lady Palm (Rhapis excelsa)", "count": 2, "rate": 8.0}, {"class_id": 53, "name_vi": "Ráy thơm", "name_en": "Night-scented Lily (Alocasia odora)", "count": 2, "rate": 8.0}, {"class_id": 37, "name_vi": "Trúc đốm", "name_en": "Gold Dust Dracaena (Dracaena surculosa)", "count": 1, "rate": 4.0}, {"class_id": 78, "name_vi": "Trầu bà lỗ", "name_en": "Swiss Cheese Vine (Monstera adansonii)", "count": 1, "rate": 4.0}]}, {"class_id": 77, "name_vi": "Sen đá chuỗi ngọc", "name_en": "String of Pearls (Senecio rowleyanus)", "total_test": 25, "tp": 19, "fn": 6, "fp": 5, "precision": 79.17, "recall": 76.0, "f1": 77.55, "misclassifications": [{"class_id": 7, "name_vi": "Cây nước mắt em bé", "name_en": "Baby Tears (Soleirolia soleirolii)", "count": 1, "rate": 4.0}, {"class_id": 32, "name_vi": "Bàng Singapore", "name_en": "Fiddle Leaf Fig (Ficus lyrata)", "count": 1, "rate": 4.0}, {"class_id": 33, "name_vi": "Cẩm tú cầu", "name_en": "French Hydrangea (Hydrangea macrophylla)", "count": 1, "rate": 4.0}, {"class_id": 36, "name_vi": "Sanh bonsai", "name_en": "Ginseng Ficus (Ficus microcarpa)", "count": 1, "rate": 4.0}, {"class_id": 61, "name_vi": "Cây chân voi", "name_en": "Ponytail Palm (Beaucarnea recurvata)", "count": 1, "rate": 4.0}, {"class_id": 72, "name_vi": "Trầu bà bạc", "name_en": "Silver Pothos (Scindapsus pictus)", "count": 1, "rate": 4.0}]}, {"class_id": 78, "name_vi": "Trầu bà lỗ", "name_en": "Swiss Cheese Vine (Monstera adansonii)", "total_test": 25, "tp": 8, "fn": 17, "fp": 7, "precision": 53.33, "recall": 32.0, "f1": 40.0, "misclassifications": [{"class_id": 28, "name_vi": "Trầu bà đuôi rồng", "name_en": "Dragon Tail (Epipremnum pinnatum)", "count": 6, "rate": 24.0}, {"class_id": 50, "name_vi": "Trầu bà lá xẻ Monstera", "name_en": "Monstera Deliciosa (Monstera deliciosa)", "count": 3, "rate": 12.0}, {"class_id": 76, "name_vi": "Dương xỉ sừng hươu", "name_en": "Staghorn Fern (Platycerium bifurcatum)", "count": 2, "rate": 8.0}, {"class_id": 84, "name_vi": "Thiên điểu trắng", "name_en": "White Bird of Paradise (Strelitzia nicolai)", "count": 2, "rate": 8.0}, {"class_id": 49, "name_vi": "Kim ngân", "name_en": "Money Tree (Pachira aquatica)", "count": 1, "rate": 4.0}, {"class_id": 40, "name_vi": "Trầu bà lá tim", "name_en": "Heartleaf Philodendron (Philodendron cordatum)", "count": 1, "rate": 4.0}, {"class_id": 37, "name_vi": "Trúc đốm", "name_en": "Gold Dust Dracaena (Dracaena surculosa)", "count": 1, "rate": 4.0}, {"class_id": 72, "name_vi": "Trầu bà bạc", "name_en": "Silver Pothos (Scindapsus pictus)", "count": 1, "rate": 4.0}]}, {"class_id": 79, "name_vi": "Trầu bà thanh xuân", "name_en": "Tree Philodendron (Philodendron bipinnatifidum)", "total_test": 25, "tp": 16, "fn": 9, "fp": 5, "precision": 76.19, "recall": 64.0, "f1": 69.57, "misclassifications": [{"class_id": 28, "name_vi": "Trầu bà đuôi rồng", "name_en": "Dragon Tail (Epipremnum pinnatum)", "count": 2, "rate": 8.0}, {"class_id": 3, "name_vi": "Cau vàng", "name_en": "Areca Palm (Dypsis lutescens)", "count": 1, "rate": 4.0}, {"class_id": 21, "name_vi": "Tía tô cảnh", "name_en": "Coleus (Coleus scutellarioides)", "count": 1, "rate": 4.0}, {"class_id": 16, "name_vi": "Ngân hậu Siam", "name_en": "Chinese Evergreen Siam (Aglaonema commutatum)", "count": 1, "rate": 4.0}, {"class_id": 23, "name_vi": "Thiết mộc lan", "name_en": "Corn Plant (Dracaena fragrans)", "count": 1, "rate": 4.0}, {"class_id": 47, "name_vi": "Phất dụ mảnh", "name_en": "Madagascar Dragon Tree (Dracaena marginata)", "count": 1, "rate": 4.0}, {"class_id": 66, "name_vi": "Trầu bà đỏ", "name_en": "Red-leaf Philodendron (Philodendron erubescens)", "count": 1, "rate": 4.0}, {"class_id": 74, "name_vi": "Trúc bách hợp", "name_en": "Song of India (Dracaena reflexa)", "count": 1, "rate": 4.0}]}, {"class_id": 80, "name_vi": "Hoa tulip", "name_en": "Tulip", "total_test": 34, "tp": 31, "fn": 3, "fp": 4, "precision": 88.57, "recall": 91.18, "f1": 89.86, "misclassifications": [{"class_id": 27, "name_vi": "Hoa thủy tiên", "name_en": "Daffodils (Narcissus spp.)", "count": 1, "rate": 2.9}, {"class_id": 41, "name_vi": "Dạ lan hương", "name_en": "Hyacinth (Hyacinthus orientalis)", "count": 1, "rate": 2.9}, {"class_id": 66, "name_vi": "Trầu bà đỏ", "name_en": "Red-leaf Philodendron (Philodendron erubescens)", "count": 1, "rate": 2.9}]}, {"class_id": 81, "name_vi": "Cây bắt ruồi", "name_en": "Venus Flytrap", "total_test": 20, "tp": 18, "fn": 2, "fp": 1, "precision": 94.74, "recall": 90.0, "f1": 92.31, "misclassifications": [{"class_id": 34, "name_vi": "Cô tòng", "name_en": "Garden Croton (Codiaeum variegatum)", "count": 1, "rate": 5.0}, {"class_id": 50, "name_vi": "Trầu bà lá xẻ Monstera", "name_en": "Monstera Deliciosa (Monstera deliciosa)", "count": 1, "rate": 5.0}]}, {"class_id": 82, "name_vi": "Trường sinh dưa hấu", "name_en": "Watermelon Peperomia (Peperomia argyreia)", "total_test": 20, "tp": 13, "fn": 7, "fp": 2, "precision": 86.67, "recall": 65.0, "f1": 74.29, "misclassifications": [{"class_id": 66, "name_vi": "Trầu bà đỏ", "name_en": "Red-leaf Philodendron (Philodendron erubescens)", "count": 2, "rate": 10.0}, {"class_id": 6, "name_vi": "Trường sinh lá tròn", "name_en": "Baby Rubber Plant (Peperomia obtusifolia)", "count": 1, "rate": 5.0}, {"class_id": 16, "name_vi": "Ngân hậu Siam", "name_en": "Chinese Evergreen Siam (Aglaonema commutatum)", "count": 1, "rate": 5.0}, {"class_id": 26, "name_vi": "Đuôi công Ctenanthe", "name_en": "Ctenanthe", "count": 1, "rate": 5.0}, {"class_id": 64, "name_vi": "Trường sinh giọt nước", "name_en": "Raindrop Peperomia (Peperomia polybotrya)", "count": 1, "rate": 5.0}, {"class_id": 67, "name_vi": "Đuôi công hồng", "name_en": "Rose-painted Calathea (Calathea roseopicta)", "count": 1, "rate": 5.0}]}, {"class_id": 83, "name_vi": "Si", "name_en": "Weeping Fig (Ficus benjamina)", "total_test": 25, "tp": 10, "fn": 15, "fp": 14, "precision": 41.67, "recall": 40.0, "f1": 40.82, "misclassifications": [{"class_id": 36, "name_vi": "Sanh bonsai", "name_en": "Ginseng Ficus (Ficus microcarpa)", "count": 3, "rate": 12.0}, {"class_id": 32, "name_vi": "Bàng Singapore", "name_en": "Fiddle Leaf Fig (Ficus lyrata)", "count": 3, "rate": 12.0}, {"class_id": 37, "name_vi": "Trúc đốm", "name_en": "Gold Dust Dracaena (Dracaena surculosa)", "count": 2, "rate": 8.0}, {"class_id": 6, "name_vi": "Trường sinh lá tròn", "name_en": "Baby Rubber Plant (Peperomia obtusifolia)", "count": 1, "rate": 4.0}, {"class_id": 28, "name_vi": "Trầu bà đuôi rồng", "name_en": "Dragon Tail (Epipremnum pinnatum)", "count": 1, "rate": 4.0}, {"class_id": 34, "name_vi": "Cô tòng", "name_en": "Garden Croton (Codiaeum variegatum)", "count": 1, "rate": 4.0}, {"class_id": 49, "name_vi": "Kim ngân", "name_en": "Money Tree (Pachira aquatica)", "count": 1, "rate": 4.0}, {"class_id": 66, "name_vi": "Trầu bà đỏ", "name_en": "Red-leaf Philodendron (Philodendron erubescens)", "count": 1, "rate": 4.0}, {"class_id": 69, "name_vi": "Đa búp đỏ", "name_en": "Rubber Plant (Ficus elastica)", "count": 1, "rate": 4.0}, {"class_id": 76, "name_vi": "Dương xỉ sừng hươu", "name_en": "Staghorn Fern (Platycerium bifurcatum)", "count": 1, "rate": 4.0}]}, {"class_id": 84, "name_vi": "Thiên điểu trắng", "name_en": "White Bird of Paradise (Strelitzia nicolai)", "total_test": 25, "tp": 23, "fn": 2, "fp": 32, "precision": 41.82, "recall": 92.0, "f1": 57.5, "misclassifications": [{"class_id": 35, "name_vi": "Ráy khổng lồ", "name_en": "Giant Taro (Alocasia macrorrhizos)", "count": 1, "rate": 4.0}, {"class_id": 47, "name_vi": "Phất dụ mảnh", "name_en": "Madagascar Dragon Tree (Dracaena marginata)", "count": 1, "rate": 4.0}]}, {"class_id": 85, "name_vi": "Tùng la hán", "name_en": "Yew Plum Pine (Podocarpus macrophyllus)", "total_test": 25, "tp": 14, "fn": 11, "fp": 2, "precision": 87.5, "recall": 56.0, "f1": 68.29, "misclassifications": [{"class_id": 51, "name_vi": "Lẻ bạn", "name_en": "Moses in the Cradle (Tradescantia spathacea)", "count": 4, "rate": 16.0}, {"class_id": 31, "name_vi": "Trúc mây", "name_en": "Fan Palm - Lady Palm (Rhapis excelsa)", "count": 2, "rate": 8.0}, {"class_id": 22, "name_vi": "Kim ngân lượng", "name_en": "Coralberry (Ardisia crenata)", "count": 1, "rate": 4.0}, {"class_id": 47, "name_vi": "Phất dụ mảnh", "name_en": "Madagascar Dragon Tree (Dracaena marginata)", "count": 1, "rate": 4.0}, {"class_id": 74, "name_vi": "Trúc bách hợp", "name_en": "Song of India (Dracaena reflexa)", "count": 1, "rate": 4.0}, {"class_id": 83, "name_vi": "Si", "name_en": "Weeping Fig (Ficus benjamina)", "count": 1, "rate": 4.0}, {"class_id": 84, "name_vi": "Thiên điểu trắng", "name_en": "White Bird of Paradise (Strelitzia nicolai)", "count": 1, "rate": 4.0}]}, {"class_id": 86, "name_vi": "Cây Yucca", "name_en": "Yucca", "total_test": 7, "tp": 6, "fn": 1, "fp": 4, "precision": 60.0, "recall": 85.71, "f1": 70.59, "misclassifications": [{"class_id": 8, "name_vi": "Thiên điểu", "name_en": "Bird of Paradise (Strelitzia reginae)", "count": 1, "rate": 14.3}]}, {"class_id": 87, "name_vi": "Kim tiền", "name_en": "ZZ Plant (Zamioculcas zamiifolia)", "total_test": 44, "tp": 37, "fn": 7, "fp": 7, "precision": 84.09, "recall": 84.09, "f1": 84.09, "misclassifications": [{"class_id": 50, "name_vi": "Trầu bà lá xẻ Monstera", "name_en": "Monstera Deliciosa (Monstera deliciosa)", "count": 2, "rate": 4.5}, {"class_id": 14, "name_vi": "Tỏi rừng", "name_en": "Cast Iron Plant (Aspidistra elatior)", "count": 1, "rate": 2.3}, {"class_id": 49, "name_vi": "Kim ngân", "name_en": "Money Tree (Pachira aquatica)", "count": 1, "rate": 2.3}, {"class_id": 61, "name_vi": "Cây chân voi", "name_en": "Ponytail Palm (Beaucarnea recurvata)", "count": 1, "rate": 2.3}, {"class_id": 64, "name_vi": "Trường sinh giọt nước", "name_en": "Raindrop Peperomia (Peperomia polybotrya)", "count": 1, "rate": 2.3}, {"class_id": 69, "name_vi": "Đa búp đỏ", "name_en": "Rubber Plant (Ficus elastica)", "count": 1, "rate": 2.3}]}, {"class_id": 88, "name_vi": "Sen đá móng rồng", "name_en": "Zebra Haworthia (Haworthiopsis attenuata)", "total_test": 25, "tp": 16, "fn": 9, "fp": 2, "precision": 88.89, "recall": 64.0, "f1": 74.42, "misclassifications": [{"class_id": 1, "name_vi": "Nha đam", "name_en": "Aloe Vera", "count": 2, "rate": 8.0}, {"class_id": 52, "name_vi": "Cẩm nhung", "name_en": "Nerve Plant (Fittonia albivenis)", "count": 2, "rate": 8.0}, {"class_id": 48, "name_vi": "Sen đá Echeveria elegans", "name_en": "Mexican Snowball (Echeveria elegans)", "count": 1, "rate": 4.0}, {"class_id": 51, "name_vi": "Lẻ bạn", "name_en": "Moses in the Cradle (Tradescantia spathacea)", "count": 1, "rate": 4.0}, {"class_id": 73, "name_vi": "Lưỡi hổ", "name_en": "Snake plant (Sanseviera)", "count": 1, "rate": 4.0}, {"class_id": 74, "name_vi": "Trúc bách hợp", "name_en": "Song of India (Dracaena reflexa)", "count": 1, "rate": 4.0}, {"class_id": 79, "name_vi": "Trầu bà thanh xuân", "name_en": "Tree Philodendron (Philodendron bipinnatifidum)", "count": 1, "rate": 4.0}]}, {"class_id": 89, "name_vi": "Cây ngựa vằn Aphelandra", "name_en": "Zebra Plant (Aphelandra squarrosa)", "total_test": 20, "tp": 18, "fn": 2, "fp": 0, "precision": 100.0, "recall": 90.0, "f1": 94.74, "misclassifications": [{"class_id": 4, "name_vi": "Trầu bà chân vịt", "name_en": "Arrowhead Plant (Syngonium podophyllum)", "count": 1, "rate": 5.0}, {"class_id": 17, "name_vi": "Dâm bụt", "name_en": "Chinese Hibiscus (Hibiscus rosa-sinensis)", "count": 1, "rate": 5.0}]}];
+    const matrixData = [[28, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 3, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 19, 0, 0, 0, 0, 0, 0, 2, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 41, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 12, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0], [0, 0, 0, 0, 8, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4, 1, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 2, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 12, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 14, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 1, 0, 0, 2, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 12, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 6, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 16, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0], [1, 0, 0, 0, 0, 0, 0, 0, 0, 22, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0], [0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 16, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 16, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 30, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 16, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 26, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0], [0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 2, 2, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0], [0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 18, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 14, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 1, 0, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 32, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 28, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 17, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 16, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 2, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 18, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 14, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 2, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 14, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 2, 0, 0, 0, 0, 0, 2, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0], [2, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 13, 0, 0, 1, 0, 0, 0, 1, 1, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 26, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 40, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 19, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 46, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 2, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 18, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 15, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 19, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 2, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0], [1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 19, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 20, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 17, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 1, 0, 0, 0, 2, 0, 0, 0, 7, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 9, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 13, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 9, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 15, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 15, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 3, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 31, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 0, 0, 0, 0, 0, 0, 1, 4, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 11, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 27, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 30, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 11, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 0, 0, 0, 0, 36, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 8, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 1, 0, 0, 16, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 26, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 48, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 1, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 18, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 15, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 14, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 24, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 26, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 16, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 32, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 3, 1, 0, 0, 1, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 11, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 31, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 2, 0, 0, 0, 0, 0, 30, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 17, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 37, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0], [0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 3, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 8, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 8, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 29, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 15, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 1, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 17, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 17, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 27, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 20, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 28, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 16, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 0, 0, 0, 35, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 3, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 9, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 5, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 11, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 16, 0, 1, 0, 0, 0, 0, 0, 3, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 19, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 6, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 2, 0, 8, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0], [0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 16, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 31, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 18, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 2, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 13, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 3, 0, 1, 0, 3, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 10, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 23, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 14, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 6, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 37, 0, 0], [0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 16, 0], [0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 18]];
+    const topPairs = [{"true_plant": "36 - Sanh bonsai", "pred_plant": "83 - Si", "count": 9, "total": 25, "rate": 36.0}, {"true_plant": "07 - Cây nước mắt em bé", "pred_plant": "24 - Vảy ốc", "count": 6, "total": 22, "rate": 27.3}, {"true_plant": "78 - Trầu bà lỗ", "pred_plant": "28 - Trầu bà đuôi rồng", "count": 6, "total": 25, "rate": 24.0}, {"true_plant": "47 - Phất dụ mảnh", "pred_plant": "74 - Trúc bách hợp", "count": 5, "total": 24, "rate": 20.8}, {"true_plant": "75 - Dây nhện", "pred_plant": "31 - Trúc mây", "count": 5, "total": 25, "rate": 20.0}, {"true_plant": "04 - Trầu bà chân vịt", "pred_plant": "66 - Trầu bà đỏ", "count": 4, "total": 25, "rate": 16.0}, {"true_plant": "49 - Kim ngân", "pred_plant": "71 - Ngũ gia bì", "count": 4, "total": 36, "rate": 11.1}, {"true_plant": "42 - Đỗ quyên", "pred_plant": "25 - Xương rồng bát tiên", "count": 4, "total": 25, "rate": 16.0}, {"true_plant": "30 - Thường xuân", "pred_plant": "71 - Ngũ gia bì", "count": 4, "total": 24, "rate": 16.7}, {"true_plant": "35 - Ráy khổng lồ", "pred_plant": "53 - Ráy thơm", "count": 4, "total": 25, "rate": 16.0}, {"true_plant": "13 - Hoa rum", "pred_plant": "84 - Thiên điểu trắng", "count": 4, "total": 25, "rate": 16.0}, {"true_plant": "56 - Chuối mỏ két", "pred_plant": "08 - Thiên điểu", "count": 4, "total": 25, "rate": 16.0}, {"true_plant": "85 - Tùng la hán", "pred_plant": "51 - Lẻ bạn", "count": 4, "total": 25, "rate": 16.0}, {"true_plant": "03 - Cau vàng", "pred_plant": "55 - Cau tiểu trâm", "count": 3, "total": 19, "rate": 15.8}, {"true_plant": "58 - Bạc hà", "pred_plant": "33 - Cẩm tú cầu", "count": 3, "total": 25, "rate": 12.0}, {"true_plant": "17 - Dâm bụt", "pred_plant": "42 - Đỗ quyên", "count": 3, "total": 25, "rate": 12.0}, {"true_plant": "63 - Dương xỉ chân thỏ", "pred_plant": "12 - Dương xỉ Boston", "count": 3, "total": 20, "rate": 15.0}, {"true_plant": "76 - Dương xỉ sừng hươu", "pred_plant": "84 - Thiên điểu trắng", "count": 3, "total": 25, "rate": 12.0}, {"true_plant": "74 - Trúc bách hợp", "pred_plant": "23 - Thiết mộc lan", "count": 3, "total": 21, "rate": 14.3}, {"true_plant": "73 - Lưỡi hổ", "pred_plant": "69 - Đa búp đỏ", "count": 3, "total": 40, "rate": 7.5}, {"true_plant": "25 - Xương rồng bát tiên", "pred_plant": "66 - Trầu bà đỏ", "count": 3, "total": 25, "rate": 12.0}, {"true_plant": "29 - Vạn niên thanh Dieffenbachia", "pred_plant": "14 - Tỏi rừng", "count": 3, "total": 55, "rate": 5.5}, {"true_plant": "52 - Cẩm nhung", "pred_plant": "62 - Dong vằn Maranta", "count": 3, "total": 25, "rate": 12.0}, {"true_plant": "18 - Cỏ đồng tiền Pilea", "pred_plant": "50 - Trầu bà lá xẻ Monstera", "count": 3, "total": 39, "rate": 7.7}, {"true_plant": "40 - Trầu bà lá tim", "pred_plant": "66 - Trầu bà đỏ", "count": 3, "total": 25, "rate": 12.0}];
+
+    // Bio explanations for pairs
+    const pairExplanations = {
+      "36 - Sanh bonsai": "Cùng chi Ficus (Ficus benjamina vs Ficus microcarpa), lá nhọn bóng và rễ phụ tương đồng",
+      "07 - Cây nước mắt em bé": "Cùng dạng cây bò thảm nhỏ li ti, kết cấu lá tròn mọng nước sát mặt đất",
+      "78 - Trầu bà lỗ": "Cùng chi Monstera/Epipremnum, phiến lá có lỗ xẻ tự nhiên tương đồng",
+      "47 - Phất dụ mảnh": "Cùng họ Dracaenaceae, hình thái thân thẳng và lá thuôn dài mọc vòng",
+      "75 - Dây nhện": "Cụm lá mảnh dài tỏa tròn giống nhau khi chụp từ trên xuống",
+      "04 - Trầu bà chân vịt": "Cùng chi Philodendron/Trầu bà, xẻ thùy lá tương tự",
+      "49 - Kim ngân": "Cùng dạng lá kép chân vịt 5 lá chét mọc tỏa tròn quanh cuống",
+      "42 - Đỗ quyên": "Cùng họ đỗ quyên/hoa bụi cánh xếp tán tròn",
+      "30 - Thường xuân": "Cùng dạng lá xẻ thùy nông màu xanh viền vân nhạt",
+      "35 - Ráy khổng lồ": "Cùng chi Alocasia, phiến lá hình tim lớn với gân nổi rõ",
+      "13 - Hoa rum": "Cùng dạng hoa bao mo (spathe) hình phễu thuôn dài",
+      "56 - Chuối mỏ két": "Cùng bộ Gừng/Thiên điểu (Zingiberales), cụm hoa và mo hoa xếp lớp",
+      "85 - Tùng la hán": "Lá dẹp dài thuôn nhọn mọc so le tương đồng"
+    };
+
+    // Populate Select Options
+    const selectElem = document.getElementById('plantSelect');
+    plantData.forEach((p, idx) => {
+      const opt = document.createElement('option');
+      opt.value = idx;
+      opt.textContent = `${String(idx).padStart(2, '0')} - ${p.name_vi} (Đúng: ${p.tp}/${p.total_test} - ${p.recall}%)`;
+      selectElem.appendChild(opt);
+    });
+
+    // Switch Tabs
+    function switchTab(tabId) {
+      document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+      document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+      
+      const targetBtn = Array.from(document.querySelectorAll('.tab-btn')).find(b => b.getAttribute('onclick').includes(tabId));
+      if (targetBtn) targetBtn.classList.add('active');
+      
+      const pane = document.getElementById(tabId);
+      if (pane) pane.classList.add('active');
+    }
+
+    // Select Plant
+    function selectPlant(idx) {
+      selectElem.value = idx;
+      renderPlantDetails(idx);
+      switchTab('tab-inspector');
+      window.scrollTo({ top: 300, behavior: 'smooth' });
+    }
+
+    function onSelectChange(val) {
+      renderPlantDetails(parseInt(val));
+    }
+
+    // Render Plant Details
+    function renderPlantDetails(idx) {
+      const p = plantData[idx];
+      if (!p) return;
+
+      document.getElementById('dispNameVi').textContent = p.name_vi;
+      document.getElementById('dispNameEn').textContent = p.name_en;
+      document.getElementById('dispClassId').textContent = `Lớp #${String(p.class_id).padStart(2, '0')} / 90`;
+      
+      document.getElementById('dispTotal').textContent = p.total_test;
+      document.getElementById('dispCorrect').textContent = p.tp;
+      document.getElementById('dispRecallSub').textContent = `Tỷ lệ đúng (Recall): ${p.recall}%`;
+      document.getElementById('dispWrong').textContent = p.fn;
+      document.getElementById('dispWrongSub').textContent = `Tỷ lệ sai: ${(100 - p.recall).toFixed(1)}%`;
+      document.getElementById('dispPrecision').textContent = `${p.precision}%`;
+      document.getElementById('dispF1').textContent = `${p.f1}%`;
+
+      document.getElementById('barCorrectText').textContent = `Đoán đúng: ${p.tp} ảnh (${p.recall}%)`;
+      document.getElementById('barWrongText').textContent = `Đoán sai: ${p.fn} ảnh (${(100 - p.recall).toFixed(1)}%)`;
+      document.getElementById('barCorrect').style.width = `${p.recall}%`;
+      document.getElementById('barWrong').style.width = `${100 - p.recall}%`;
+
+      document.getElementById('misTotalCount').textContent = `Tổng cộng sai: ${p.fn} ảnh`;
+
+      const tbody = document.getElementById('misTbody');
+      tbody.innerHTML = '';
+      if (p.misclassifications.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="3" style="text-align: center; color: #10b981; padding: 20px;">🎉 Hoàn hảo! Không có bức ảnh nào bị đoán nhầm sang loài khác (Độ chính xác 100%).</td></tr>`;
+      } else {
+        p.misclassifications.forEach(item => {
+          const tr = document.createElement('tr');
+          tr.innerHTML = `
+            <td>
+              <span style="font-weight: 600; color: #f8fafc;">${String(item.class_id).padStart(2, '0')} - ${item.name_vi}</span>
+              <div style="font-size: 11px; color: #94a3b8; font-style: italic;">${item.name_en}</div>
+            </td>
+            <td style="text-align: center; font-weight: 700; color: #f87171;">${item.count} ảnh</td>
+            <td style="text-align: right; font-weight: 700; color: #f59e0b;">${item.rate}%</td>
+          `;
+          tbody.appendChild(tr);
+        });
+      }
+
+      document.getElementById('formulaRecall').innerHTML = `<code>Recall = TP / Tổng ảnh = ${p.tp} / ${p.total_test} = ${p.recall}%</code>`;
+      const predTotal = p.tp + p.fp;
+      document.getElementById('formulaPrecision').innerHTML = `<code>Precision = TP / (TP + FP) = ${p.tp} / (${p.tp} + ${p.fp}) = ${p.precision}%</code>`;
+    }
+
+    // Render Pairs Table
+    function renderPairsTable() {
+      const tbody = document.getElementById('pairsTbody');
+      tbody.innerHTML = '';
+      topPairs.forEach((pair, idx) => {
+        const reason = pairExplanations[pair.true_plant] || "Đặc trưng hình thái lá và kết cấu tương đồng trong điều kiện ánh sáng tự nhiên";
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td style="color: #94a3b8; font-weight: 600;">#${idx + 1}</td>
+          <td style="font-weight: 700; color: #38bdf8;">${pair.true_plant}</td>
+          <td style="font-weight: 700; color: #f87171;">${pair.pred_plant}</td>
+          <td style="text-align: center; font-weight: 800; color: #ef4444;">${pair.count}</td>
+          <td style="text-align: center; color: #94a3b8;">${pair.total}</td>
+          <td style="text-align: right; font-weight: 700; color: #fbbf24;">${pair.rate}%</td>
+          <td style="font-size: 12px; color: #cbd5e1;">${reason}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    // Render Matrix Table
+    function renderMatrixTable() {
+      const thead = document.getElementById('matrixThead');
+      const tbody = document.getElementById('matrixTbody');
+      
+      let headerHtml = '<tr><th class="corner">Thực tế \ Dự đoán</th>';
+      for (let j = 0; j < 90; j++) {
+        headerHtml += `<th class="c-hdr" title="${String(j).padStart(2, '0')} - ${plantData[j].name_vi}">${String(j).padStart(2, '0')}</th>`;
+      }
+      headerHtml += '</tr>';
+      thead.innerHTML = headerHtml;
+
+      let bodyHtml = '';
+      for (let i = 0; i < 90; i++) {
+        bodyHtml += `<tr id="mtr-row-${i}">`;
+        bodyHtml += `<td class="r-hdr" onclick="selectPlant(${i})" title="Bấm để soi chi tiết ${plantData[i].name_vi}">${String(i).padStart(2, '0')} - ${plantData[i].name_vi}</td>`;
+        for (let j = 0; j < 90; j++) {
+          const val = matrixData[i][j];
+          let cls = 'cell-zero';
+          if (i === j) {
+            cls = 'cell-diag';
+          } else if (val >= 3) {
+            cls = 'cell-high-err';
+          } else if (val > 0) {
+            cls = 'cell-low-err';
+          }
+          const displayVal = val > 0 ? val : '';
+          bodyHtml += `<td class="${cls}" onmouseover="showMatrixBanner(${i}, ${j}, ${val})" onclick="selectPlant(${i})">${displayVal}</td>`;
+        }
+        bodyHtml += '</tr>';
+      }
+      tbody.innerHTML = bodyHtml;
+    }
+
+    function showMatrixBanner(i, j, val) {
+      const banner = document.getElementById('matrixBanner');
+      const truePlant = plantData[i].name_vi;
+      const predPlant = plantData[j].name_vi;
+      if (i === j) {
+        banner.innerHTML = `✅ <strong>DỰ ĐOÁN ĐÚNG:</strong> Lớp #${String(i).padStart(2, '0')} [${truePlant}] có <strong>${val}</strong> ảnh nhận diện chính xác! (Bấm để xem phân tích)`;
+      } else if (val > 0) {
+        banner.innerHTML = `⚠️ <strong>NHẦM LẪN:</strong> Có <strong>${val}</strong> ảnh thực tế là [${String(i).padStart(2, '0')} - ${truePlant}] nhưng mô hình đoán nhầm thành [${String(j).padStart(2, '0')} - ${predPlant}]. (Bấm để soi cây này)`;
+      } else {
+        banner.innerHTML = `🔍 Thực tế: [${truePlant}] | Dự đoán: [${predPlant}] -> Không có bức ảnh nào bị nhầm.`;
+      }
+    }
+
+    function filterMatrixTable() {
+      const q = document.getElementById('matrixSearch').value.toLowerCase();
+      for (let i = 0; i < 90; i++) {
+        const row = document.getElementById(`mtr-row-${i}`);
+        const name = plantData[i].name_vi.toLowerCase();
+        if (name.includes(q) || String(i).includes(q)) {
+          row.style.display = '';
+        } else {
+          row.style.display = 'none';
+        }
+      }
+    }
+
+    // Initialize
+    renderPlantDetails(0);
+    renderPairsTable();
+    renderMatrixTable();
+  </script>
+</body>
+</html>

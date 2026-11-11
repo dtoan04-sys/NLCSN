@@ -1,0 +1,547 @@
+<!DOCTYPE html>
+
+<html lang="vi"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0" name="viewport"/><meta content="web_standard" name="shell-type"/><title>FloraBotanic.AI</title><link href="https://fonts.googleapis.com" rel="preconnect"/><link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/><link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&amp;display=swap" rel="stylesheet"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/><style>@layer base{html,body{margin:0;padding:0;}body{overscroll-behavior:none;}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}</style><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config={"darkMode":"class","theme":{"extend":{"colors":{"secondary-fixed":"#abf4ac","on-tertiary-fixed-variant":"#773203","on-primary":"#ffffff","tertiary":"#8a4112","on-error":"#ffffff","background":"#eaffeb","primary":"#0d631b","primary-container":"#2e7d32","on-surface-variant":"#40493d","on-primary-container":"#cbffc2","on-background":"#0e1f13","on-primary-fixed":"#002204","on-secondary":"#ffffff","on-tertiary":"#ffffff","primary-fixed":"#a3f69c","surface-container-high":"#d9eeda","surface-container-low":"#e4f9e5","tertiary-fixed-dim":"#ffb690","outline":"#707a6c","on-secondary-fixed":"#002107","tertiary-container":"#a95828","surface-dim":"#cbdfcc","inverse-on-surface":"#e2f6e2","on-secondary-container":"#2e7238","outline-variant":"#bfcaba","surface":"#eaffeb","surface-container-highest":"#d3e8d4","inverse-primary":"#88d982","error-container":"#ffdad6","surface-bright":"#eaffeb","tertiary-fixed":"#ffdbca","surface-container-lowest":"#ffffff","on-tertiary-fixed":"#341100","on-surface":"#0e1f13","surface-tint":"#1b6d24","secondary-fixed-dim":"#90d792","surface-container":"#dff3e0","inverse-surface":"#233427","secondary-container":"#abf4ac","secondary":"#286b33","error":"#ba1a1a","surface-variant":"#d3e8d4","primary-fixed-dim":"#88d982","on-secondary-fixed-variant":"#07521d","on-primary-fixed-variant":"#005312","on-error-container":"#93000a","on-tertiary-container":"#ffeee8"},"borderRadius":{"DEFAULT":"0.25rem","lg":"0.5rem","xl":"0.75rem","full":"9999px"},"spacing":{"space-sm":"0.5rem","gutter":"1.5rem","space-md":"1rem","margin":"2rem","margin-mobile":"1rem","space-xs":"0.25rem","space-xl":"2.5rem","space-lg":"1.5rem","gutter-mobile":"1rem"},"fontFamily":{"body-md":["Plus Jakarta Sans"],"label-sm":["Plus Jakarta Sans"],"display-lg-mobile":["Plus Jakarta Sans"],"display-lg":["Plus Jakarta Sans"],"headline-lg":["Plus Jakarta Sans"],"body-sm":["Plus Jakarta Sans"],"headline-md":["Plus Jakarta Sans"],"headline-sm":["Plus Jakarta Sans"],"label-lg":["Plus Jakarta Sans"],"headline-xl-mobile":["Plus Jakarta Sans"],"body-lg":["Plus Jakarta Sans"],"label-md":["Plus Jakarta Sans"],"headline-xl":["Plus Jakarta Sans"]},"fontSize":{"body-md":["15px",{"lineHeight":"24px","fontWeight":"400"}],"label-sm":["11px",{"lineHeight":"16px","letterSpacing":"0.04em","fontWeight":"700"}],"display-lg-mobile":["36px",{"lineHeight":"44px","letterSpacing":"-0.02em","fontWeight":"800"}],"display-lg":["48px",{"lineHeight":"56px","letterSpacing":"-0.03em","fontWeight":"800"}],"headline-lg":["28px",{"lineHeight":"36px","letterSpacing":"-0.01em","fontWeight":"700"}],"body-sm":["13px",{"lineHeight":"20px","fontWeight":"400"}],"headline-md":["22px",{"lineHeight":"30px","letterSpacing":"-0.01em","fontWeight":"600"}],"headline-sm":["18px",{"lineHeight":"26px","fontWeight":"600"}],"label-lg":["15px",{"lineHeight":"20px","letterSpacing":"0.01em","fontWeight":"600"}],"headline-xl-mobile":["28px",{"lineHeight":"36px","letterSpacing":"-0.01em","fontWeight":"700"}],"body-lg":["17px",{"lineHeight":"28px","fontWeight":"400"}],"label-md":["13px",{"lineHeight":"18px","letterSpacing":"0.02em","fontWeight":"600"}],"headline-xl":["36px",{"lineHeight":"44px","letterSpacing":"-0.02em","fontWeight":"700"}]}}}};</script></head><body class="bg-surface font-body-md text-on-surface antialiased"><header class="fixed top-0 left-0 right-0 z-50 bg-surface/85 backdrop-blur-xl shadow-[0_1px_8px_rgba(27,94,32,0.06)]"><div class="h-20 w-full px-gutter flex items-center justify-between gap-space-md"><div class="flex items-center gap-space-lg"><a class="flex items-center gap-space-sm" data-path="trang-chu" href="#"><img alt="FloraBotanic AI Logo" class="h-8 w-auto object-contain" src="https://lh3.googleusercontent.com/aida/AEtjO1XaIaDl9bN5GFf2drgmLrTZqsTJwWKQ3u9kaNnqgNCYFOsdj48wL7lMGlAWJ2bowCZA44FygiPNtbzvjbQIjM8vQkQGBYyJaF6QxHMsNBkOwvUIjMOfj_E1F5CFzcxoWIUcMnOtL93TMNUv7n5rnP26nDqr9yZwF2v1_6RNPu_Bl8kQBYXAsnOMf3RWsNNEVq26DOfpPJDDWRvVoWXfzx1yQpDYCg74pRVunr2PipqoYTZEZGol7q6oUg"/><span class="font-headline-sm text-headline-sm text-primary tracking-tight font-bold">FloraBotanic<span class="text-tertiary-container">.AI</span></span></a><nav class="hidden xl:flex items-center gap-space-xs" data-active-classes="bg-primary-container text-on-primary-container font-label-lg rounded-xl"><a class="px-space-md py-space-sm rounded-xl font-label-lg text-label-lg text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors" data-path="trang-chu" href="#">Trang chủ</a><a class="px-space-md py-space-sm rounded-xl font-label-lg text-label-lg text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors" data-path="san-pham" href="#">Sản phẩm</a><a class="px-space-md py-space-sm rounded-xl font-label-lg text-label-lg text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors" data-path="danh-muc-cay" href="#">Danh mục cây</a><a class="relative px-space-md py-space-sm rounded-xl font-label-lg text-label-lg text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors flex items-center" data-path="nhan-dien-cay-ai" href="#"><span>Nhận diện AI</span><span class="ml-space-xs px-space-xs py-0.5 rounded-full bg-secondary-container text-on-secondary-container font-label-sm text-label-sm uppercase tracking-wide">AI Vision</span></a><a class="px-space-md py-space-sm rounded-xl font-label-lg text-label-lg text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors" data-path="huong-dan-cham-soc" href="#">Hướng dẫn chăm sóc</a></nav></div><div class="flex items-center gap-space-md flex-1 max-w-md hidden md:flex mx-space-sm"><div class="relative w-full"><span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-lg">search</span><input class="w-full pl-10 pr-space-md py-space-sm bg-surface-container-lowest rounded-xl font-body-sm text-body-sm text-on-surface placeholder:text-on-surface-variant/70 focus:outline-none focus:ring-2 focus:ring-primary-container shadow-[0_2px_8px_rgba(27,94,32,0.03)]" placeholder="Tìm kiếm cây cảnh, loại cây..." type="text"/></div></div><div class="flex items-center gap-space-sm sm:gap-space-md"><a class="hidden lg:inline-flex items-center gap-space-xs px-space-md py-space-sm rounded-xl bg-surface-container text-on-secondary-container hover:bg-surface-container-high font-label-md text-label-md transition-colors" data-path="admin-dashboard" href="#"><span class="material-symbols-outlined text-sm">admin_panel_settings</span><span>Quản trị viên</span></a><a class="relative p-space-sm rounded-xl text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors" data-path="gio-hang" href="#" title="Giỏ hàng"><span class="material-symbols-outlined">shopping_bag</span><span class="absolute top-1 right-1 flex items-center justify-center w-5 h-5 rounded-full bg-primary text-on-primary font-label-sm text-label-sm">2</span></a><div class="relative group"><button class="flex items-center gap-space-sm p-space-xs pr-space-sm rounded-xl hover:bg-surface-container-high transition-colors text-left" type="button"><img alt="Profile" class="w-8 h-8 rounded-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuD3-tSQhmTHkBN6yiru8c1xCKynKMc5g3rCNvpPQQEEZLxFM7qSBCMPkmA7AM3M0dpJbCZJPV5eQmXHviHyWBDExm3ympgcTFE3cTwgRwOPzIl5JLUYP95xkdbvvza_1SUDCDnqKuO1CMpfhHsoiHzhSuW93l-N6b9sxlSDR9PiueQvPTg1Yb3zW3GPmUOui4lmyJc_K2252guUcKOKsNFtXvrUB-IktHFN0jkqGYijSb1mSRV4i0GK"/><div class="hidden sm:flex flex-col"><span class="font-label-md text-label-md text-on-surface leading-tight">Ngọc Anh</span><span class="font-label-sm text-label-sm text-on-surface-variant">Khách hàng VIP</span></div><span class="material-symbols-outlined text-on-surface-variant text-sm hidden sm:inline">expand_more</span></button><div class="absolute right-0 top-full mt-2 w-64 bg-surface-container-lowest rounded-xl shadow-[0_16px_36px_-4px_rgba(27,94,32,0.12)] p-space-sm opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50 flex flex-col gap-1"><div class="px-space-md py-space-xs sm:hidden border-b border-surface-container mb-1"><p class="font-label-md text-label-md text-on-surface">Ngọc Anh</p><p class="font-label-sm text-label-sm text-on-surface-variant">Khách hàng VIP</p></div><a class="flex items-center gap-space-sm px-space-md py-space-sm rounded-lg font-label-md text-label-md text-on-surface-variant hover:bg-surface-container-low hover:text-on-surface transition-colors" data-path="tai-khoan-cua-toi" href="#"><span class="material-symbols-outlined text-lg">person</span><span>Tài khoản của tôi</span></a><a class="flex items-center gap-space-sm px-space-md py-space-sm rounded-lg font-label-md text-label-md text-on-surface-variant hover:bg-surface-container-low hover:text-on-surface transition-colors" data-path="don-hang-cua-toi" href="#"><span class="material-symbols-outlined text-lg">local_mall</span><span>Đơn hàng của tôi</span></a><a class="flex items-center gap-space-sm px-space-md py-space-sm rounded-lg font-label-md text-label-md text-on-surface-variant hover:bg-surface-container-low hover:text-on-surface transition-colors" data-path="lich-su-nhan-dien-ai" href="#"><span class="material-symbols-outlined text-lg">history</span><span>Lịch sử nhận diện AI</span></a><div class="h-px bg-surface-container my-1"></div><a class="flex items-center gap-space-sm px-space-md py-space-sm rounded-lg font-label-md text-label-md text-error hover:bg-error-container hover:text-on-error-container transition-colors" data-path="dang-xuat" href="#"><span class="material-symbols-outlined text-lg">logout</span><span>Đăng xuất</span></a></div></div></div></div></header><main class="w-full pt-20 bg-surface"><div class="flex flex-col w-full relative">
+<!-- Interactive Background Canvas (Mocked Storefront Backdrop behind modal) -->
+<div class="w-full px-gutter py-space-lg pointer-events-none opacity-40 select-none filter blur-sm transition-all duration-300">
+<div class="max-w-7xl mx-auto flex flex-col gap-space-lg">
+<div class="h-10 w-72 rounded-xl bg-surface-container-high animate-pulse"></div>
+<div class="grid grid-cols-4 gap-space-md">
+<div class="h-64 rounded-xl bg-surface-container-high"></div>
+<div class="h-64 rounded-xl bg-surface-container-high"></div>
+<div class="h-64 rounded-xl bg-surface-container-high"></div>
+<div class="h-64 rounded-xl bg-surface-container-high"></div>
+</div>
+</div>
+</div>
+<!-- FIXED MODAL OVERLAY -->
+<div class="fixed inset-0 z-50 flex items-center justify-center p-space-sm sm:p-space-md md:p-space-lg bg-inverse-surface/65 backdrop-blur-md overflow-y-auto transition-opacity duration-300" id="aiVisionModal">
+<!-- MODAL CARD CONTAINER -->
+<div class="relative w-full max-w-6xl bg-surface-container-lowest rounded-3xl shadow-[0_24px_60px_-12px_rgba(13,99,27,0.28)] overflow-hidden my-auto flex flex-col max-h-[942px]">
+<!-- MODAL HEADER -->
+<header class="flex-none px-space-lg py-space-md bg-surface-container-lowest flex items-center justify-between gap-space-md shadow-sm z-20">
+<div class="flex items-center gap-space-md flex-wrap">
+<div class="w-10 h-10 rounded-xl bg-primary-container text-on-primary flex items-center justify-center shadow-md">
+<span class="material-symbols-outlined text-xl">psychology</span>
+</div>
+<div class="flex flex-col">
+<div class="flex items-center gap-space-sm">
+<h1 class="font-headline-sm text-headline-sm text-on-surface font-bold tracking-tight">AI Plant Vision Search</h1>
+<span class="font-label-sm text-label-sm px-space-xs py-0.5 rounded-full bg-secondary-container text-on-secondary-container uppercase tracking-wide">Tra cứu thị giác</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant flex items-center gap-space-xs">
+<span>Hệ thống phân loại thực vật &amp; chẩn đoán nông học</span>
+<span class="inline-block w-1 h-1 rounded-full bg-outline"></span>
+<span class="inline-flex items-center gap-1 font-label-sm text-label-sm text-primary font-semibold">
+<span class="relative flex h-2 w-2">
+<span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary-fixed-dim opacity-75"></span>
+<span class="relative inline-flex rounded-full h-2 w-2 bg-primary"></span>
+</span>
+                AI Vision Core v2.4 Online
+              </span>
+</p>
+</div>
+</div>
+<!-- Quick Top Actions -->
+<div class="flex items-center gap-space-xs">
+<button class="p-space-sm rounded-xl text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors" title="Trợ giúp &amp; Hướng dẫn" type="button">
+<span class="material-symbols-outlined text-xl">help_outline</span>
+</button>
+<button class="p-space-sm rounded-xl text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors" title="Toàn màn hình" type="button">
+<span class="material-symbols-outlined text-xl">fullscreen</span>
+</button>
+<button class="p-space-sm rounded-xl text-on-surface-variant hover:bg-error-container hover:text-on-error-container transition-colors ml-space-xs" id="closeModalBtn" title="Đóng cửa sổ (Esc)" type="button">
+<span class="material-symbols-outlined text-2xl">close</span>
+</button>
+</div>
+</header>
+<!-- SCROLLABLE MODAL CONTENT BODY -->
+<div class="flex-1 overflow-y-auto px-space-md sm:px-space-lg py-space-md flex flex-col gap-space-lg">
+<!-- 2-COLUMN MAIN DIAGNOSTIC WORKSPACE -->
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-space-lg items-start">
+<!-- LEFT COLUMN: Image Scanner HUD (~42% -> 5 cols on lg) -->
+<div class="lg:col-span-5 flex flex-col gap-space-md">
+<!-- SCANNER VIEWPORT CARD -->
+<div class="relative w-full aspect-[4/3] sm:aspect-[1/1] rounded-2xl overflow-hidden bg-inverse-surface shadow-inner group">
+<!-- Background / Uploaded Plant Preview -->
+<img class="w-full h-full object-cover select-none transition-transform duration-700 group-hover:scale-105" data-alt="High resolution detailed macro photography of a healthy green Monstera Deliciosa leaf displaying deep natural fenestrations perforated slits with fine botanical veins glowing under soft daylight organic greenhouse ambience" id="plantPreviewImg" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCV-xsbVBes3-pPeMsJAFQvv3zjtNXBrWSnqZyfe5BsKrEGupnNWhDF8NIcFwSKl3vNlt6l4oh9tWXD2_mRTyEN4lRvYtA2mVlrO4sLggnGaK4cmA0BQLsG0mluq6w8dapzHHUNxXV1bn27dixTLhQZOpkxpukQFHI8Fji3kDuayFYvjTCrDY9eBgm_mEq7S2Xh9_D6ZSHB50PJyOri8AOBCoggzeG4cipHrmOTwLtLO4xe3sL_mvbE"/>
+<!-- Bioluminescent Tech HUD Layer -->
+<div class="absolute inset-0 pointer-events-none p-space-md flex flex-col justify-between">
+<!-- HUD Top Reticles -->
+<div class="flex justify-between items-start">
+<div class="w-8 h-8 border-t-2 border-l-2 border-primary-fixed shadow-[0_0_12px_rgba(163,246,156,0.6)]"></div>
+<div class="flex items-center gap-1.5 px-space-sm py-1 rounded-full bg-inverse-surface/85 backdrop-blur-md text-inverse-on-surface font-label-sm text-label-sm shadow-md">
+<span class="material-symbols-outlined text-sm text-primary-fixed">center_focus_strong</span>
+<span>TARGET LOCKED</span>
+</div>
+<div class="w-8 h-8 border-t-2 border-r-2 border-primary-fixed shadow-[0_0_12px_rgba(163,246,156,0.6)]"></div>
+</div>
+<!-- Active Bounding Box with Label -->
+<div class="relative mx-auto w-[76%] h-[72%] border border-primary-fixed/80 rounded-xl shadow-[0_0_20px_rgba(163,246,156,0.35)] flex flex-col justify-between p-2">
+<div class="self-start px-2 py-0.5 rounded bg-primary text-on-primary font-label-sm text-label-sm tracking-widest flex items-center gap-1">
+<span class="material-symbols-outlined text-xs">auto_awesome</span>
+<span>LEAF_ROI #01 [99.2%]</span>
+</div>
+<!-- Sweeping Neon Scanner Line -->
+<div class="absolute inset-x-0 h-1 bg-gradient-to-r from-transparent via-primary-fixed to-transparent opacity-85 shadow-[0_0_14px_rgba(163,246,156,0.9)] animate-[bounce_2.8s_infinite]"></div>
+<div class="self-end px-1.5 py-0.5 rounded bg-inverse-surface/80 text-inverse-on-surface font-label-sm text-label-sm">
+                    FENESTRATION DETECTED
+                  </div>
+</div>
+<!-- HUD Bottom Reticles -->
+<div class="flex justify-between items-end">
+<div class="w-8 h-8 border-b-2 border-l-2 border-primary-fixed shadow-[0_0_12px_rgba(163,246,156,0.6)]"></div>
+<div class="flex items-center gap-2 px-space-sm py-1 rounded-full bg-inverse-surface/90 text-primary-fixed font-label-sm text-label-sm tracking-wide shadow-md backdrop-blur">
+<span class="material-symbols-outlined text-xs animate-spin">refresh</span>
+<span>SPECTRAL DENSITY: OPTIMAL</span>
+</div>
+<div class="w-8 h-8 border-b-2 border-r-2 border-primary-fixed shadow-[0_0_12px_rgba(163,246,156,0.6)]"></div>
+</div>
+</div>
+</div>
+<!-- SCANNER ACTION BAR -->
+<div class="grid grid-cols-3 gap-space-xs sm:gap-space-sm">
+<button class="flex items-center justify-center gap-space-xs py-space-sm px-space-xs rounded-xl bg-surface-container text-on-secondary-container hover:bg-surface-container-high transition-all text-center" type="button">
+<span class="material-symbols-outlined text-lg">photo_camera</span>
+<span class="font-label-md text-label-md">Camera</span>
+</button>
+<button class="flex items-center justify-center gap-space-xs py-space-sm px-space-xs rounded-xl bg-surface-container text-on-secondary-container hover:bg-surface-container-high transition-all text-center" type="button">
+<span class="material-symbols-outlined text-lg">upload_file</span>
+<span class="font-label-md text-label-md">Tải ảnh khác</span>
+</button>
+<button class="flex items-center justify-center gap-space-xs py-space-sm px-space-xs rounded-xl bg-primary text-on-primary hover:bg-primary-container shadow-md transition-all text-center" id="rescanBtn" type="button">
+<span class="material-symbols-outlined text-lg">sync</span>
+<span class="font-label-md text-label-md">Quét lại</span>
+</button>
+</div>
+<!-- DIAGNOSTIC TELEMETRY STATUS PILL -->
+<div class="p-space-sm rounded-xl bg-surface-container-low flex items-center justify-between gap-space-xs text-on-surface-variant font-label-sm text-label-sm shadow-sm">
+<span class="flex items-center gap-1">
+<span class="material-symbols-outlined text-sm text-secondary">image</span>
+                2048 × 1536 px
+              </span>
+<span>•</span>
+<span class="flex items-center gap-1">
+<span class="material-symbols-outlined text-sm text-secondary">timer</span>
+                0.85 giây
+              </span>
+<span>•</span>
+<span class="flex items-center gap-1 text-primary font-bold">
+<span class="material-symbols-outlined text-sm">verified</span>
+                Khớp 100%
+              </span>
+</div>
+<!-- QUICK SWITCH TEST THUMBNAILS -->
+<div class="flex flex-col gap-space-xs pt-1">
+<span class="font-label-sm text-label-sm text-on-surface-variant font-semibold uppercase tracking-wider">Mẫu thử kiểm nghiệm nhanh:</span>
+<div class="grid grid-cols-3 gap-space-xs">
+<!-- Sample 1 (Active) -->
+<button class="sample-btn group p-1.5 rounded-xl bg-surface-container-lowest hover:bg-surface-container-high shadow-sm flex items-center gap-2 text-left transition-all ring-2 ring-primary" type="button">
+<div class="w-10 h-10 rounded-lg overflow-hidden flex-none bg-surface-container">
+<img class="w-full h-full object-cover" data-alt="Close up miniature square thumbnail of glossy Monstera leaf pattern with clean natural light" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCG9vftQPbL3UDVjRVtAu0VQyvgpLUxhtKPNyZwPMpiDladFYOWc0bCSp9dCNSJ02XJf8tXBuqTGAOSPKCu2b00ZWngaiM4qcVJpNngx1XnxNlLBDZdnaXsLBsqrcP1jBtCthJSP3CkviHzZcwXYQnZNSRB7TR-XIy_wf_OQjM8eVVs1rZUO5vPlF7Vtum1k1QjIjt8WhRoHNIp5miS6-OxF7hF1qOuJ7ZEZzip4Q1IzQ2Cn9m0GlTN"/>
+</div>
+<div class="min-w-0 flex flex-col">
+<span class="font-label-md text-label-md text-on-surface truncate font-bold">Monstera</span>
+<span class="font-label-sm text-label-sm text-primary">Đang quét</span>
+</div>
+</button>
+<!-- Sample 2 -->
+<button class="sample-btn group p-1.5 rounded-xl bg-surface-container-lowest hover:bg-surface-container-high shadow-sm flex items-center gap-2 text-left transition-all" type="button">
+<div class="w-10 h-10 rounded-lg overflow-hidden flex-none bg-surface-container">
+<img class="w-full h-full object-cover" data-alt="Miniature square thumbnail of Sansevieria snake plant stiff upright sword-like green yellow leaves" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCwj1w-8lKonxYBb1XZ8e67WtcdJmBjveN4PjTW2_rwtngZDL0CqiEZxPHerBXH9IVEblU89LNhgyA7aKvBQacRumAVcknoFoCplye6fclL-eggUk9PMG5jPuG3M6GMHJds_w8ENpVaqsyiDfk40vXCnF_luPpxlX70kOr-Wqylz4uF5TVa0VIq_oNZ9e8UIlzEn6WUL3MrEOIlWasjdKHtvMdnAZWSrR1ZQdf3RgMw_VY_vz_rG5A0"/>
+</div>
+<div class="min-w-0 flex flex-col">
+<span class="font-label-md text-label-md text-on-surface truncate">Lưỡi Hổ</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant">Sansevieria</span>
+</div>
+</button>
+<!-- Sample 3 -->
+<button class="sample-btn group p-1.5 rounded-xl bg-surface-container-lowest hover:bg-surface-container-high shadow-sm flex items-center gap-2 text-left transition-all" type="button">
+<div class="w-10 h-10 rounded-lg overflow-hidden flex-none bg-surface-container">
+<img class="w-full h-full object-cover" data-alt="Miniature square thumbnail of golden pothos epipremnum aureum trailing plant with heart shaped marbled green leaf" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAMCuiBZ38I6zSV3gvHeEvf8Z0k1Wd5rG93GA3jQp6kxJdMR4GS_AZt50z1R1ku8jK26e5bKwwLn8Bsc0p-O2aS8xMHvZPXBEVcG3wu5zYtOHLPLC0DXKxjfvHwclc6M7af3gWvkSIn2UqCVmwvBk9WSBRYZaUXVmmHQ59qHE11oc8emIgYbTuhk-lEd2_559kZv4l4luj9O8O7CBu1Yd1pONC07S-8CY91ap8asbUMiF4zBBQTeBbe"/>
+</div>
+<div class="min-w-0 flex flex-col">
+<span class="font-label-md text-label-md text-on-surface truncate">Trầu Bà Vàng</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant">Epipremnum</span>
+</div>
+</button>
+</div>
+</div>
+</div>
+<!-- RIGHT COLUMN: AI Recognition Results (~58% -> 7 cols on lg) -->
+<div class="lg:col-span-7 flex flex-col gap-space-md">
+<!-- TOP 1 PREDICTION HERO CARD -->
+<div class="p-space-lg rounded-2xl bg-surface-container-lowest shadow-[0_8px_30px_rgba(13,99,27,0.08)] flex flex-col gap-space-md relative overflow-hidden">
+<!-- Subtle decorative accent glow in corner -->
+<div class="absolute -right-12 -top-12 w-48 h-48 rounded-full bg-secondary-fixed/35 filter blur-2xl pointer-events-none"></div>
+<!-- Top Match Header with Progress Badge -->
+<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-space-sm pb-space-xs relative z-10">
+<div class="flex items-center gap-space-xs">
+<span class="px-space-sm py-1 rounded-full bg-primary text-on-primary font-label-sm text-label-sm uppercase tracking-wide flex items-center gap-1 shadow-sm">
+<span class="material-symbols-outlined text-xs">verified</span>
+                    Top 1 • Chuẩn xác nhất
+                  </span>
+<span class="font-label-sm text-label-sm px-space-sm py-1 rounded-full bg-secondary-container text-on-secondary-container">
+                    Họ Ráy (Araceae)
+                  </span>
+</div>
+<!-- Confidence Gauge -->
+<div class="flex items-center gap-space-sm bg-surface-container-low px-space-sm py-1 rounded-xl">
+<div class="flex flex-col items-end">
+<span class="font-label-sm text-label-sm text-on-surface-variant leading-none">Độ tin cậy</span>
+<span class="font-headline-sm text-headline-sm text-primary font-extrabold leading-tight">96.4%</span>
+</div>
+<!-- Progress Bar Mini Visualizer -->
+<div class="w-16 h-2.5 rounded-full bg-surface-container-highest overflow-hidden">
+<div class="h-full bg-primary rounded-full" style="width: 96.4%;"></div>
+</div>
+</div>
+</div>
+<!-- Plant Nomenclature -->
+<div class="flex flex-col gap-1 relative z-10">
+<div class="flex items-baseline gap-space-sm flex-wrap">
+<h2 class="font-headline-lg text-headline-lg text-on-surface font-extrabold tracking-tight">Trầu Bà Nam Mỹ</h2>
+<span class="font-headline-sm text-headline-sm text-on-surface-variant font-normal">(Monstera Deliciosa)</span>
+</div>
+<p class="font-body-md text-body-md text-secondary italic font-semibold">
+                  Monstera deliciosa Liebm. • Swiss Cheese Plant
+                </p>
+</div>
+<!-- Botanical Taxonomy & Agronomic Needs Grid -->
+<div class="grid grid-cols-2 sm:grid-cols-4 gap-space-sm relative z-10">
+<!-- Habitat -->
+<div class="p-space-sm rounded-xl bg-surface-container-low flex flex-col gap-1">
+<div class="flex items-center gap-1 text-on-surface-variant">
+<span class="material-symbols-outlined text-base text-primary">public</span>
+<span class="font-label-sm text-label-sm">Xuất xứ</span>
+</div>
+<span class="font-label-md text-label-md text-on-surface font-bold">Rừng Trung Mỹ</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant leading-tight">Khí hậu nhiệt đới</span>
+</div>
+<!-- Light -->
+<div class="p-space-sm rounded-xl bg-surface-container-low flex flex-col gap-1">
+<div class="flex items-center gap-1 text-on-surface-variant">
+<span class="material-symbols-outlined text-base text-tertiary">wb_sunny</span>
+<span class="font-label-sm text-label-sm">Ánh sáng</span>
+</div>
+<span class="font-label-md text-label-md text-on-surface font-bold">Tán xạ gián tiếp</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant leading-tight">1.500 - 2.500 Lux</span>
+</div>
+<!-- Moisture -->
+<div class="p-space-sm rounded-xl bg-surface-container-low flex flex-col gap-1">
+<div class="flex items-center gap-1 text-on-surface-variant">
+<span class="material-symbols-outlined text-base text-secondary">humidity_mid</span>
+<span class="font-label-sm text-label-sm">Độ ẩm</span>
+</div>
+<span class="font-label-md text-label-md text-on-surface font-bold">65% - 85%</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant leading-tight">Phun sương lá</span>
+</div>
+<!-- Watering -->
+<div class="p-space-sm rounded-xl bg-surface-container-low flex flex-col gap-1">
+<div class="flex items-center gap-1 text-on-surface-variant">
+<span class="material-symbols-outlined text-base text-primary">water_drop</span>
+<span class="font-label-sm text-label-sm">Tưới nước</span>
+</div>
+<span class="font-label-md text-label-md text-on-surface font-bold">1 - 2 lần / tuần</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant leading-tight">Khô 3cm bề mặt</span>
+</div>
+</div>
+<!-- Beneficial Botanical Attribute Tags -->
+<div class="flex flex-wrap gap-space-xs pt-1 relative z-10">
+<span class="px-space-sm py-1 rounded-full bg-surface-container font-label-sm text-label-sm text-on-secondary-container flex items-center gap-1">
+<span class="material-symbols-outlined text-xs">air</span>
+                  Lọc Formaldehyde &amp; Benzen
+                </span>
+<span class="px-space-sm py-1 rounded-full bg-surface-container font-label-sm text-label-sm text-on-secondary-container flex items-center gap-1">
+<span class="material-symbols-outlined text-xs">nature</span>
+                  Cực kỳ dễ thích nghi
+                </span>
+<span class="px-space-sm py-1 rounded-full bg-surface-container font-label-sm text-label-sm text-on-secondary-container flex items-center gap-1">
+<span class="material-symbols-outlined text-xs">pets</span>
+                  Cảnh báo: Cần để xa mèo/chó
+                </span>
+<span class="px-space-sm py-1 rounded-full bg-secondary-container font-label-sm text-label-sm text-on-secondary-container flex items-center gap-1 font-bold">
+<span class="material-symbols-outlined text-xs">verified_user</span>
+                  Bảo hành sống khỏe 30 ngày
+                </span>
+</div>
+</div>
+<!-- SECONDARY PREDICTIONS ACCORDION -->
+<div class="flex flex-col gap-space-xs">
+<span class="font-label-sm text-label-sm text-on-surface-variant font-bold uppercase tracking-wider">Các loài tương đồng hình thái học:</span>
+<!-- Accordion Item 1 -->
+<details class="group rounded-xl bg-surface-container-low transition-colors duration-200 open:bg-surface-container">
+<summary class="flex items-center justify-between p-space-sm cursor-pointer select-none">
+<div class="flex items-center gap-space-sm min-w-0">
+<span class="w-6 h-6 rounded-full bg-surface-container-high flex items-center justify-center font-label-sm text-label-sm text-on-surface font-bold">2</span>
+<div class="min-w-0">
+<span class="font-label-lg text-label-lg text-on-surface font-bold">Trầu Bà Thanh Xuân</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant italic ml-1 truncate">(Philodendron bipinnatifidum)</span>
+</div>
+</div>
+<div class="flex items-center gap-space-sm flex-none">
+<span class="font-label-sm text-label-sm px-space-xs py-0.5 rounded bg-surface-container-highest text-on-surface-variant">2.8%</span>
+<span class="material-symbols-outlined text-on-surface-variant group-open:rotate-180 transition-transform">expand_more</span>
+</div>
+</summary>
+<div class="px-space-sm pb-space-sm pt-1 text-on-surface-variant font-body-sm text-body-sm">
+                  Lá dạng xẻ sâu nhưng phiến lá thuôn dài hơn và không có các lỗ khuyết kín dọc sống lá như Monstera Deliciosa. Thích hợp trưng bày góc phòng đọc sách.
+                </div>
+</details>
+<!-- Accordion Item 2 -->
+<details class="group rounded-xl bg-surface-container-low transition-colors duration-200 open:bg-surface-container">
+<summary class="flex items-center justify-between p-space-sm cursor-pointer select-none">
+<div class="flex items-center gap-space-sm min-w-0">
+<span class="w-6 h-6 rounded-full bg-surface-container-high flex items-center justify-center font-label-sm text-label-sm text-on-surface font-bold">3</span>
+<div class="min-w-0">
+<span class="font-label-lg text-label-lg text-on-surface font-bold">Trầu Bà Lỗ (Trầu Bà Cửa Sổ)</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant italic ml-1 truncate">(Monstera adansonii)</span>
+</div>
+</div>
+<div class="flex items-center gap-space-sm flex-none">
+<span class="font-label-sm text-label-sm px-space-xs py-0.5 rounded bg-surface-container-highest text-on-surface-variant">0.8%</span>
+<span class="material-symbols-outlined text-on-surface-variant group-open:rotate-180 transition-transform">expand_more</span>
+</div>
+</summary>
+<div class="px-space-sm pb-space-sm pt-1 text-on-surface-variant font-body-sm text-body-sm">
+                  Cùng chi thực vật nhưng kích thước lá nhỏ hơn rất nhiều (15-20cm), các lỗ khuyết hoàn toàn kín viền, thường trồng dạng thân rủ hoặc leo giàn nhỏ.
+                </div>
+</details>
+</div>
+</div>
+</div>
+<!-- BOTTOM SECTION: AVAILABLE PLANTS CAROUSEL -->
+<div class="pt-space-md flex flex-col gap-space-md">
+<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-space-xs">
+<div class="flex items-center gap-space-xs">
+<span class="material-symbols-outlined text-primary text-xl">storefront</span>
+<h3 class="font-headline-sm text-headline-sm text-on-surface font-bold">
+                Cây giống loài này đang có sẵn tại vườn FloraBotanic
+              </h3>
+<span class="hidden md:inline-flex px-space-xs py-0.5 rounded-full bg-secondary-container text-on-secondary-container font-label-sm text-label-sm">Giao hỏa tốc 2h tại TP.HCM &amp; Hà Nội</span>
+</div>
+<a class="font-label-lg text-label-lg text-primary hover:text-primary-container flex items-center gap-1 font-bold group" href="#">
+<span>Xem tất cả (4 chậu)</span>
+<span class="material-symbols-outlined text-base group-hover:translate-x-1 transition-transform">arrow_forward</span>
+</a>
+</div>
+<!-- Product Cards Grid (3 Columns) -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-space-md">
+<!-- Product Card 1 -->
+<div class="rounded-2xl bg-surface-container-lowest p-space-sm shadow-sm hover:shadow-md transition-shadow flex flex-col justify-between group">
+<div class="flex flex-col gap-space-sm">
+<div class="relative w-full aspect-[4/3] rounded-xl overflow-hidden bg-surface-container">
+<img class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" data-alt="Monstera Deliciosa compact desktop indoor potted plant in minimalist matte white ceramic pot placed on natural oak desk soft light" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBoI6rd6qYCknHygIVSqWi5pz9hpOnOrphZJqqekI4vA_-pHFKb3d4Q4ccaANFURF7zW_k9wq2aIgWitOJHtUFjjWeJo8ghkreZ9kWk3Ip-UEs-Zie0u9FEJfR6c1P1kMqQIHpKvsQ5H0wP3yYu-IVZaFq2mkYv6Wxibv49FlhYuiXysUh2sTj_YGo4F7h1U_jCf9UMQrWHiXyLNzmRwG7fz1mlh6zaQlDRY55Tz0LqT4GaEJAWfE6m"/>
+<span class="absolute top-2 left-2 px-space-xs py-0.5 rounded-full bg-tertiary-container text-on-tertiary-container font-label-sm text-label-sm font-bold shadow-sm">
+                    -15% Hôm nay
+                  </span>
+<span class="absolute top-2 right-2 px-space-xs py-0.5 rounded-full bg-surface-container-lowest/90 backdrop-blur text-on-surface font-label-sm text-label-sm font-semibold">
+                    Còn 8 chậu
+                  </span>
+</div>
+<div class="flex flex-col gap-0.5">
+<h4 class="font-headline-sm text-headline-sm text-on-surface font-bold group-hover:text-primary transition-colors line-clamp-1">
+                    Monstera Deliciosa Để Bàn (35cm)
+                  </h4>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Phù hợp bàn làm việc, lọc khí độc</p>
+</div>
+</div>
+<div class="flex items-center justify-between gap-space-sm pt-space-md">
+<div class="flex flex-col">
+<div class="flex items-baseline gap-1">
+<span class="font-headline-sm text-headline-sm text-primary font-extrabold">380.000₫</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant line-through">450.000₫</span>
+</div>
+<span class="font-label-sm text-label-sm text-secondary flex items-center gap-0.5">
+<span class="material-symbols-outlined text-xs">local_shipping</span> Miễn ship nội thành
+                  </span>
+</div>
+<button class="buy-action-btn px-space-md py-space-sm rounded-xl bg-primary text-on-primary hover:bg-primary-container font-label-md text-label-md flex items-center gap-1 shadow-sm transition-transform active:scale-95" type="button">
+<span class="material-symbols-outlined text-base">shopping_cart</span>
+<span>Mua ngay</span>
+</button>
+</div>
+</div>
+<!-- Product Card 2 (Best Seller) -->
+<div class="rounded-2xl bg-surface-container-lowest p-space-sm shadow-md ring-2 ring-primary-container/20 flex flex-col justify-between group relative">
+<div class="flex flex-col gap-space-sm">
+<div class="relative w-full aspect-[4/3] rounded-xl overflow-hidden bg-surface-container">
+<img class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" data-alt="Monstera Deliciosa medium size plant 70cm tall in premium emerald green glazed ceramic planter on living room wood floor" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCatRbxGSYgcEbjfQue4AmFLZciMpY1TEdlyjoOZk9xYKnX7LNoLSctc5TPRYdXUg03ZxDie4ePKqmH7ReUSwn5cXT73KlagCq9zXmun-EIVFkMDMtX5qQ1LePuVD1Pd6AajmRZbe8Sb_OOV2pafsznNAd-PxzqBmN9EaumLrUi_tnc1-8_68_1Squ6BJ838tKpebvjcGhl-iMxLdxLzltTJsSHEz35ZtMSOh7lvrFwB2AZUXwB1FK0"/>
+<span class="absolute top-2 left-2 px-space-xs py-0.5 rounded-full bg-primary text-on-primary font-label-sm text-label-sm font-bold shadow-sm flex items-center gap-1">
+<span class="material-symbols-outlined text-xs">star</span>
+                    Bán chạy nhất
+                  </span>
+<span class="absolute bottom-2 left-2 px-space-xs py-0.5 rounded-md bg-inverse-surface/85 backdrop-blur text-inverse-on-surface font-label-sm text-label-sm">
+                    Cao 70cm • Đã có chậu
+                  </span>
+</div>
+<div class="flex flex-col gap-0.5">
+<h4 class="font-headline-sm text-headline-sm text-on-surface font-bold group-hover:text-primary transition-colors line-clamp-1">
+                    Trầu Bà Nam Mỹ Cỡ Trung Kèm Chậu Gốm Sứ
+                  </h4>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Lá xẻ đều 5-6 tai, rễ khí sinh khỏe mạnh</p>
+</div>
+</div>
+<div class="flex items-center justify-between gap-space-sm pt-space-md">
+<div class="flex flex-col">
+<span class="font-headline-sm text-headline-sm text-primary font-extrabold">750.000₫</span>
+<span class="font-label-sm text-label-sm text-secondary flex items-center gap-0.5">
+<span class="material-symbols-outlined text-xs">eco</span> Kèm phân bón dinh dưỡng
+                  </span>
+</div>
+<button class="buy-action-btn px-space-md py-space-sm rounded-xl bg-primary text-on-primary hover:bg-primary-container font-label-md text-label-md flex items-center gap-1 shadow-sm transition-transform active:scale-95" type="button">
+<span class="material-symbols-outlined text-base">shopping_cart</span>
+<span>Mua ngay</span>
+</button>
+</div>
+</div>
+<!-- Product Card 3 (Foliage VIP) -->
+<div class="rounded-2xl bg-surface-container-lowest p-space-sm shadow-sm hover:shadow-md transition-shadow flex flex-col justify-between group">
+<div class="flex flex-col gap-space-sm">
+<div class="relative w-full aspect-[4/3] rounded-xl overflow-hidden bg-surface-container">
+<img class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" data-alt="Grand Monstera Deliciosa specimen plant 1.2 meters tall in high-end terrazzo cement pot standing in luxury hotel lobby or modern sunlit living space" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAaJIrY8m1_SLRIPBBDnQOOP7LAkkhHj2lF9utU2hHxFD1zXuri3Xi9oMOLOCjTi4hNSCiReqq8JNDPGvK809kXlPj-B6oy8m4m88JXyEyt5XNCgV-0DepLnDSQN4pok10eAWP1usdDHw2vt4P_uTwkWr4tKBicfSFmEzIS2lRoOBh2tQ-YFJDksamiVUDuGCri1Q55710XGH2XXk6gF_dzYCrU2Ne3dbDYTIV0jNwbhlTN4gSw0trP"/>
+<span class="absolute top-2 left-2 px-space-xs py-0.5 rounded-full bg-secondary text-on-secondary font-label-sm text-label-sm font-bold shadow-sm">
+                    Foliage VIP
+                  </span>
+<span class="absolute top-2 right-2 px-space-xs py-0.5 rounded-full bg-surface-container-lowest/90 backdrop-blur text-on-surface font-label-sm text-label-sm font-semibold">
+                    Đại cảnh 1m2
+                  </span>
+</div>
+<div class="flex flex-col gap-0.5">
+<h4 class="font-headline-sm text-headline-sm text-on-surface font-bold group-hover:text-primary transition-colors line-clamp-1">
+                    Monstera Đại Sảnh Chậu Đá Mài (1m2)
+                  </h4>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Lá bản đại 60cm, tạo điểm nhấn nội thất biệt thự</p>
+</div>
+</div>
+<div class="flex items-center justify-between gap-space-sm pt-space-md">
+<div class="flex flex-col">
+<span class="font-headline-sm text-headline-sm text-primary font-extrabold">1.450.000₫</span>
+<span class="font-label-sm text-label-sm text-secondary flex items-center gap-0.5">
+<span class="material-symbols-outlined text-xs">handshake</span> Kỹ thuật viên giao &amp; trồng tận nơi
+                  </span>
+</div>
+<button class="buy-action-btn px-space-md py-space-sm rounded-xl bg-primary text-on-primary hover:bg-primary-container font-label-md text-label-md flex items-center gap-1 shadow-sm transition-transform active:scale-95" type="button">
+<span class="material-symbols-outlined text-base">shopping_cart</span>
+<span>Mua ngay</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- MODAL FOOTER BAR -->
+<footer class="flex-none px-space-lg py-space-sm bg-surface-container-low flex flex-col sm:flex-row items-center justify-between gap-space-sm shadow-inner z-20">
+<div class="flex items-center gap-space-md text-on-surface-variant font-body-sm text-body-sm">
+<span class="flex items-center gap-1">
+<span class="material-symbols-outlined text-base text-secondary">database</span>
+            Cơ sở dữ liệu: 45.200 mẫu lá thực vật học
+          </span>
+<span class="hidden sm:inline">•</span>
+<span class="hidden sm:flex items-center gap-1">
+<span class="material-symbols-outlined text-base text-secondary">security</span>
+            Hình ảnh không lưu trữ vĩnh viễn trên máy chủ
+          </span>
+</div>
+<div class="flex items-center gap-space-sm w-full sm:w-auto justify-end">
+<button class="px-space-md py-space-sm rounded-xl text-on-surface-variant hover:bg-surface-container font-label-lg text-label-lg transition-colors" id="closeFooterBtn" type="button">
+            Đóng
+          </button>
+<a class="px-space-lg py-space-sm rounded-xl bg-primary-container text-on-primary hover:bg-primary font-label-lg text-label-lg flex items-center gap-space-xs shadow-md transition-all" href="#">
+<span class="material-symbols-outlined text-lg">menu_book</span>
+<span>Xem Cẩm Nang Chăm Sóc Monstera</span>
+</a>
+</div>
+</footer>
+</div>
+</div>
+<!-- Micro-interactions Script -->
+<script>
+    (function() {
+      const modal = document.getElementById('aiVisionModal');
+      const closeBtn = document.getElementById('closeModalBtn');
+      const closeFooterBtn = document.getElementById('closeFooterBtn');
+      const rescanBtn = document.getElementById('rescanBtn');
+      const sampleButtons = document.querySelectorAll('.sample-btn');
+
+      // Dismiss logic
+      function closeModal() {
+        if (!modal) return;
+        modal.classList.add('opacity-0', 'pointer-events-none');
+        setTimeout(() => {
+          modal.style.display = 'none';
+        }, 300);
+      }
+
+      if (closeBtn) closeBtn.addEventListener('click', closeModal);
+      if (closeFooterBtn) closeFooterBtn.addEventListener('click', closeModal);
+
+      // Close on ESC key
+      window.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') closeModal();
+      });
+
+      // Close when clicking outside content box
+      if (modal) {
+        modal.addEventListener('click', (e) => {
+          if (e.target === modal) {
+            closeModal();
+          }
+        });
+      }
+
+      // Re-scan button animation micro-feedback
+      if (rescanBtn) {
+        rescanBtn.addEventListener('click', () => {
+          const icon = rescanBtn.querySelector('.material-symbols-outlined');
+          if (icon) icon.classList.add('animate-spin');
+          rescanBtn.setAttribute('disabled', 'true');
+          
+          setTimeout(() => {
+            if (icon) icon.classList.remove('animate-spin');
+            rescanBtn.removeAttribute('disabled');
+          }, 850);
+        });
+      }
+
+      // Sample switch interactive styling toggle
+      sampleButtons.forEach(btn => {
+        btn.addEventListener('click', () => {
+          sampleButtons.forEach(b => {
+            b.classList.remove('ring-2', 'ring-primary');
+            const sub = b.querySelector('.font-label-sm');
+            if (sub && sub.textContent === 'Đang quét') {
+              sub.textContent = 'Nhấn để quét';
+              sub.classList.remove('text-primary');
+              sub.classList.add('text-on-surface-variant');
+            }
+          });
+          btn.classList.add('ring-2', 'ring-primary');
+          const status = btn.querySelector('.font-label-sm');
+          if (status) {
+            status.textContent = 'Đang quét';
+            status.classList.add('text-primary');
+            status.classList.remove('text-on-surface-variant');
+          }
+        });
+      });
+
+      // Quick Buy toast feedback
+      const buyBtns = document.querySelectorAll('.buy-action-btn');
+      buyBtns.forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          const originalText = btn.innerHTML;
+          btn.innerHTML = '<span class="material-symbols-outlined text-base">check</span> Đã thêm!';
+          btn.classList.remove('bg-primary');
+          btn.classList.add('bg-secondary');
+          setTimeout(() => {
+            btn.innerHTML = originalText;
+            btn.classList.add('bg-primary');
+            btn.classList.remove('bg-secondary');
+          }, 1800);
+        });
+      });
+    })();
+  </script>
+</div></main><footer class="w-full bg-surface-container-low text-on-surface"><div class="w-full px-gutter py-space-xl"><div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-space-xl mb-space-xl"><div class="flex flex-col gap-space-sm"><div class="flex items-center gap-space-xs"><span class="font-headline-sm text-headline-sm text-primary font-bold">FloraBotanic<span class="text-tertiary-container">.AI</span></span></div><p class="font-body-md text-body-md text-on-surface-variant">Hệ sinh thái cây cảnh và công nghệ nhận diện AI thông minh. Đem hơi thở tự nhiên kết hợp cùng thị giác máy tính vào không gian sống của bạn.</p><div class="flex flex-col gap-space-xs mt-space-xs font-body-sm text-body-sm text-on-surface-variant"><p class="flex items-center gap-space-xs"><span class="material-symbols-outlined text-sm text-primary">call</span><span>Hotline: 1900 6886 (8h00 - 21h00)</span></p><p class="flex items-center gap-space-xs"><span class="material-symbols-outlined text-sm text-primary">location_on</span><span>TP. HCM: 124 Thảo Điền, TP. Thủ Đức</span></p><p class="flex items-center gap-space-xs"><span class="material-symbols-outlined text-sm text-primary">location_on</span><span>Hà Nội: 45 Tô Ngọc Vân, Q. Tây Hồ</span></p></div></div><div class="flex flex-col gap-space-sm"><h3 class="font-headline-sm text-headline-sm text-on-surface font-semibold">Khám phá &amp; Dịch vụ</h3><div class="flex flex-col gap-space-xs"><a class="font-body-md text-body-md text-on-surface-variant hover:text-primary transition-colors" data-path="san-pham" href="#">Tất cả cây cảnh nội thất</a><a class="font-body-md text-body-md text-on-surface-variant hover:text-primary transition-colors" data-path="nhan-dien-cay-ai" href="#">Chẩn đoán sâu bệnh qua ảnh</a><a class="font-body-md text-body-md text-on-surface-variant hover:text-primary transition-colors" data-path="quy-trinh-nhan-dien-ai" href="#">Quy trình nhận diện AI</a><a class="font-body-md text-body-md text-on-surface-variant hover:text-primary transition-colors" data-path="huong-dan-cham-soc" href="#">Hướng dẫn chăm sóc chuyên sâu</a></div></div><div class="flex flex-col gap-space-sm"><h3 class="font-headline-sm text-headline-sm text-on-surface font-semibold">Chính sách khách hàng</h3><div class="flex flex-col gap-space-xs"><a class="font-body-md text-body-md text-on-surface-variant hover:text-primary transition-colors" data-path="chinh-sach-bao-hanh" href="#">Chính sách bảo hành cây 30 ngày</a><a class="font-body-md text-body-md text-on-surface-variant hover:text-primary transition-colors" data-path="chinh-sach-van-chuyen" href="#">Vận chuyển an toàn toàn quốc</a><a class="font-body-md text-body-md text-on-surface-variant hover:text-primary transition-colors" data-path="lien-he" href="#">Liên hệ tư vấn viên botanical</a><a class="font-body-md text-body-md text-on-surface-variant hover:text-primary transition-colors" data-path="dieu-khoan-su-dung" href="#">Điều khoản &amp; Bảo mật AI</a></div></div><div class="flex flex-col gap-space-sm"><h3 class="font-headline-sm text-headline-sm text-on-surface font-semibold">Bản tin sinh thái</h3><p class="font-body-md text-body-md text-on-surface-variant">Nhận cẩm nang chăm sóc cây &amp; ưu đãi định kỳ từ các chuyên gia thực vật học.</p><form class="flex flex-col gap-space-xs mt-space-xs"><div class="flex items-center gap-space-xs"><input class="flex-1 px-space-md py-space-sm bg-surface-container-lowest rounded-xl font-body-sm text-body-sm text-on-surface placeholder:text-on-surface-variant/70 focus:outline-none focus:ring-2 focus:ring-primary-container" placeholder="Nhập email của bạn..." type="email"/><button class="px-space-md py-space-sm rounded-xl bg-primary text-on-primary font-label-md text-label-md hover:bg-primary-container transition-colors" type="button">Đăng ký</button></div><span class="font-label-sm text-label-sm text-on-surface-variant">Cam kết không spam. Hủy đăng ký bất cứ lúc nào.</span></form></div></div><div class="pt-space-lg flex flex-col sm:flex-row items-center justify-between gap-space-sm text-on-surface-variant font-body-sm text-body-sm"><p>© 2025 FloraBotanic.AI. Tất cả các quyền được bảo lưu.</p><div class="flex items-center gap-space-md"><span class="flex items-center gap-1"><span class="material-symbols-outlined text-sm text-secondary">eco</span>Bảo hành sống khỏe 30 ngày</span><span class="flex items-center gap-1"><span class="material-symbols-outlined text-sm text-secondary">bolt</span>AI Vision Core v2.4</span></div></div></div></footer></body></html>

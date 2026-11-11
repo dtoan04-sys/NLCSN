@@ -1,0 +1,16 @@
+{
+  "seed": 999,
+  "dataset_version": "30.000 images (pHash cleaned)",
+  "split_ratio": "80-10-10",
+  "test_images": 2577,
+  "correct_predictions": 1814,
+  "incorrect_predictions": 763,
+  "top1_accuracy": 0.7039192859914629,
+  "top3_accuracy": 0.857198292588281,
+  "macro_precision": 0.7252231117037096,
+  "macro_recall": 0.6861207331307964,
+  "macro_f1": 0.6916136130445588,
+  "weighted_precision": 0.7324167066029127,
+  "weighted_recall": 0.7039192859914629,
+  "weighted_f1": 0.7044703708035082
+}

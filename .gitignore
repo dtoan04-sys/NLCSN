@@ -1,0 +1,30 @@
+# Dependency directories
+node_modules/
+*/node_modules/
+.venv/
+venv/
+env/
+__pycache__/
+*/__pycache__/
+*.pyc
+
+# Local Archive & Backups
+05_Luu_Tru_Backup/
+_Archive*/
+*/_Archive*/
+
+# Large binaries & executable files
+*.exe
+*.zip
+*.tar.gz
+*.rar
+
+# Uploaded images during testing
+uploads/
+*/uploads/
+uploads/*
+
+# OS generated files
+.DS_Store
+Thumbs.db
+*.log

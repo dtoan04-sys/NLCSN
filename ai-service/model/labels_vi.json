@@ -1,0 +1,452 @@
+[
+  {
+    "class_id": 0,
+    "original_label": "African Violet (Saintpaulia ionantha)",
+    "vietnamese_name": "Violet châu Phi"
+  },
+  {
+    "class_id": 1,
+    "original_label": "Aloe Vera",
+    "vietnamese_name": "Nha đam"
+  },
+  {
+    "class_id": 2,
+    "original_label": "Anthurium (Anthurium andraeanum)",
+    "vietnamese_name": "Hồng môn"
+  },
+  {
+    "class_id": 3,
+    "original_label": "Areca Palm (Dypsis lutescens)",
+    "vietnamese_name": "Cau vàng"
+  },
+  {
+    "class_id": 4,
+    "original_label": "Arrowhead Plant (Syngonium podophyllum)",
+    "vietnamese_name": "Trầu bà chân vịt"
+  },
+  {
+    "class_id": 5,
+    "original_label": "Asparagus Fern (Asparagus setaceus)",
+    "vietnamese_name": "Thiên môn đông cảnh"
+  },
+  {
+    "class_id": 6,
+    "original_label": "Baby Rubber Plant (Peperomia obtusifolia)",
+    "vietnamese_name": "Trường sinh lá tròn"
+  },
+  {
+    "class_id": 7,
+    "original_label": "Baby Tears (Soleirolia soleirolii)",
+    "vietnamese_name": "Cây nước mắt em bé"
+  },
+  {
+    "class_id": 8,
+    "original_label": "Bird of Paradise (Strelitzia reginae)",
+    "vietnamese_name": "Thiên điểu"
+  },
+  {
+    "class_id": 9,
+    "original_label": "Birds Nest Fern (Asplenium nidus)",
+    "vietnamese_name": "Dương xỉ tổ chim"
+  },
+  {
+    "class_id": 10,
+    "original_label": "Black Velvet Alocasia (Alocasia reginula)",
+    "vietnamese_name": "Môn nhung đen"
+  },
+  {
+    "class_id": 11,
+    "original_label": "Blushing Bromeliad (Neoregelia carolinae)",
+    "vietnamese_name": "Dứa cảnh Neoregelia"
+  },
+  {
+    "class_id": 12,
+    "original_label": "Boston Fern (Nephrolepis exaltata)",
+    "vietnamese_name": "Dương xỉ Boston"
+  },
+  {
+    "class_id": 13,
+    "original_label": "Calla Lily (Zantedeschia aethiopica)",
+    "vietnamese_name": "Hoa rum"
+  },
+  {
+    "class_id": 14,
+    "original_label": "Cast Iron Plant (Aspidistra elatior)",
+    "vietnamese_name": "Tỏi rừng"
+  },
+  {
+    "class_id": 15,
+    "original_label": "China Doll Plant (Radermachera sinica)",
+    "vietnamese_name": "Cây hạnh phúc"
+  },
+  {
+    "class_id": 16,
+    "original_label": "Chinese Evergreen Siam (Aglaonema commutatum)",
+    "vietnamese_name": "Ngân hậu Siam"
+  },
+  {
+    "class_id": 17,
+    "original_label": "Chinese Hibiscus (Hibiscus rosa-sinensis)",
+    "vietnamese_name": "Dâm bụt"
+  },
+  {
+    "class_id": 18,
+    "original_label": "Chinese Money Plant (Pilea peperomioides)",
+    "vietnamese_name": "Cỏ đồng tiền Pilea"
+  },
+  {
+    "class_id": 19,
+    "original_label": "Christmas Cactus (Schlumbergera bridgesii)",
+    "vietnamese_name": "Xương rồng Giáng sinh"
+  },
+  {
+    "class_id": 20,
+    "original_label": "Chrysanthemum",
+    "vietnamese_name": "Hoa cúc"
+  },
+  {
+    "class_id": 21,
+    "original_label": "Coleus (Coleus scutellarioides)",
+    "vietnamese_name": "Tía tô cảnh"
+  },
+  {
+    "class_id": 22,
+    "original_label": "Coralberry (Ardisia crenata)",
+    "vietnamese_name": "Kim ngân lượng"
+  },
+  {
+    "class_id": 23,
+    "original_label": "Corn Plant (Dracaena fragrans)",
+    "vietnamese_name": "Thiết mộc lan"
+  },
+  {
+    "class_id": 24,
+    "original_label": "Creeping Fig (Ficus pumila)",
+    "vietnamese_name": "Vảy ốc"
+  },
+  {
+    "class_id": 25,
+    "original_label": "Crown of Thorns (Euphorbia milii)",
+    "vietnamese_name": "Xương rồng bát tiên"
+  },
+  {
+    "class_id": 26,
+    "original_label": "Ctenanthe",
+    "vietnamese_name": "Đuôi công Ctenanthe"
+  },
+  {
+    "class_id": 27,
+    "original_label": "Daffodils (Narcissus spp.)",
+    "vietnamese_name": "Hoa thủy tiên"
+  },
+  {
+    "class_id": 28,
+    "original_label": "Dragon Tail (Epipremnum pinnatum)",
+    "vietnamese_name": "Trầu bà đuôi rồng"
+  },
+  {
+    "class_id": 29,
+    "original_label": "Dumb Cane (Dieffenbachia spp.)",
+    "vietnamese_name": "Vạn niên thanh Dieffenbachia"
+  },
+  {
+    "class_id": 30,
+    "original_label": "English Ivy (Hedera helix)",
+    "vietnamese_name": "Thường xuân"
+  },
+  {
+    "class_id": 31,
+    "original_label": "Fan Palm - Lady Palm (Rhapis excelsa)",
+    "vietnamese_name": "Trúc mây"
+  },
+  {
+    "class_id": 32,
+    "original_label": "Fiddle Leaf Fig (Ficus lyrata)",
+    "vietnamese_name": "Bàng Singapore"
+  },
+  {
+    "class_id": 33,
+    "original_label": "French Hydrangea (Hydrangea macrophylla)",
+    "vietnamese_name": "Cẩm tú cầu"
+  },
+  {
+    "class_id": 34,
+    "original_label": "Garden Croton (Codiaeum variegatum)",
+    "vietnamese_name": "Cô tòng"
+  },
+  {
+    "class_id": 35,
+    "original_label": "Giant Taro (Alocasia macrorrhizos)",
+    "vietnamese_name": "Ráy khổng lồ"
+  },
+  {
+    "class_id": 36,
+    "original_label": "Ginseng Ficus (Ficus microcarpa)",
+    "vietnamese_name": "Sanh bonsai"
+  },
+  {
+    "class_id": 37,
+    "original_label": "Gold Dust Dracaena (Dracaena surculosa)",
+    "vietnamese_name": "Trúc đốm"
+  },
+  {
+    "class_id": 38,
+    "original_label": "Hairy Philodendron (Philodendron squamiferum)",
+    "vietnamese_name": "Trầu bà cuống lông"
+  },
+  {
+    "class_id": 39,
+    "original_label": "Heart of Jesus (Caladium bicolor)",
+    "vietnamese_name": "Môn lá màu"
+  },
+  {
+    "class_id": 40,
+    "original_label": "Heartleaf Philodendron (Philodendron cordatum)",
+    "vietnamese_name": "Trầu bà lá tim"
+  },
+  {
+    "class_id": 41,
+    "original_label": "Hyacinth (Hyacinthus orientalis)",
+    "vietnamese_name": "Dạ lan hương"
+  },
+  {
+    "class_id": 42,
+    "original_label": "Indian Azalea (Rhododendron simsii)",
+    "vietnamese_name": "Đỗ quyên"
+  },
+  {
+    "class_id": 43,
+    "original_label": "Iron Cross begonia (Begonia masoniana)",
+    "vietnamese_name": "Thu hải đường chữ thập"
+  },
+  {
+    "class_id": 44,
+    "original_label": "Jade plant (Crassula ovata)",
+    "vietnamese_name": "Ngọc bích"
+  },
+  {
+    "class_id": 45,
+    "original_label": "Kalanchoe",
+    "vietnamese_name": "Cây sống đời"
+  },
+  {
+    "class_id": 46,
+    "original_label": "Lily of the valley (Convallaria majalis)",
+    "vietnamese_name": "Linh lan"
+  },
+  {
+    "class_id": 47,
+    "original_label": "Madagascar Dragon Tree (Dracaena marginata)",
+    "vietnamese_name": "Phất dụ mảnh"
+  },
+  {
+    "class_id": 48,
+    "original_label": "Mexican Snowball (Echeveria elegans)",
+    "vietnamese_name": "Sen đá Echeveria elegans"
+  },
+  {
+    "class_id": 49,
+    "original_label": "Money Tree (Pachira aquatica)",
+    "vietnamese_name": "Kim ngân"
+  },
+  {
+    "class_id": 50,
+    "original_label": "Monstera Deliciosa (Monstera deliciosa)",
+    "vietnamese_name": "Trầu bà lá xẻ Monstera"
+  },
+  {
+    "class_id": 51,
+    "original_label": "Moses in the Cradle (Tradescantia spathacea)",
+    "vietnamese_name": "Lẻ bạn"
+  },
+  {
+    "class_id": 52,
+    "original_label": "Nerve Plant (Fittonia albivenis)",
+    "vietnamese_name": "Cẩm nhung"
+  },
+  {
+    "class_id": 53,
+    "original_label": "Night-scented Lily (Alocasia odora)",
+    "vietnamese_name": "Ráy thơm"
+  },
+  {
+    "class_id": 54,
+    "original_label": "Orchid",
+    "vietnamese_name": "Hoa lan"
+  },
+  {
+    "class_id": 55,
+    "original_label": "Parlor Palm (Chamaedorea elegans)",
+    "vietnamese_name": "Cau tiểu trâm"
+  },
+  {
+    "class_id": 56,
+    "original_label": "Parrot Flower (Heliconia psittacorum)",
+    "vietnamese_name": "Chuối mỏ két"
+  },
+  {
+    "class_id": 57,
+    "original_label": "Peace lily",
+    "vietnamese_name": "Lan ý"
+  },
+  {
+    "class_id": 58,
+    "original_label": "Peppermint (Mentha piperita)",
+    "vietnamese_name": "Bạc hà"
+  },
+  {
+    "class_id": 59,
+    "original_label": "Poinsettia (Euphorbia pulcherrima)",
+    "vietnamese_name": "Trạng nguyên"
+  },
+  {
+    "class_id": 60,
+    "original_label": "Polka Dot Plant (Hypoestes phyllostachya)",
+    "vietnamese_name": "Cây chấm bi"
+  },
+  {
+    "class_id": 61,
+    "original_label": "Ponytail Palm (Beaucarnea recurvata)",
+    "vietnamese_name": "Cây chân voi"
+  },
+  {
+    "class_id": 62,
+    "original_label": "Prayer Plant (Maranta leuconeura)",
+    "vietnamese_name": "Dong vằn Maranta"
+  },
+  {
+    "class_id": 63,
+    "original_label": "Rabbit Foot Fern (Davallia fejeensis)",
+    "vietnamese_name": "Dương xỉ chân thỏ"
+  },
+  {
+    "class_id": 64,
+    "original_label": "Raindrop Peperomia (Peperomia polybotrya)",
+    "vietnamese_name": "Trường sinh giọt nước"
+  },
+  {
+    "class_id": 65,
+    "original_label": "Rattlesnake Plant (Calathea lancifolia)",
+    "vietnamese_name": "Đuôi công lá dài"
+  },
+  {
+    "class_id": 66,
+    "original_label": "Red-leaf Philodendron (Philodendron erubescens)",
+    "vietnamese_name": "Trầu bà đỏ"
+  },
+  {
+    "class_id": 67,
+    "original_label": "Rose-painted Calathea (Calathea roseopicta)",
+    "vietnamese_name": "Đuôi công hồng"
+  },
+  {
+    "class_id": 68,
+    "original_label": "Round-leaf Calathea (Calathea orbifolia)",
+    "vietnamese_name": "Đuôi công lá tròn"
+  },
+  {
+    "class_id": 69,
+    "original_label": "Rubber Plant (Ficus elastica)",
+    "vietnamese_name": "Đa búp đỏ"
+  },
+  {
+    "class_id": 70,
+    "original_label": "Sago Palm (Cycas revoluta)",
+    "vietnamese_name": "Vạn tuế"
+  },
+  {
+    "class_id": 71,
+    "original_label": "Schefflera",
+    "vietnamese_name": "Ngũ gia bì"
+  },
+  {
+    "class_id": 72,
+    "original_label": "Silver Pothos (Scindapsus pictus)",
+    "vietnamese_name": "Trầu bà bạc"
+  },
+  {
+    "class_id": 73,
+    "original_label": "Snake plant (Sanseviera)",
+    "vietnamese_name": "Lưỡi hổ"
+  },
+  {
+    "class_id": 74,
+    "original_label": "Song of India (Dracaena reflexa)",
+    "vietnamese_name": "Trúc bách hợp"
+  },
+  {
+    "class_id": 75,
+    "original_label": "Spider Plant (Chlorophytum comosum)",
+    "vietnamese_name": "Dây nhện"
+  },
+  {
+    "class_id": 76,
+    "original_label": "Staghorn Fern (Platycerium bifurcatum)",
+    "vietnamese_name": "Dương xỉ sừng hươu"
+  },
+  {
+    "class_id": 77,
+    "original_label": "String of Pearls (Senecio rowleyanus)",
+    "vietnamese_name": "Sen đá chuỗi ngọc"
+  },
+  {
+    "class_id": 78,
+    "original_label": "Swiss Cheese Vine (Monstera adansonii)",
+    "vietnamese_name": "Trầu bà lỗ"
+  },
+  {
+    "class_id": 79,
+    "original_label": "Tree Philodendron (Philodendron bipinnatifidum)",
+    "vietnamese_name": "Trầu bà thanh xuân"
+  },
+  {
+    "class_id": 80,
+    "original_label": "Tulip",
+    "vietnamese_name": "Hoa tulip"
+  },
+  {
+    "class_id": 81,
+    "original_label": "Venus Flytrap",
+    "vietnamese_name": "Cây bắt ruồi"
+  },
+  {
+    "class_id": 82,
+    "original_label": "Watermelon Peperomia (Peperomia argyreia)",
+    "vietnamese_name": "Trường sinh dưa hấu"
+  },
+  {
+    "class_id": 83,
+    "original_label": "Weeping Fig (Ficus benjamina)",
+    "vietnamese_name": "Si"
+  },
+  {
+    "class_id": 84,
+    "original_label": "White Bird of Paradise (Strelitzia nicolai)",
+    "vietnamese_name": "Thiên điểu trắng"
+  },
+  {
+    "class_id": 85,
+    "original_label": "Yew Plum Pine (Podocarpus macrophyllus)",
+    "vietnamese_name": "Tùng la hán"
+  },
+  {
+    "class_id": 86,
+    "original_label": "Yucca",
+    "vietnamese_name": "Cây Yucca"
+  },
+  {
+    "class_id": 87,
+    "original_label": "ZZ Plant (Zamioculcas zamiifolia)",
+    "vietnamese_name": "Kim tiền"
+  },
+  {
+    "class_id": 88,
+    "original_label": "Zebra Haworthia (Haworthiopsis attenuata)",
+    "vietnamese_name": "Sen đá móng rồng"
+  },
+  {
+    "class_id": 89,
+    "original_label": "Zebra Plant (Aphelandra squarrosa)",
+    "vietnamese_name": "Cây ngựa vằn Aphelandra"
+  }
+]

@@ -1,0 +1,556 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 3100 1950" width="3100" height="1950" style="background:#f8fafc; font-family:'Segoe UI', Arial, sans-serif;">
+  <defs>
+    <filter id="shadow" x="-5%" y="-5%" width="110%" height="115%" filterUnits="userSpaceOnUse">
+      <feDropShadow dx="2" dy="5" stdDeviation="5" flood-color="#0f172a" flood-opacity="0.10"/>
+    </filter>
+    <filter id="badge-shadow" x="-10%" y="-10%" width="120%" height="130%">
+      <feDropShadow dx="1" dy="2" stdDeviation="2" flood-color="#0f172a" flood-opacity="0.15"/>
+    </filter>
+    <marker id="arrow" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1.5 L 10 5 L 0 8.5 z" fill="#64748b"/>
+    </marker>
+    <marker id="circle-end" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="6" markerHeight="6">
+      <circle cx="5" cy="5" r="3" fill="#ffffff" stroke="#64748b" stroke-width="1.5"/>
+    </marker>
+  </defs>
+
+  <!-- BANNER HEADER -->
+  <rect x="40" y="25" width="3020" height="95" rx="12" fill="#0f172a" filter="url(#shadow)"/>
+  <text x="75" y="66" font-size="26" font-weight="bold" fill="#ffffff" letter-spacing="0.5">SƠ ĐỒ MÔ HÌNH DỮ LIỆU QUAN NIỆM (CDM) — HỆ THỐNG BÁN CÂY CẢNH TÍCH HỢP AI VISION</text>
+  <text x="75" y="98" font-size="15" fill="#94a3b8">Kiến trúc: Chuyên biệt hóa (Kế thừa Khách hàng - Admin) • Quản lý giá theo thời điểm • Phân loại thực vật AI • 16 Thực thể chuẩn hóa</text>
+  <rect x="2780" y="45" width="250" height="46" rx="8" fill="#1e293b"/>
+  <text x="2905" y="74" font-size="14" font-weight="bold" fill="#38bdf8" text-anchor="middle">CHUẨN POWERDESIGNER</text>
+
+  <!-- ========================================== -->
+  <!-- RELATIONSHIP LINES & LABELS -->
+  <!-- ========================================== -->
+
+  <!-- 1. INHERITANCE: NGUOI_DUNG -> Circle -> KHACH_HANG & ADMIN -->
+  <!-- Line from NGUOI_DUNG (bottom center: 1610, 410) down to circle (1610, 460) -->
+  <line x1="1610" y1="410" x2="1610" y2="450" stroke="#4f46e5" stroke-width="3"/>
+  <!-- Inheritance circle symbol -->
+  <circle cx="1610" cy="470" r="20" fill="#ffffff" stroke="#4f46e5" stroke-width="3" filter="url(#badge-shadow)"/>
+  <path d="M 1600 480 A 12 12 0 0 1 1620 480 Z" fill="#4f46e5"/>
+  <text x="1640" y="475" font-size="12" font-weight="bold" fill="#4f46e5">Kế thừa (Inheritance)</text>
+  <!-- Lines from circle to KHACH_HANG (1535, 530) & ADMIN (1945, 530) -->
+  <line x1="1600" y1="485" x2="1545" y2="530" stroke="#4f46e5" stroke-width="2.5"/>
+  <line x1="1620" y1="485" x2="1945" y2="530" stroke="#4f46e5" stroke-width="2.5"/>
+
+  <!-- 2. KHACH_HANG -> DIA_CHI_NGUOI_DUNG (downwards) -->
+  <line x1="1545" y1="670" x2="1545" y2="740" stroke="#64748b" stroke-width="2"/>
+  <rect x="1485" y="692" width="120" height="26" rx="13" fill="#ffffff" stroke="#0284c7" stroke-width="2" filter="url(#badge-shadow)"/>
+  <text x="1545" y="709" font-size="11" font-weight="bold" fill="#0369a1" text-anchor="middle">Luu_Dia_Chi</text>
+  <text x="1555" y="688" font-size="12" font-weight="bold" fill="#0f172a">1,1</text>
+  <text x="1555" y="735" font-size="12" font-weight="bold" fill="#0f172a">0,n</text>
+
+  <!-- 3. KHACH_HANG -> GIO_HANG (across right-down: 1710, 600 -> 1800, 880) -->
+  <path d="M 1710 600 L 1760 600 L 1760 880 L 1800 880" stroke="#64748b" stroke-width="2" fill="none"/>
+  <rect x="1710" y="725" width="100" height="26" rx="13" fill="#ffffff" stroke="#0284c7" stroke-width="2" filter="url(#badge-shadow)"/>
+  <text x="1760" y="742" font-size="11" font-weight="bold" fill="#0369a1" text-anchor="middle">So_Huu</text>
+  <text x="1715" y="590" font-size="12" font-weight="bold" fill="#0f172a">1,1</text>
+  <text x="1790" y="870" font-size="12" font-weight="bold" fill="#0f172a">0,1</text>
+
+  <!-- 4. KHACH_HANG -> DON_HANG (right & down: 1710, 640 -> 2240, 1000) -->
+  <path d="M 1710 640 L 2170 640 L 2170 1000 L 2240 1000" stroke="#64748b" stroke-width="2" fill="none"/>
+  <rect x="2120" y="790" width="100" height="26" rx="13" fill="#ffffff" stroke="#0284c7" stroke-width="2" filter="url(#badge-shadow)"/>
+  <text x="2170" y="807" font-size="11" font-weight="bold" fill="#0369a1" text-anchor="middle">Dat_Hang</text>
+  <text x="1720" y="632" font-size="12" font-weight="bold" fill="#0f172a">1,1</text>
+  <text x="2210" y="990" font-size="12" font-weight="bold" fill="#0f172a">0,n</text>
+
+  <!-- 5. KHACH_HANG -> TIM_ANH (left: 1380, 560 -> 400, 260) -->
+  <path d="M 1380 560 L 1260 560 L 1260 140 L 230 140 L 230 180" stroke="#64748b" stroke-width="2" fill="none"/>
+  <rect x="700" y="127" width="130" height="26" rx="13" fill="#ffffff" stroke="#d97706" stroke-width="2" filter="url(#badge-shadow)"/>
+  <text x="765" y="144" font-size="11" font-weight="bold" fill="#b45309" text-anchor="middle">Thuc_Hien_Tim</text>
+  <text x="1350" y="550" font-size="12" font-weight="bold" fill="#0f172a">0,1</text>
+  <text x="240" y="172" font-size="12" font-weight="bold" fill="#0f172a">0,n</text>
+
+  <!-- 6. ADMIN -> MA_GIAM_GIA (right: 2110, 580 -> 2240, 580) -->
+  <line x1="2110" y1="580" x2="2240" y2="580" stroke="#64748b" stroke-width="2"/>
+  <rect x="2135" y="567" width="80" height="26" rx="13" fill="#ffffff" stroke="#be123c" stroke-width="2" filter="url(#badge-shadow)"/>
+  <text x="2175" y="584" font-size="11" font-weight="bold" fill="#be123c" text-anchor="middle">Tao_Ma</text>
+  <text x="2118" y="572" font-size="12" font-weight="bold" fill="#0f172a">1,1</text>
+  <text x="2215" y="572" font-size="12" font-weight="bold" fill="#0f172a">0,n</text>
+
+  <!-- 7. ADMIN -> SAN_PHAM (down-left: 1850, 670 -> 1115, 850) -->
+  <path d="M 1850 670 L 1850 780 L 1200 780 L 1200 850" stroke="#64748b" stroke-width="2" fill="none"/>
+  <rect x="1460" y="767" width="130" height="26" rx="13" fill="#ffffff" stroke="#be123c" stroke-width="2" filter="url(#badge-shadow)"/>
+  <text x="1525" y="784" font-size="11" font-weight="bold" fill="#be123c" text-anchor="middle">Them_San_Pham</text>
+  <text x="1858" y="690" font-size="12" font-weight="bold" fill="#0f172a">1,1</text>
+  <text x="1210" y="840" font-size="12" font-weight="bold" fill="#0f172a">0,n</text>
+
+  <!-- 8. ADMIN -> LICH_SU_GIA_SAN_PHAM (down: 2020, 670 -> 2020, 1345 -> 1300, 1345) -->
+  <path d="M 2020 670 L 2020 1345 L 1300 1345" stroke="#64748b" stroke-width="2" fill="none"/>
+  <rect x="1600" y="1332" width="130" height="26" rx="13" fill="#ffffff" stroke="#be123c" stroke-width="2" filter="url(#badge-shadow)"/>
+  <text x="1665" y="1349" font-size="11" font-weight="bold" fill="#be123c" text-anchor="middle">Ghi_Nhan_Gia</text>
+  <text x="2028" y="695" font-size="12" font-weight="bold" fill="#0f172a">1,1</text>
+  <text x="1310" y="1335" font-size="12" font-weight="bold" fill="#0f172a">0,n</text>
+
+  <!-- 9. TIM_ANH -> KET_QUA_NHAN_DIEN -->
+  <line x1="230" y1="370" x2="230" y2="500" stroke="#64748b" stroke-width="2"/>
+  <rect x="165" y="422" width="130" height="26" rx="13" fill="#ffffff" stroke="#d97706" stroke-width="2" filter="url(#badge-shadow)"/>
+  <text x="230" y="439" font-size="11" font-weight="bold" fill="#b45309" text-anchor="middle">Tra_Ve_Ket_Qua</text>
+  <text x="240" y="390" font-size="12" font-weight="bold" fill="#0f172a">1,1</text>
+  <text x="240" y="490" font-size="12" font-weight="bold" fill="#0f172a">0,n</text>
+
+  <!-- 10. KET_QUA_NHAN_DIEN -> LOAI_CAY (horizontal: 400, 580 -> 480, 580) -->
+  <line x1="400" y1="580" x2="480" y2="580" stroke="#64748b" stroke-width="2"/>
+  <rect x="390" y="567" width="100" height="26" rx="13" fill="#ffffff" stroke="#d97706" stroke-width="2" filter="url(#badge-shadow)"/>
+  <text x="440" y="584" font-size="11" font-weight="bold" fill="#b45309" text-anchor="middle">Chi_Dinh_Loai</text>
+  <text x="375" y="572" font-size="12" font-weight="bold" fill="#0f172a">1,1</text>
+  <text x="485" y="572" font-size="12" font-weight="bold" fill="#0f172a">0,n</text>
+
+  <!-- 11. DANH_MUC -> LOAI_CAY (vertical: 650, 370 -> 650, 490) -->
+  <line x1="650" y1="370" x2="650" y2="490" stroke="#64748b" stroke-width="2"/>
+  <rect x="590" y="417" width="120" height="26" rx="13" fill="#ffffff" stroke="#059669" stroke-width="2" filter="url(#badge-shadow)"/>
+  <text x="650" y="434" font-size="11" font-weight="bold" fill="#047857" text-anchor="middle">Phan_Loai</text>
+  <text x="660" y="390" font-size="12" font-weight="bold" fill="#0f172a">1,1</text>
+  <text x="660" y="480" font-size="12" font-weight="bold" fill="#0f172a">0,n</text>
+
+  <!-- 12. LOAI_CAY -> SAN_PHAM (down-right: 750, 730 -> 750, 890 -> 930, 890) -->
+  <path d="M 750 730 L 750 890 L 930 890" stroke="#64748b" stroke-width="2" fill="none"/>
+  <rect x="760" y="877" width="120" height="26" rx="13" fill="#ffffff" stroke="#059669" stroke-width="2" filter="url(#badge-shadow)"/>
+  <text x="820" y="894" font-size="11" font-weight="bold" fill="#047857" text-anchor="middle">Thuoc_Loai_Cay</text>
+  <text x="758" y="750" font-size="12" font-weight="bold" fill="#0f172a">1,1</text>
+  <text x="905" y="880" font-size="12" font-weight="bold" fill="#0f172a">0,n</text>
+
+  <!-- 13. SAN_PHAM -> HINH_ANH_SAN_PHAM (left: 930, 970 -> 820, 970) -->
+  <line x1="930" y1="970" x2="820" y2="970" stroke="#64748b" stroke-width="2"/>
+  <rect x="830" y="957" width="90" height="26" rx="13" fill="#ffffff" stroke="#059669" stroke-width="2" filter="url(#badge-shadow)"/>
+  <text x="875" y="974" font-size="11" font-weight="bold" fill="#047857" text-anchor="middle">Co_Hinh_Anh</text>
+  <text x="910" y="962" font-size="12" font-weight="bold" fill="#0f172a">1,1</text>
+  <text x="825" y="962" font-size="12" font-weight="bold" fill="#0f172a">0,n</text>
+
+  <!-- 14. SAN_PHAM -> LICH_SU_GIA_SAN_PHAM (vertical: 1115, 1110 -> 1115, 1250) -->
+  <line x1="1115" y1="1110" x2="1115" y2="1250" stroke="#64748b" stroke-width="2"/>
+  <rect x="1055" y="1167" width="120" height="26" rx="13" fill="#ffffff" stroke="#0f766e" stroke-width="2" filter="url(#badge-shadow)"/>
+  <text x="1115" y="1184" font-size="11" font-weight="bold" fill="#0f766e" text-anchor="middle">Gia_Theo_Ky</text>
+  <text x="1125" y="1130" font-size="12" font-weight="bold" fill="#0f172a">1,1</text>
+  <text x="1125" y="1240" font-size="12" font-weight="bold" fill="#0f172a">0,n</text>
+
+  <!-- 15. THOI_DIEM -> LICH_SU_GIA_SAN_PHAM (horizontal: 820, 1345 -> 930, 1345) -->
+  <line x1="820" y1="1345" x2="930" y2="1345" stroke="#64748b" stroke-width="2"/>
+  <rect x="830" y="1332" width="90" height="26" rx="13" fill="#ffffff" stroke="#0f766e" stroke-width="2" filter="url(#badge-shadow)"/>
+  <text x="875" y="1349" font-size="11" font-weight="bold" fill="#0f766e" text-anchor="middle">Vao_Ky</text>
+  <text x="825" y="1337" font-size="12" font-weight="bold" fill="#0f172a">1,1</text>
+  <text x="910" y="1337" font-size="12" font-weight="bold" fill="#0f172a">0,n</text>
+
+  <!-- 16. GIO_HANG -> CHI_TIET_GIO_HANG (left & down: 1800, 950 -> 1720, 950 -> 1720, 1070) -->
+  <path d="M 1800 950 L 1550 950 L 1550 1030" stroke="#64748b" stroke-width="2" fill="none"/>
+  <rect x="1620" y="937" width="100" height="26" rx="13" fill="#ffffff" stroke="#0284c7" stroke-width="2" filter="url(#badge-shadow)"/>
+  <text x="1670" y="954" font-size="11" font-weight="bold" fill="#0369a1" text-anchor="middle">Chua_Hang</text>
+  <text x="1780" y="942" font-size="12" font-weight="bold" fill="#0f172a">1,1</text>
+  <text x="1560" y="1020" font-size="12" font-weight="bold" fill="#0f172a">0,n</text>
+
+  <!-- 17. SAN_PHAM -> CHI_TIET_GIO_HANG (horizontal: 1300, 1050 -> 1380, 1050) -->
+  <line x1="1300" y1="1050" x2="1380" y2="1050" stroke="#64748b" stroke-width="2"/>
+  <rect x="1310" y="1037" width="60" height="26" rx="13" fill="#ffffff" stroke="#0284c7" stroke-width="2" filter="url(#badge-shadow)"/>
+  <text x="1340" y="1054" font-size="11" font-weight="bold" fill="#0369a1" text-anchor="middle">Vao_Gio</text>
+  <text x="1305" y="1042" font-size="12" font-weight="bold" fill="#0f172a">1,1</text>
+  <text x="1365" y="1042" font-size="12" font-weight="bold" fill="#0f172a">0,n</text>
+
+  <!-- 18. GIO_HANG -> DON_HANG (right: 2130, 950 -> 2240, 950 -> down to DON_HANG: 2240, 1040) -->
+  <path d="M 2130 920 L 2240 920 L 2240 950" stroke="#64748b" stroke-width="2" fill="none"/>
+  <rect x="2140" y="907" width="90" height="26" rx="13" fill="#ffffff" stroke="#0284c7" stroke-width="2" filter="url(#badge-shadow)"/>
+  <text x="2185" y="924" font-size="11" font-weight="bold" fill="#0369a1" text-anchor="middle">Lap_Tu_Gio</text>
+  <text x="2135" y="912" font-size="12" font-weight="bold" fill="#0f172a">0,n</text>
+  <text x="2225" y="942" font-size="12" font-weight="bold" fill="#0f172a">0,1</text>
+
+  <!-- 19. MA_GIAM_GIA -> DON_HANG (down: 2420, 810 -> 2420, 950) -->
+  <line x1="2420" y1="810" x2="2420" y2="950" stroke="#64748b" stroke-width="2"/>
+  <rect x="2370" y="867" width="100" height="26" rx="13" fill="#ffffff" stroke="#be123c" stroke-width="2" filter="url(#badge-shadow)"/>
+  <text x="2420" y="884" font-size="11" font-weight="bold" fill="#be123c" text-anchor="middle">Ap_Dung</text>
+  <text x="2430" y="830" font-size="12" font-weight="bold" fill="#0f172a">0,n</text>
+  <text x="2430" y="940" font-size="12" font-weight="bold" fill="#0f172a">0,1</text>
+
+  <!-- 20. DON_HANG -> DANH_GIA_SAN_PHAM (down & left: 2320, 1230 -> 2320, 1420 -> 2160, 1420) -->
+  <path d="M 2320 1230 L 2320 1420 L 2160 1420" stroke="#64748b" stroke-width="2" fill="none"/>
+  <rect x="2210" y="1407" width="110" height="26" rx="13" fill="#ffffff" stroke="#0284c7" stroke-width="2" filter="url(#badge-shadow)"/>
+  <text x="2265" y="1424" font-size="11" font-weight="bold" fill="#0369a1" text-anchor="middle">Danh_Gia_Don</text>
+  <text x="2328" y="1250" font-size="12" font-weight="bold" fill="#0f172a">0,n</text>
+  <text x="2170" y="1410" font-size="12" font-weight="bold" fill="#0f172a">0,1</text>
+
+  <!-- 21. SAN_PHAM -> DANH_GIA_SAN_PHAM (down-right: 1200, 1110 -> 1200, 1450 -> 1800, 1450) -->
+  <path d="M 1200 1110 L 1200 1450 L 1800 1450" stroke="#64748b" stroke-width="2" fill="none"/>
+  <rect x="1450" y="1437" width="110" height="26" rx="13" fill="#ffffff" stroke="#0284c7" stroke-width="2" filter="url(#badge-shadow)"/>
+  <text x="1505" y="1454" font-size="11" font-weight="bold" fill="#0369a1" text-anchor="middle">Nhan_Danh_Gia</text>
+  <text x="1208" y="1130" font-size="12" font-weight="bold" fill="#0f172a">1,1</text>
+  <text x="1775" y="1440" font-size="12" font-weight="bold" fill="#0f172a">0,n</text>
+
+
+  <!-- ========================================== -->
+  <!-- ENTITY CARDS -->
+  <!-- ========================================== -->
+
+  <!-- ENTITY 1: TIM_ANH (x=60, y=180, w=340, h=190) -->
+  <g transform="translate(60, 180)">
+    <rect width="340" height="190" rx="8" fill="#ffffff" stroke="#d97706" stroke-width="2" filter="url(#shadow)"/>
+    <path d="M 0 8 Q 0 0 8 0 L 332 0 Q 340 0 340 8 L 340 38 L 0 38 Z" fill="#d97706"/>
+    <text x="170" y="25" font-size="14" font-weight="bold" fill="#ffffff" text-anchor="middle">TIM ANH</text>
+    <line x1="0" y1="38" x2="340" y2="38" stroke="#d97706" stroke-width="1.5"/>
+    <text x="15" y="60" font-size="12" font-weight="bold" fill="#0f172a">🔑 MaTimKiem &lt;pi&gt; &lt;M&gt;</text>
+    <text x="250" y="60" font-size="12" fill="#64748b">Integer</text>
+    <line x1="10" y1="68" x2="330" y2="68" stroke="#e2e8f0" stroke-width="1"/>
+    <text x="15" y="88" font-size="12" fill="#334155">HinhAnhUrl &lt;M&gt;</text>
+    <text x="250" y="88" font-size="12" fill="#64748b">Varchar(255)</text>
+    <text x="15" y="112" font-size="12" fill="#334155">ThoiGian &lt;M&gt;</text>
+    <text x="250" y="112" font-size="12" fill="#64748b">Date &amp; Time</text>
+    <text x="15" y="136" font-size="12" fill="#334155">NenTang</text>
+    <text x="250" y="136" font-size="12" fill="#64748b">Varchar(20)</text>
+    <rect x="0" y="158" width="340" height="32" rx="0" fill="#fef3c7"/>
+    <text x="170" y="179" font-size="11" font-weight="bold" fill="#92400e" text-anchor="middle">Lưu lượt tìm ảnh (hỗ trợ vãng lai)</text>
+  </g>
+
+  <!-- ENTITY 2: KET_QUA_NHAN_DIEN (x=60, y=500, w=340, h=180) - WEAK ENTITY -->
+  <g transform="translate(60, 500)">
+    <rect width="340" height="180" rx="8" fill="#ffffff" stroke="#b45309" stroke-width="2.5" stroke-dasharray="6,4" filter="url(#shadow)"/>
+    <path d="M 0 8 Q 0 0 8 0 L 332 0 Q 340 0 340 8 L 340 38 L 0 38 Z" fill="#b45309"/>
+    <text x="170" y="25" font-size="14" font-weight="bold" fill="#ffffff" text-anchor="middle">KET QUA NHAN DIEN (Thực thể yếu)</text>
+    <text x="15" y="60" font-size="12" font-weight="bold" fill="#0f172a">🔑 MaKetQua &lt;pi&gt; &lt;M&gt;</text>
+    <text x="250" y="60" font-size="12" fill="#64748b">Integer</text>
+    <line x1="10" y1="68" x2="330" y2="68" stroke="#e2e8f0" stroke-width="1"/>
+    <text x="15" y="90" font-size="12" font-weight="bold" fill="#334155">ThuHang (Top-K) &lt;M&gt;</text>
+    <text x="250" y="90" font-size="12" fill="#64748b">Integer</text>
+    <text x="15" y="116" font-size="12" fill="#334155">XacSuatChinhXac &lt;M&gt;</text>
+    <text x="250" y="116" font-size="12" fill="#64748b">Decimal(5,4)</text>
+    <rect x="0" y="148" width="340" height="32" rx="0" fill="#fef3c7"/>
+    <text x="170" y="169" font-size="11" font-weight="bold" fill="#92400e" text-anchor="middle">Phụ thuộc định danh vào TIM_ANH</text>
+  </g>
+
+  <!-- ENTITY 3: DANH_MUC (x=480, y=180, w=340, h=190) -->
+  <g transform="translate(480, 180)">
+    <rect width="340" height="190" rx="8" fill="#ffffff" stroke="#059669" stroke-width="2" filter="url(#shadow)"/>
+    <path d="M 0 8 Q 0 0 8 0 L 332 0 Q 340 0 340 8 L 340 38 L 0 38 Z" fill="#059669"/>
+    <text x="170" y="25" font-size="14" font-weight="bold" fill="#ffffff" text-anchor="middle">DANH MUC</text>
+    <text x="15" y="60" font-size="12" font-weight="bold" fill="#0f172a">🔑 MaDanhMuc &lt;pi&gt; &lt;M&gt;</text>
+    <text x="250" y="60" font-size="12" fill="#64748b">Integer</text>
+    <line x1="10" y1="68" x2="330" y2="68" stroke="#e2e8f0" stroke-width="1"/>
+    <text x="15" y="90" font-size="12" fill="#334155">TenDanhMuc &lt;M&gt;</text>
+    <text x="250" y="90" font-size="12" fill="#64748b">Varchar(100)</text>
+    <text x="15" y="116" font-size="12" fill="#334155">HinhAnhDanhMuc</text>
+    <text x="250" y="116" font-size="12" fill="#64748b">Varchar(255)</text>
+    <text x="15" y="142" font-size="12" fill="#334155">MoTaDanhMuc</text>
+    <text x="250" y="142" font-size="12" fill="#64748b">Text</text>
+  </g>
+
+  <!-- ENTITY 4: LOAI_CAY (x=480, y=490, w=370, h=240) -->
+  <g transform="translate(480, 490)">
+    <rect width="370" height="240" rx="8" fill="#ffffff" stroke="#059669" stroke-width="2" filter="url(#shadow)"/>
+    <path d="M 0 8 Q 0 0 8 0 L 362 0 Q 370 0 370 8 L 370 38 L 0 38 Z" fill="#059669"/>
+    <text x="185" y="25" font-size="14" font-weight="bold" fill="#ffffff" text-anchor="middle">LOAI CAY (Knowledge Base)</text>
+    <text x="15" y="60" font-size="12" font-weight="bold" fill="#0f172a">🔑 MaLoaiCay &lt;pi&gt; &lt;M&gt;</text>
+    <text x="270" y="60" font-size="12" fill="#64748b">Integer</text>
+    <line x1="10" y1="68" x2="360" y2="68" stroke="#e2e8f0" stroke-width="1"/>
+    <text x="15" y="88" font-size="12" fill="#334155">TenKhoaHoc &lt;M&gt;</text>
+    <text x="270" y="88" font-size="12" fill="#64748b">Varchar(150)</text>
+    <text x="15" y="112" font-size="12" fill="#334155">TenThuongGoi &lt;M&gt;</text>
+    <text x="270" y="112" font-size="12" fill="#64748b">Varchar(150)</text>
+    <text x="15" y="136" font-size="12" fill="#334155">DacDiemNhanDang</text>
+    <text x="270" y="136" font-size="12" fill="#64748b">Text</text>
+    <text x="15" y="160" font-size="12" fill="#334155">HuongDanChamSoc</text>
+    <text x="270" y="160" font-size="12" fill="#64748b">Text</text>
+    <text x="15" y="184" font-size="12" fill="#334155">XuatXu</text>
+    <text x="270" y="184" font-size="12" fill="#64748b">Varchar(100)</text>
+    <rect x="0" y="206" width="370" height="34" rx="0" fill="#ecfdf5"/>
+    <text x="185" y="228" font-size="11" font-weight="bold" fill="#065f46" text-anchor="middle">Đã bỏ GiaThamKhao (chuyển sang Lịch sử giá)</text>
+  </g>
+
+  <!-- ENTITY 5: SAN_PHAM (x=930, y=850, w=370, h=260) -->
+  <g transform="translate(930, 850)">
+    <rect width="370" height="284" rx="8" fill="#ffffff" stroke="#047857" stroke-width="2" filter="url(#shadow)"/>
+    <path d="M 0 8 Q 0 0 8 0 L 362 0 Q 370 0 370 8 L 370 38 L 0 38 Z" fill="#047857"/>
+    <text x="185" y="25" font-size="14" font-weight="bold" fill="#ffffff" text-anchor="middle">SAN PHAM (Mặt hàng cụ thể)</text>
+    <text x="15" y="60" font-size="12" font-weight="bold" fill="#0f172a">🔑 MaSanPham &lt;pi&gt; &lt;M&gt;</text>
+    <text x="270" y="60" font-size="12" fill="#64748b">Integer</text>
+    <line x1="10" y1="68" x2="360" y2="68" stroke="#e2e8f0" stroke-width="1"/>
+    <text x="15" y="88" font-size="12" fill="#334155">TenSanPham &lt;M&gt;</text>
+    <text x="270" y="88" font-size="12" fill="#64748b">Varchar(255)</text>
+    <text x="15" y="112" font-size="12" fill="#334155">SoLuongTonKho &lt;M&gt;</text>
+    <text x="270" y="112" font-size="12" fill="#64748b">Integer</text>
+    <text x="15" y="136" font-size="12" fill="#334155">KichThuocCay</text>
+    <text x="270" y="136" font-size="12" fill="#64748b">Varchar(50)</text>
+    <text x="15" y="160" font-size="12" fill="#334155">TinhTrangCay</text>
+    <text x="270" y="160" font-size="12" fill="#64748b">Varchar(100)</text>
+    <text x="15" y="184" font-size="12" fill="#334155">TrangThaiBan &lt;M&gt;</text>
+    <text x="270" y="184" font-size="12" fill="#64748b">Varchar(50)</text>
+    <text x="15" y="208" font-size="12" fill="#334155">NgayNhap</text>
+    <text x="270" y="208" font-size="12" fill="#64748b">Date &amp; Time</text>
+    <text x="15" y="232" font-size="12" fill="#334155">MoTaChiTiet</text>
+    <text x="270" y="232" font-size="12" fill="#64748b">Text</text>
+    <rect x="0" y="250" width="370" height="34" rx="0" fill="#ecfdf5"/>
+    <text x="185" y="272" font-size="11" font-weight="bold" fill="#065f46" text-anchor="middle">Giá bán quản lý qua LICH_SU_GIA_SAN_PHAM</text>
+  </g>
+
+  <!-- ENTITY 6: HINH_ANH_SAN_PHAM (x=480, y=900, w=340, h=170) -->
+  <g transform="translate(480, 900)">
+    <rect width="340" height="170" rx="8" fill="#ffffff" stroke="#059669" stroke-width="2" filter="url(#shadow)"/>
+    <path d="M 0 8 Q 0 0 8 0 L 332 0 Q 340 0 340 8 L 340 38 L 0 38 Z" fill="#059669"/>
+    <text x="170" y="25" font-size="14" font-weight="bold" fill="#ffffff" text-anchor="middle">HINH ANH SAN PHAM</text>
+    <text x="15" y="60" font-size="12" font-weight="bold" fill="#0f172a">🔑 MaAnh &lt;pi&gt; &lt;M&gt;</text>
+    <text x="250" y="60" font-size="12" fill="#64748b">Integer</text>
+    <line x1="10" y1="68" x2="330" y2="68" stroke="#e2e8f0" stroke-width="1"/>
+    <text x="15" y="90" font-size="12" fill="#334155">UrlAnh &lt;M&gt;</text>
+    <text x="250" y="90" font-size="12" fill="#64748b">Varchar(255)</text>
+    <text x="15" y="118" font-size="12" fill="#334155">LaAnhChinh &lt;M&gt;</text>
+    <text x="250" y="118" font-size="12" fill="#64748b">Boolean</text>
+    <rect x="0" y="136" width="340" height="34" rx="0" fill="#ecfdf5"/>
+    <text x="170" y="157" font-size="11" font-weight="bold" fill="#065f46" text-anchor="middle">Album ảnh chi tiết cho từng cây</text>
+  </g>
+
+  <!-- ENTITY 7: THOI_DIEM (x=480, y=1260, w=340, h=170) -->
+  <g transform="translate(480, 1260)">
+    <rect width="340" height="170" rx="8" fill="#ffffff" stroke="#0f766e" stroke-width="2" filter="url(#shadow)"/>
+    <path d="M 0 8 Q 0 0 8 0 L 332 0 Q 340 0 340 8 L 340 38 L 0 38 Z" fill="#0f766e"/>
+    <text x="170" y="25" font-size="14" font-weight="bold" fill="#ffffff" text-anchor="middle">THOI DIEM (Temporal Entity)</text>
+    <text x="15" y="60" font-size="12" font-weight="bold" fill="#0f172a">🔑 MaThoiDiem &lt;pi&gt; &lt;M&gt;</text>
+    <text x="250" y="60" font-size="12" fill="#64748b">Integer</text>
+    <line x1="10" y1="68" x2="330" y2="68" stroke="#e2e8f0" stroke-width="1"/>
+    <text x="15" y="88" font-size="12" fill="#334155">TenThoiDiem &lt;M&gt;</text>
+    <text x="250" y="88" font-size="12" fill="#64748b">Varchar(100)</text>
+    <text x="15" y="112" font-size="12" fill="#334155">NgayBatDau &lt;M&gt;</text>
+    <text x="250" y="112" font-size="12" fill="#64748b">Date &amp; Time</text>
+    <text x="15" y="136" font-size="12" fill="#334155">NgayKetThuc</text>
+    <text x="250" y="136" font-size="12" fill="#64748b">Date &amp; Time</text>
+  </g>
+
+  <!-- ENTITY 8: LICH_SU_GIA_SAN_PHAM (x=930, y=1250, w=370, h=200) - RESTORED GiaBan -->
+  <g transform="translate(930, 1250)">
+    <rect width="370" height="200" rx="8" fill="#ffffff" stroke="#0d9488" stroke-width="2.5" stroke-dasharray="6,4" filter="url(#shadow)"/>
+    <path d="M 0 8 Q 0 0 8 0 L 362 0 Q 370 0 370 8 L 370 38 L 0 38 Z" fill="#0d9488"/>
+    <text x="185" y="25" font-size="14" font-weight="bold" fill="#ffffff" text-anchor="middle">LICH SU GIA SAN PHAM (Yếu)</text>
+    <text x="15" y="60" font-size="12" font-weight="bold" fill="#0f172a">🔑 MaLichSuGia &lt;pi&gt; &lt;M&gt;</text>
+    <text x="270" y="60" font-size="12" fill="#64748b">Integer</text>
+    <line x1="10" y1="68" x2="360" y2="68" stroke="#e2e8f0" stroke-width="1"/>
+    <text x="15" y="88" font-size="12" font-weight="bold" fill="#b91c1c">★ GiaBan (Giá bán) &lt;M&gt;</text>
+    <text x="270" y="88" font-size="12" font-weight="bold" fill="#b91c1c">Decimal</text>
+    <text x="15" y="112" font-size="12" fill="#334155">NgayCapNhat &lt;M&gt;</text>
+    <text x="270" y="112" font-size="12" fill="#64748b">Date &amp; Time</text>
+    <text x="15" y="136" font-size="12" fill="#334155">LyDoThayDoi</text>
+    <text x="270" y="136" font-size="12" fill="#64748b">Varchar(255)</text>
+    <rect x="0" y="156" width="370" height="44" rx="0" fill="#ccfbf1"/>
+    <text x="185" y="174" font-size="11" font-weight="bold" fill="#115e59" text-anchor="middle">Ghi nhận: Sản phẩm + Thời điểm + Admin</text>
+    <text x="185" y="192" font-size="10" fill="#134e4a" text-anchor="middle">(Bổ sung lại cột GiaBan đã bị xóa trước đó)</text>
+  </g>
+
+  <!-- ENTITY 9: NGUOI_DUNG (SUPERTYPE) (x=1420, y=160, w=380, h=250) -->
+  <g transform="translate(1420, 160)">
+    <rect width="380" height="250" rx="8" fill="#ffffff" stroke="#4338ca" stroke-width="2.5" filter="url(#shadow)"/>
+    <path d="M 0 8 Q 0 0 8 0 L 372 0 Q 380 0 380 8 L 380 38 L 0 38 Z" fill="#4338ca"/>
+    <text x="190" y="25" font-size="14" font-weight="bold" fill="#ffffff" text-anchor="middle">NGUOI DUNG (Thực thể cha / Supertype)</text>
+    <text x="15" y="60" font-size="12" font-weight="bold" fill="#0f172a">🔑 MaNguoiDung &lt;pi&gt; &lt;M&gt;</text>
+    <text x="280" y="60" font-size="12" fill="#64748b">Integer</text>
+    <line x1="10" y1="68" x2="370" y2="68" stroke="#e2e8f0" stroke-width="1"/>
+    <text x="15" y="88" font-size="12" fill="#334155">TaiKhoan &lt;M&gt;</text>
+    <text x="280" y="88" font-size="12" fill="#64748b">Varchar(50)</text>
+    <text x="15" y="112" font-size="12" fill="#334155">MatKhau (Hash) &lt;M&gt;</text>
+    <text x="280" y="112" font-size="12" fill="#64748b">Varchar(255)</text>
+    <text x="15" y="136" font-size="12" fill="#334155">HoTen &lt;M&gt;</text>
+    <text x="280" y="136" font-size="12" fill="#64748b">Varchar(50)</text>
+    <text x="15" y="160" font-size="12" fill="#334155">Email &lt;M&gt;</text>
+    <text x="280" y="160" font-size="12" fill="#64748b">Varchar(50)</text>
+    <text x="15" y="184" font-size="12" fill="#334155">SDT</text>
+    <text x="280" y="184" font-size="12" fill="#64748b">Varchar(15)</text>
+    <text x="15" y="208" font-size="12" fill="#334155">NgayDangKy &lt;M&gt;</text>
+    <text x="280" y="208" font-size="12" fill="#64748b">Date &amp; Time</text>
+    <text x="15" y="232" font-size="12" fill="#334155">TrangThaiTaiKhoan &lt;M&gt;</text>
+    <text x="280" y="232" font-size="12" fill="#64748b">Varchar(30)</text>
+  </g>
+
+  <!-- ENTITY 10: KHACH_HANG (SUBTYPE) (x=1380, y=530, w=330, h=140) -->
+  <g transform="translate(1380, 530)">
+    <rect width="330" height="140" rx="8" fill="#ffffff" stroke="#0284c7" stroke-width="2" filter="url(#shadow)"/>
+    <path d="M 0 8 Q 0 0 8 0 L 322 0 Q 330 0 330 8 L 330 36 L 0 36 Z" fill="#0284c7"/>
+    <text x="165" y="24" font-size="13" font-weight="bold" fill="#ffffff" text-anchor="middle">KHACH HANG (Subtype)</text>
+    <text x="15" y="58" font-size="12" fill="#64748b">Kế thừa: MaNguoiDung, TaiKhoan...</text>
+    <line x1="10" y1="68" x2="320" y2="68" stroke="#e2e8f0" stroke-width="1"/>
+    <text x="15" y="90" font-size="12" fill="#334155">DiemTichLuy</text>
+    <text x="240" y="90" font-size="12" fill="#64748b">Integer</text>
+    <text x="15" y="116" font-size="12" fill="#334155">LoaiThanhVien</text>
+    <text x="240" y="116" font-size="12" fill="#64748b">Varchar(30)</text>
+  </g>
+
+  <!-- ENTITY 11: ADMIN (SUBTYPE) (x=1780, y=530, w=330, h=140) -->
+  <g transform="translate(1780, 530)">
+    <rect width="330" height="140" rx="8" fill="#ffffff" stroke="#be123c" stroke-width="2" filter="url(#shadow)"/>
+    <path d="M 0 8 Q 0 0 8 0 L 322 0 Q 330 0 330 8 L 330 36 L 0 36 Z" fill="#be123c"/>
+    <text x="165" y="24" font-size="13" font-weight="bold" fill="#ffffff" text-anchor="middle">ADMIN (Subtype Quản trị)</text>
+    <text x="15" y="58" font-size="12" fill="#64748b">Kế thừa: MaNguoiDung, TaiKhoan...</text>
+    <line x1="10" y1="68" x2="320" y2="68" stroke="#e2e8f0" stroke-width="1"/>
+    <text x="15" y="90" font-size="12" fill="#334155">ChucVu &lt;M&gt;</text>
+    <text x="240" y="90" font-size="12" fill="#64748b">Varchar(50)</text>
+    <text x="15" y="116" font-size="12" fill="#334155">NgayNhamChuc &lt;M&gt;</text>
+    <text x="240" y="116" font-size="12" fill="#64748b">Date &amp; Time</text>
+  </g>
+
+  <!-- ENTITY 12: DIA_CHI_NGUOI_DUNG (x=1380, y=740, w=330, h=190) -->
+  <g transform="translate(1380, 740)">
+    <rect width="330" height="190" rx="8" fill="#ffffff" stroke="#0284c7" stroke-width="2" filter="url(#shadow)"/>
+    <path d="M 0 8 Q 0 0 8 0 L 322 0 Q 330 0 330 8 L 330 36 L 0 36 Z" fill="#0284c7"/>
+    <text x="165" y="24" font-size="13" font-weight="bold" fill="#ffffff" text-anchor="middle">DIA CHI NGUOI DUNG (Sổ địa chỉ)</text>
+    <text x="15" y="58" font-size="12" font-weight="bold" fill="#0f172a">🔑 MaDiaChi &lt;pi&gt; &lt;M&gt;</text>
+    <text x="240" y="58" font-size="12" fill="#64748b">Integer</text>
+    <line x1="10" y1="66" x2="320" y2="66" stroke="#e2e8f0" stroke-width="1"/>
+    <text x="15" y="86" font-size="12" fill="#334155">TenNguoiNhan &lt;M&gt;</text>
+    <text x="240" y="86" font-size="12" fill="#64748b">Varchar(50)</text>
+    <text x="15" y="110" font-size="12" fill="#334155">SDTNguoiNhan &lt;M&gt;</text>
+    <text x="240" y="110" font-size="12" fill="#64748b">Varchar(15)</text>
+    <text x="15" y="134" font-size="12" fill="#334155">DiaChiChiTiet &lt;M&gt;</text>
+    <text x="240" y="134" font-size="12" fill="#64748b">Varchar(255)</text>
+    <text x="15" y="158" font-size="12" fill="#334155">DatMacDinh &lt;M&gt;</text>
+    <text x="240" y="158" font-size="12" fill="#64748b">Boolean</text>
+  </g>
+
+  <!-- ENTITY 13: GIO_HANG (x=1800, y=850, w=330, h=140) -->
+  <g transform="translate(1800, 850)">
+    <rect width="330" height="140" rx="8" fill="#ffffff" stroke="#0284c7" stroke-width="2" filter="url(#shadow)"/>
+    <path d="M 0 8 Q 0 0 8 0 L 322 0 Q 330 0 330 8 L 330 36 L 0 36 Z" fill="#0284c7"/>
+    <text x="165" y="24" font-size="13" font-weight="bold" fill="#ffffff" text-anchor="middle">GIO HANG</text>
+    <text x="15" y="58" font-size="12" font-weight="bold" fill="#0f172a">🔑 MaGioHang &lt;pi&gt; &lt;M&gt;</text>
+    <text x="240" y="58" font-size="12" fill="#64748b">Integer</text>
+    <line x1="10" y1="66" x2="320" y2="66" stroke="#e2e8f0" stroke-width="1"/>
+    <text x="15" y="90" font-size="12" fill="#334155">NgayCapNhat &lt;M&gt;</text>
+    <text x="240" y="90" font-size="12" fill="#64748b">Date &amp; Time</text>
+    <rect x="0" y="106" width="330" height="34" rx="0" fill="#e0f2fe"/>
+    <text x="165" y="127" font-size="11" font-weight="bold" fill="#0369a1" text-anchor="middle">Mỗi Khách hàng sở hữu 1 giỏ hàng</text>
+  </g>
+
+  <!-- ENTITY 14: CHI_TIET_GIO_HANG (x=1380, y=1030, w=340, h=160) - WEAK ENTITY -->
+  <g transform="translate(1380, 1030)">
+    <rect width="340" height="160" rx="8" fill="#ffffff" stroke="#0284c7" stroke-width="2.5" stroke-dasharray="6,4" filter="url(#shadow)"/>
+    <path d="M 0 8 Q 0 0 8 0 L 332 0 Q 340 0 340 8 L 340 36 L 0 36 Z" fill="#0284c7"/>
+    <text x="170" y="24" font-size="13" font-weight="bold" fill="#ffffff" text-anchor="middle">CHI TIET GIO HANG (Thực thể yếu)</text>
+    <text x="15" y="58" font-size="12" font-weight="bold" fill="#0f172a">🔑 MaChiTietGioHang &lt;pi&gt; &lt;M&gt;</text>
+    <text x="250" y="58" font-size="12" fill="#64748b">Integer</text>
+    <line x1="10" y1="66" x2="330" y2="66" stroke="#e2e8f0" stroke-width="1"/>
+    <text x="15" y="90" font-size="12" font-weight="bold" fill="#334155">SoLuongChon &lt;M&gt;</text>
+    <text x="250" y="90" font-size="12" fill="#64748b">Integer</text>
+    <rect x="0" y="116" width="340" height="44" rx="0" fill="#e0f2fe"/>
+    <text x="170" y="135" font-size="11" font-weight="bold" fill="#0369a1" text-anchor="middle">Phụ thuộc vào GIO_HANG và SAN_PHAM</text>
+    <text x="170" y="151" font-size="10" fill="#075985" text-anchor="middle">Khóa ghép PDM: (MaGioHang, MaSanPham)</text>
+  </g>
+
+  <!-- ENTITY 15: MA_GIAM_GIA (x=2240, y=530, w=360, h=280) -->
+  <g transform="translate(2240, 530)">
+    <rect width="360" height="280" rx="8" fill="#ffffff" stroke="#be123c" stroke-width="2" filter="url(#shadow)"/>
+    <path d="M 0 8 Q 0 0 8 0 L 352 0 Q 360 0 360 8 L 360 38 L 0 38 Z" fill="#be123c"/>
+    <text x="180" y="25" font-size="14" font-weight="bold" fill="#ffffff" text-anchor="middle">MA GIAM GIA (Do Admin tạo)</text>
+    <text x="15" y="60" font-size="12" font-weight="bold" fill="#0f172a">🔑 MaGiamGia &lt;pi&gt; &lt;M&gt;</text>
+    <text x="260" y="60" font-size="12" fill="#64748b">Integer</text>
+    <line x1="10" y1="68" x2="350" y2="68" stroke="#e2e8f0" stroke-width="1"/>
+    <text x="15" y="88" font-size="12" fill="#334155">Code (Voucher) &lt;M&gt;</text>
+    <text x="260" y="88" font-size="12" fill="#64748b">Varchar(20)</text>
+    <text x="15" y="112" font-size="12" fill="#334155">TenMaGiamGia &lt;M&gt;</text>
+    <text x="260" y="112" font-size="12" fill="#64748b">Varchar(100)</text>
+    <text x="15" y="136" font-size="12" fill="#334155">LoaiGiamGia &lt;M&gt;</text>
+    <text x="260" y="136" font-size="12" fill="#64748b">Varchar(20)</text>
+    <text x="15" y="160" font-size="12" fill="#334155">GiaTriGiam &lt;M&gt;</text>
+    <text x="260" y="160" font-size="12" fill="#64748b">Decimal</text>
+    <text x="15" y="184" font-size="12" fill="#334155">ToiThieu &lt;M&gt; / ToiDa</text>
+    <text x="260" y="184" font-size="12" fill="#64748b">Decimal</text>
+    <text x="15" y="208" font-size="12" fill="#334155">SoLuongPhieu &lt;M&gt;</text>
+    <text x="260" y="208" font-size="12" fill="#64748b">Integer</text>
+    <text x="15" y="232" font-size="12" fill="#334155">SoLuongDaDung &lt;M&gt;</text>
+    <text x="260" y="232" font-size="12" fill="#64748b">Integer</text>
+    <text x="15" y="256" font-size="12" fill="#334155">NgayBatDau - NgayKetThuc</text>
+    <text x="260" y="256" font-size="12" fill="#64748b">Date &amp; Time</text>
+  </g>
+
+  <!-- ENTITY 16: DON_HANG (x=2240, y=950, w=380, h=280) -->
+  <g transform="translate(2240, 950)">
+    <rect width="380" height="280" rx="8" fill="#ffffff" stroke="#0369a1" stroke-width="2.5" filter="url(#shadow)"/>
+    <path d="M 0 8 Q 0 0 8 0 L 372 0 Q 380 0 380 8 L 380 38 L 0 38 Z" fill="#0369a1"/>
+    <text x="190" y="25" font-size="14" font-weight="bold" fill="#ffffff" text-anchor="middle">DON HANG</text>
+    <text x="15" y="60" font-size="12" font-weight="bold" fill="#0f172a">🔑 MaDonHang &lt;pi&gt; &lt;M&gt;</text>
+    <text x="270" y="60" font-size="12" fill="#64748b">Integer</text>
+    <line x1="10" y1="68" x2="370" y2="68" stroke="#e2e8f0" stroke-width="1"/>
+    <text x="15" y="86" font-size="12" fill="#334155">NgayDatHang &lt;M&gt;</text>
+    <text x="270" y="86" font-size="12" fill="#64748b">Date &amp; Time</text>
+    <text x="15" y="108" font-size="12" fill="#334155">TamTinh / SoTienGiam</text>
+    <text x="270" y="108" font-size="12" fill="#64748b">Decimal</text>
+    <text x="15" y="130" font-size="12" fill="#334155">PhiVanChuyen / TongTien</text>
+    <text x="270" y="130" font-size="12" fill="#64748b">Decimal</text>
+    <text x="15" y="152" font-size="12" fill="#334155">DiaChiNhanHang (Snapshot) &lt;M&gt;</text>
+    <text x="270" y="152" font-size="12" fill="#64748b">Varchar(255)</text>
+    <text x="15" y="174" font-size="12" fill="#334155">SDTNhanHang &lt;M&gt;</text>
+    <text x="270" y="174" font-size="12" fill="#64748b">Varchar(15)</text>
+    <text x="15" y="196" font-size="12" fill="#334155">PhuongThucThanhToan &lt;M&gt;</text>
+    <text x="270" y="196" font-size="12" fill="#64748b">Varchar(50)</text>
+    <text x="15" y="218" font-size="12" font-weight="bold" fill="#0369a1">TrangThaiDonHang &lt;M&gt;</text>
+    <text x="270" y="218" font-size="12" fill="#64748b">Varchar(50)</text>
+    <text x="15" y="240" font-size="12" font-weight="bold" fill="#0369a1">TrangThaiThanhToan &lt;M&gt;</text>
+    <text x="270" y="240" font-size="12" fill="#64748b">Varchar(30)</text>
+    <rect x="0" y="252" width="380" height="28" rx="0" fill="#e0f2fe"/>
+    <text x="190" y="271" font-size="11" font-weight="bold" fill="#0369a1" text-anchor="middle">Lập từ Giỏ hàng • Áp dụng Mã giảm giá</text>
+  </g>
+
+  <!-- ENTITY 17 (DANH_GIA_SAN_PHAM): (x=1800, y=1330, w=360, h=200) -->
+  <g transform="translate(1800, 1330)">
+    <rect width="360" height="200" rx="8" fill="#ffffff" stroke="#0284c7" stroke-width="2" filter="url(#shadow)"/>
+    <path d="M 0 8 Q 0 0 8 0 L 352 0 Q 360 0 360 8 L 360 38 L 0 38 Z" fill="#0284c7"/>
+    <text x="180" y="25" font-size="14" font-weight="bold" fill="#ffffff" text-anchor="middle">DANH GIA SAN PHAM</text>
+    <text x="15" y="60" font-size="12" font-weight="bold" fill="#0f172a">🔑 MaDanhGia &lt;pi&gt; &lt;M&gt;</text>
+    <text x="250" y="60" font-size="12" fill="#64748b">Integer</text>
+    <line x1="10" y1="68" x2="350" y2="68" stroke="#e2e8f0" stroke-width="1"/>
+    <text x="15" y="88" font-size="12" font-weight="bold" fill="#0f172a">SoSao (Domain 1..5) &lt;M&gt;</text>
+    <text x="250" y="88" font-size="12" fill="#64748b">DM_SOSAO</text>
+    <text x="15" y="112" font-size="12" fill="#334155">HinhAnhThucTe</text>
+    <text x="250" y="112" font-size="12" fill="#64748b">Varchar(255)</text>
+    <text x="15" y="136" font-size="12" fill="#334155">NoiDungBinhLuan</text>
+    <text x="250" y="136" font-size="12" fill="#64748b">Text</text>
+    <text x="15" y="160" font-size="12" fill="#334155">NgayDanhGia &lt;M&gt;</text>
+    <text x="250" y="160" font-size="12" fill="#64748b">Date &amp; Time</text>
+    <rect x="0" y="174" width="360" height="26" rx="0" fill="#e0f2fe"/>
+    <text x="180" y="191" font-size="10" font-weight="bold" fill="#0369a1" text-anchor="middle">Liên kết xác thực đơn hàng &amp; tối ưu hiển thị sản phẩm</text>
+  </g>
+
+  <!-- ========================================== -->
+  <!-- LEGEND / CHÚ THÍCH -->
+  <!-- ========================================== -->
+  <g transform="translate(60, 1500)">
+    <rect width="840" height="390" rx="10" fill="#ffffff" stroke="#cbd5e1" stroke-width="2" filter="url(#shadow)"/>
+    <path d="M 0 10 Q 0 0 10 0 L 830 0 Q 840 0 840 10 L 840 38 L 0 38 Z" fill="#1e293b"/>
+    <text x="420" y="25" font-size="14" font-weight="bold" fill="#ffffff" text-anchor="middle">CHÚ THÍCH KÝ HIỆU &amp; QUY ƯỚC MÔ HÌNH CDM (MERISE)</text>
+    
+    <!-- Legend columns -->
+    <g transform="translate(25, 55)">
+      <!-- Box types -->
+      <rect x="0" y="0" width="130" height="24" rx="4" fill="#ffffff" stroke="#059669" stroke-width="2"/>
+      <text x="145" y="17" font-size="12" fill="#1e293b">: Thực thể mạnh (Strong Entity)</text>
+
+      <rect x="0" y="38" width="130" height="24" rx="4" fill="#ffffff" stroke="#0d9488" stroke-width="2" stroke-dasharray="4,3"/>
+      <text x="145" y="55" font-size="12" fill="#1e293b">: Thực thể yếu (Weak Entity - Phụ thuộc tồn tại &amp; định danh)</text>
+
+      <circle cx="15" cy="88" r="12" fill="#ffffff" stroke="#4f46e5" stroke-width="2"/>
+      <path d="M 9 93 A 6 6 0 0 1 21 93 Z" fill="#4f46e5"/>
+      <text x="145" y="93" font-size="12" fill="#1e293b">: Ký hiệu Chuyên biệt hóa / Kế thừa (Inheritance)</text>
+
+      <rect x="0" y="116" width="100" height="22" rx="11" fill="#ffffff" stroke="#0284c7" stroke-width="1.5"/>
+      <text x="50" y="132" font-size="11" font-weight="bold" fill="#0369a1" text-anchor="middle">Ten_Quan_He</text>
+      <text x="145" y="132" font-size="12" fill="#1e293b">: Mối quan hệ liên kết giữa 2 thực thể (Relationship)</text>
+
+      <text x="0" y="170" font-size="12" font-weight="bold" fill="#0f172a">🔑 &lt;pi&gt; &lt;M&gt;</text>
+      <text x="145" y="170" font-size="12" fill="#1e293b">: Khóa chính định danh thực thể (Primary Identifier, Mandatory)</text>
+    </g>
+
+    <g transform="translate(460, 55)">
+      <text x="0" y="16" font-size="13" font-weight="bold" fill="#0f172a">Ý nghĩa các Bản số (Cardinality):</text>
+      <text x="0" y="42" font-size="12" font-weight="bold" fill="#4338ca">1,1</text>
+      <text x="45" y="42" font-size="12" fill="#334155">: Bắt buộc và duy nhất một (One and only one)</text>
+
+      <text x="0" y="70" font-size="12" font-weight="bold" fill="#4338ca">0,1</text>
+      <text x="45" y="70" font-size="12" fill="#334155">: Tùy chọn tối đa một (At most one / Optional)</text>
+
+      <text x="0" y="98" font-size="12" font-weight="bold" fill="#4338ca">0,n</text>
+      <text x="45" y="98" font-size="12" fill="#334155">: Tùy chọn nhiều (Zero or many)</text>
+
+      <text x="0" y="126" font-size="12" font-weight="bold" fill="#4338ca">1,n</text>
+      <text x="45" y="126" font-size="12" fill="#334155">: Bắt buộc nhiều (One or more)</text>
+
+      <rect x="0" y="150" width="350" height="70" rx="6" fill="#f8fafc" stroke="#e2e8f0"/>
+      <text x="15" y="172" font-size="11" font-weight="bold" fill="#0f172a">QUY TẮC MÔ HÌNH CHUẨN (MERISE):</text>
+      <text x="15" y="192" font-size="11" fill="#475569">• CDM thuần khái niệm: không hiển thị thuộc tính khóa ngoại (FK)</text>
+      <text x="15" y="210" font-size="11" fill="#475569">• Toàn bộ khóa ngoại vật lý sẽ tự sinh chuẩn xác khi chuyển sang PDM</text>
+    </g>
+  </g>
+
+</svg>

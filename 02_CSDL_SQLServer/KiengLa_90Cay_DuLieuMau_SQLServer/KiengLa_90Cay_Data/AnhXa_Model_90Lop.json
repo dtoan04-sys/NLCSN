@@ -1,0 +1,722 @@
+[
+  {
+    "class_id": 0,
+    "MaLoaiCay": 1,
+    "original_label": "African Violet (Saintpaulia ionantha)",
+    "vietnamese_name": "Violet châu Phi",
+    "scientific_name_as_label": "Saintpaulia ionantha",
+    "label_note": "Tên Saintpaulia trong nhãn là tên cũ; giữ nguyên liên kết mô hình."
+  },
+  {
+    "class_id": 1,
+    "MaLoaiCay": 2,
+    "original_label": "Aloe Vera",
+    "vietnamese_name": "Nha đam",
+    "scientific_name_as_label": "Aloe vera",
+    "label_note": ""
+  },
+  {
+    "class_id": 2,
+    "MaLoaiCay": 3,
+    "original_label": "Anthurium (Anthurium andraeanum)",
+    "vietnamese_name": "Hồng môn",
+    "scientific_name_as_label": "Anthurium andraeanum",
+    "label_note": ""
+  },
+  {
+    "class_id": 3,
+    "MaLoaiCay": 4,
+    "original_label": "Areca Palm (Dypsis lutescens)",
+    "vietnamese_name": "Cau vàng",
+    "scientific_name_as_label": "Dypsis lutescens",
+    "label_note": "Tên chi Dypsis được giữ theo nhãn mô hình."
+  },
+  {
+    "class_id": 4,
+    "MaLoaiCay": 5,
+    "original_label": "Arrowhead Plant (Syngonium podophyllum)",
+    "vietnamese_name": "Trầu bà mũi tên (tróc bạc)",
+    "scientific_name_as_label": "Syngonium podophyllum",
+    "label_note": "Tên Việt có thể khác theo địa phương; giữ liên kết Syngonium podophyllum."
+  },
+  {
+    "class_id": 5,
+    "MaLoaiCay": 6,
+    "original_label": "Asparagus Fern (Asparagus setaceus)",
+    "vietnamese_name": "Măng tây cảnh",
+    "scientific_name_as_label": "Asparagus setaceus",
+    "label_note": "Không phải dương xỉ thực sự."
+  },
+  {
+    "class_id": 6,
+    "MaLoaiCay": 7,
+    "original_label": "Baby Rubber Plant (Peperomia obtusifolia)",
+    "vietnamese_name": "Trường sinh lá tròn",
+    "scientific_name_as_label": "Peperomia obtusifolia",
+    "label_note": ""
+  },
+  {
+    "class_id": 7,
+    "MaLoaiCay": 8,
+    "original_label": "Baby Tears (Soleirolia soleirolii)",
+    "vietnamese_name": "Thảm nước mắt",
+    "scientific_name_as_label": "Soleirolia soleirolii",
+    "label_note": "Tên Việt mô tả, chưa coi là tên địa phương thống nhất."
+  },
+  {
+    "class_id": 8,
+    "MaLoaiCay": 9,
+    "original_label": "Bird of Paradise (Strelitzia reginae)",
+    "vietnamese_name": "Thiên điểu hoa cam",
+    "scientific_name_as_label": "Strelitzia reginae",
+    "label_note": ""
+  },
+  {
+    "class_id": 9,
+    "MaLoaiCay": 10,
+    "original_label": "Birds Nest Fern (Asplenium nidus)",
+    "vietnamese_name": "Dương xỉ tổ chim",
+    "scientific_name_as_label": "Asplenium nidus",
+    "label_note": ""
+  },
+  {
+    "class_id": 10,
+    "MaLoaiCay": 11,
+    "original_label": "Black Velvet Alocasia (Alocasia reginula)",
+    "vietnamese_name": "Môn nhung đen",
+    "scientific_name_as_label": "Alocasia reginula",
+    "label_note": ""
+  },
+  {
+    "class_id": 11,
+    "MaLoaiCay": 12,
+    "original_label": "Blushing Bromeliad (Neoregelia carolinae)",
+    "vietnamese_name": "Dứa cảnh tâm đỏ",
+    "scientific_name_as_label": "Neoregelia carolinae",
+    "label_note": ""
+  },
+  {
+    "class_id": 12,
+    "MaLoaiCay": 13,
+    "original_label": "Boston Fern (Nephrolepis exaltata)",
+    "vietnamese_name": "Dương xỉ Boston",
+    "scientific_name_as_label": "Nephrolepis exaltata",
+    "label_note": "Boston fern thường là giống trồng trong phạm vi loài này."
+  },
+  {
+    "class_id": 13,
+    "MaLoaiCay": 14,
+    "original_label": "Calla Lily (Zantedeschia aethiopica)",
+    "vietnamese_name": "Hoa rum trắng",
+    "scientific_name_as_label": "Zantedeschia aethiopica",
+    "label_note": ""
+  },
+  {
+    "class_id": 14,
+    "MaLoaiCay": 15,
+    "original_label": "Cast Iron Plant (Aspidistra elatior)",
+    "vietnamese_name": "Tỏi rừng",
+    "scientific_name_as_label": "Aspidistra elatior",
+    "label_note": ""
+  },
+  {
+    "class_id": 15,
+    "MaLoaiCay": 16,
+    "original_label": "China Doll Plant (Radermachera sinica)",
+    "vietnamese_name": "Hạnh phúc",
+    "scientific_name_as_label": "Radermachera sinica",
+    "label_note": ""
+  },
+  {
+    "class_id": 16,
+    "MaLoaiCay": 17,
+    "original_label": "Chinese Evergreen Siam (Aglaonema commutatum)",
+    "vietnamese_name": "Phú quý Siam",
+    "scientific_name_as_label": "Aglaonema commutatum",
+    "label_note": "Siam là tên thương mại; cần xác minh giống cụ thể trước khi công bố loài/giống."
+  },
+  {
+    "class_id": 17,
+    "MaLoaiCay": 18,
+    "original_label": "Chinese Hibiscus (Hibiscus rosa-sinensis)",
+    "vietnamese_name": "Dâm bụt",
+    "scientific_name_as_label": "Hibiscus rosa-sinensis",
+    "label_note": "Không khẳng định một quốc gia xuất xứ duy nhất."
+  },
+  {
+    "class_id": 18,
+    "MaLoaiCay": 19,
+    "original_label": "Chinese Money Plant (Pilea peperomioides)",
+    "vietnamese_name": "Cỏ đồng tiền Trung Quốc",
+    "scientific_name_as_label": "Pilea peperomioides",
+    "label_note": ""
+  },
+  {
+    "class_id": 19,
+    "MaLoaiCay": 20,
+    "original_label": "Christmas Cactus (Schlumbergera bridgesii)",
+    "vietnamese_name": "Xương rồng Giáng sinh",
+    "scientific_name_as_label": "Schlumbergera bridgesii",
+    "label_note": "Thường ghi Schlumbergera x bridgesii; nhãn mô hình bỏ ký hiệu lai."
+  },
+  {
+    "class_id": 20,
+    "MaLoaiCay": 21,
+    "original_label": "Chrysanthemum",
+    "vietnamese_name": "Hoa cúc",
+    "scientific_name_as_label": "Chrysanthemum spp.",
+    "label_note": "Nhãn cấp chi/nhóm, không đủ để xác định một loài."
+  },
+  {
+    "class_id": 21,
+    "MaLoaiCay": 22,
+    "original_label": "Coleus (Coleus scutellarioides)",
+    "vietnamese_name": "Tía tô cảnh",
+    "scientific_name_as_label": "Coleus scutellarioides",
+    "label_note": ""
+  },
+  {
+    "class_id": 22,
+    "MaLoaiCay": 23,
+    "original_label": "Coralberry (Ardisia crenata)",
+    "vietnamese_name": "Kim ngân lượng",
+    "scientific_name_as_label": "Ardisia crenata",
+    "label_note": ""
+  },
+  {
+    "class_id": 23,
+    "MaLoaiCay": 24,
+    "original_label": "Corn Plant (Dracaena fragrans)",
+    "vietnamese_name": "Thiết mộc lan",
+    "scientific_name_as_label": "Dracaena fragrans",
+    "label_note": ""
+  },
+  {
+    "class_id": 24,
+    "MaLoaiCay": 25,
+    "original_label": "Creeping Fig (Ficus pumila)",
+    "vietnamese_name": "Vảy ốc",
+    "scientific_name_as_label": "Ficus pumila",
+    "label_note": ""
+  },
+  {
+    "class_id": 25,
+    "MaLoaiCay": 26,
+    "original_label": "Crown of Thorns (Euphorbia milii)",
+    "vietnamese_name": "Xương rồng bát tiên",
+    "scientific_name_as_label": "Euphorbia milii",
+    "label_note": "Có nhựa mủ gây kích ứng; không phải họ Xương rồng."
+  },
+  {
+    "class_id": 26,
+    "MaLoaiCay": 27,
+    "original_label": "Ctenanthe",
+    "vietnamese_name": "Dong cảnh Ctenanthe",
+    "scientific_name_as_label": "Ctenanthe spp.",
+    "label_note": "Nhãn cấp chi; không đủ xác định một loài."
+  },
+  {
+    "class_id": 27,
+    "MaLoaiCay": 28,
+    "original_label": "Daffodils (Narcissus spp.)",
+    "vietnamese_name": "Thủy tiên Narcissus",
+    "scientific_name_as_label": "Narcissus spp.",
+    "label_note": "Nhãn cấp chi; không mặc định là thủy tiên ta."
+  },
+  {
+    "class_id": 28,
+    "MaLoaiCay": 29,
+    "original_label": "Dragon Tail (Epipremnum pinnatum)",
+    "vietnamese_name": "Trầu bà đuôi rồng",
+    "scientific_name_as_label": "Epipremnum pinnatum",
+    "label_note": ""
+  },
+  {
+    "class_id": 29,
+    "MaLoaiCay": 30,
+    "original_label": "Dumb Cane (Dieffenbachia spp.)",
+    "vietnamese_name": "Vạn niên thanh Dieffenbachia",
+    "scientific_name_as_label": "Dieffenbachia spp.",
+    "label_note": "Nhãn cấp chi; tên vạn niên thanh có thể dùng cho cây khác."
+  },
+  {
+    "class_id": 30,
+    "MaLoaiCay": 31,
+    "original_label": "English Ivy (Hedera helix)",
+    "vietnamese_name": "Thường xuân",
+    "scientific_name_as_label": "Hedera helix",
+    "label_note": ""
+  },
+  {
+    "class_id": 31,
+    "MaLoaiCay": 32,
+    "original_label": "Fan Palm - Lady Palm (Rhapis excelsa)",
+    "vietnamese_name": "Mật cật",
+    "scientific_name_as_label": "Rhapis excelsa",
+    "label_note": ""
+  },
+  {
+    "class_id": 32,
+    "MaLoaiCay": 33,
+    "original_label": "Fiddle Leaf Fig (Ficus lyrata)",
+    "vietnamese_name": "Bàng Singapore",
+    "scientific_name_as_label": "Ficus lyrata",
+    "label_note": "Tên thương mại không phản ánh xuất xứ Singapore."
+  },
+  {
+    "class_id": 33,
+    "MaLoaiCay": 34,
+    "original_label": "French Hydrangea (Hydrangea macrophylla)",
+    "vietnamese_name": "Cẩm tú cầu",
+    "scientific_name_as_label": "Hydrangea macrophylla",
+    "label_note": "Màu hoa một số giống chịu ảnh hưởng của pH và nhôm, không áp dụng mọi giống."
+  },
+  {
+    "class_id": 34,
+    "MaLoaiCay": 35,
+    "original_label": "Garden Croton (Codiaeum variegatum)",
+    "vietnamese_name": "Cô tòng",
+    "scientific_name_as_label": "Codiaeum variegatum",
+    "label_note": ""
+  },
+  {
+    "class_id": 35,
+    "MaLoaiCay": 36,
+    "original_label": "Giant Taro (Alocasia macrorrhizos)",
+    "vietnamese_name": "Môn khổng lồ",
+    "scientific_name_as_label": "Alocasia macrorrhizos",
+    "label_note": "Dễ nhầm Alocasia odora; không phân biệt chỉ bằng kích thước lá."
+  },
+  {
+    "class_id": 36,
+    "MaLoaiCay": 37,
+    "original_label": "Ginseng Ficus (Ficus microcarpa)",
+    "vietnamese_name": "Sanh bonsai",
+    "scientific_name_as_label": "Ficus microcarpa",
+    "label_note": "Ginseng là dạng tạo hình thương mại, không phải loài riêng."
+  },
+  {
+    "class_id": 37,
+    "MaLoaiCay": 38,
+    "original_label": "Gold Dust Dracaena (Dracaena surculosa)",
+    "vietnamese_name": "Trúc đốm",
+    "scientific_name_as_label": "Dracaena surculosa",
+    "label_note": ""
+  },
+  {
+    "class_id": 38,
+    "MaLoaiCay": 39,
+    "original_label": "Hairy Philodendron (Philodendron squamiferum)",
+    "vietnamese_name": "Trầu bà cuống lông",
+    "scientific_name_as_label": "Philodendron squamiferum",
+    "label_note": ""
+  },
+  {
+    "class_id": 39,
+    "MaLoaiCay": 40,
+    "original_label": "Heart of Jesus (Caladium bicolor)",
+    "vietnamese_name": "Môn lá màu",
+    "scientific_name_as_label": "Caladium bicolor",
+    "label_note": "Tên loài không đảm bảo mọi ảnh là Caladium bicolor thuần chủng."
+  },
+  {
+    "class_id": 40,
+    "MaLoaiCay": 41,
+    "original_label": "Heartleaf Philodendron (Philodendron cordatum)",
+    "vietnamese_name": "Trầu bà lá tim theo nhãn",
+    "scientific_name_as_label": "Philodendron cordatum",
+    "label_note": "Nhãn Heartleaf thường được dùng cho P. hederaceum; cần xác minh ảnh, không tự đổi nhãn mô hình."
+  },
+  {
+    "class_id": 41,
+    "MaLoaiCay": 42,
+    "original_label": "Hyacinth (Hyacinthus orientalis)",
+    "vietnamese_name": "Dạ lan hương",
+    "scientific_name_as_label": "Hyacinthus orientalis",
+    "label_note": ""
+  },
+  {
+    "class_id": 42,
+    "MaLoaiCay": 43,
+    "original_label": "Indian Azalea (Rhododendron simsii)",
+    "vietnamese_name": "Đỗ quyên Simsii",
+    "scientific_name_as_label": "Rhododendron simsii",
+    "label_note": ""
+  },
+  {
+    "class_id": 43,
+    "MaLoaiCay": 44,
+    "original_label": "Iron Cross begonia (Begonia masoniana)",
+    "vietnamese_name": "Thu hải đường chữ thập",
+    "scientific_name_as_label": "Begonia masoniana",
+    "label_note": ""
+  },
+  {
+    "class_id": 44,
+    "MaLoaiCay": 45,
+    "original_label": "Jade plant (Crassula ovata)",
+    "vietnamese_name": "Ngọc bích",
+    "scientific_name_as_label": "Crassula ovata",
+    "label_note": ""
+  },
+  {
+    "class_id": 45,
+    "MaLoaiCay": 46,
+    "original_label": "Kalanchoe",
+    "vietnamese_name": "Sống đời Kalanchoe",
+    "scientific_name_as_label": "Kalanchoe spp.",
+    "label_note": "Nhãn cấp chi; không mặc định toàn bộ là K. blossfeldiana."
+  },
+  {
+    "class_id": 46,
+    "MaLoaiCay": 47,
+    "original_label": "Lily of the valley (Convallaria majalis)",
+    "vietnamese_name": "Linh lan",
+    "scientific_name_as_label": "Convallaria majalis",
+    "label_note": ""
+  },
+  {
+    "class_id": 47,
+    "MaLoaiCay": 48,
+    "original_label": "Madagascar Dragon Tree (Dracaena marginata)",
+    "vietnamese_name": "Phất dụ mảnh",
+    "scientific_name_as_label": "Dracaena marginata",
+    "label_note": "Giữ tên Dracaena marginata theo nhãn; có xử lý phân loại khác trong các nguồn."
+  },
+  {
+    "class_id": 48,
+    "MaLoaiCay": 49,
+    "original_label": "Mexican Snowball (Echeveria elegans)",
+    "vietnamese_name": "Sen đá bông hồng trắng",
+    "scientific_name_as_label": "Echeveria elegans",
+    "label_note": ""
+  },
+  {
+    "class_id": 49,
+    "MaLoaiCay": 50,
+    "original_label": "Money Tree (Pachira aquatica)",
+    "vietnamese_name": "Kim ngân",
+    "scientific_name_as_label": "Pachira aquatica",
+    "label_note": ""
+  },
+  {
+    "class_id": 50,
+    "MaLoaiCay": 51,
+    "original_label": "Monstera Deliciosa (Monstera deliciosa)",
+    "vietnamese_name": "Trầu bà Nam Mỹ",
+    "scientific_name_as_label": "Monstera deliciosa",
+    "label_note": "Lá non có thể chưa có lỗ hoặc đường xẻ."
+  },
+  {
+    "class_id": 51,
+    "MaLoaiCay": 52,
+    "original_label": "Moses in the Cradle (Tradescantia spathacea)",
+    "vietnamese_name": "Lẻ bạn",
+    "scientific_name_as_label": "Tradescantia spathacea",
+    "label_note": ""
+  },
+  {
+    "class_id": 52,
+    "MaLoaiCay": 53,
+    "original_label": "Nerve Plant (Fittonia albivenis)",
+    "vietnamese_name": "Cẩm nhung",
+    "scientific_name_as_label": "Fittonia albivenis",
+    "label_note": ""
+  },
+  {
+    "class_id": 53,
+    "MaLoaiCay": 54,
+    "original_label": "Night-scented Lily (Alocasia odora)",
+    "vietnamese_name": "Môn thơm",
+    "scientific_name_as_label": "Alocasia odora",
+    "label_note": "Khó tách khỏi A. macrorrhizos từ ảnh xa; cần kiểm tra đặc điểm lá và hoa."
+  },
+  {
+    "class_id": 54,
+    "MaLoaiCay": 55,
+    "original_label": "Orchid",
+    "vietnamese_name": "Hoa lan",
+    "scientific_name_as_label": "Orchidaceae (nhóm chưa xác định)",
+    "label_note": "Nhãn ở cấp họ/nhóm; không tự gán thành Phalaenopsis."
+  },
+  {
+    "class_id": 55,
+    "MaLoaiCay": 56,
+    "original_label": "Parlor Palm (Chamaedorea elegans)",
+    "vietnamese_name": "Cau tiểu trâm",
+    "scientific_name_as_label": "Chamaedorea elegans",
+    "label_note": ""
+  },
+  {
+    "class_id": 56,
+    "MaLoaiCay": 57,
+    "original_label": "Parrot Flower (Heliconia psittacorum)",
+    "vietnamese_name": "Chuối mỏ két",
+    "scientific_name_as_label": "Heliconia psittacorum",
+    "label_note": ""
+  },
+  {
+    "class_id": 57,
+    "MaLoaiCay": 58,
+    "original_label": "Peace lily",
+    "vietnamese_name": "Lan ý",
+    "scientific_name_as_label": "Spathiphyllum spp.",
+    "label_note": "Nhãn không nêu loài; không tự mặc định S. wallisii."
+  },
+  {
+    "class_id": 58,
+    "MaLoaiCay": 59,
+    "original_label": "Peppermint (Mentha piperita)",
+    "vietnamese_name": "Bạc hà",
+    "scientific_name_as_label": "Mentha x piperita",
+    "label_note": "Giữ liên kết nhãn Mentha piperita; tên thực vật có ký hiệu lai."
+  },
+  {
+    "class_id": 59,
+    "MaLoaiCay": 60,
+    "original_label": "Poinsettia (Euphorbia pulcherrima)",
+    "vietnamese_name": "Trạng nguyên",
+    "scientific_name_as_label": "Euphorbia pulcherrima",
+    "label_note": "Phần đỏ thường thấy là lá bắc, không phải cánh hoa."
+  },
+  {
+    "class_id": 60,
+    "MaLoaiCay": 61,
+    "original_label": "Polka Dot Plant (Hypoestes phyllostachya)",
+    "vietnamese_name": "Mặt nám",
+    "scientific_name_as_label": "Hypoestes phyllostachya",
+    "label_note": ""
+  },
+  {
+    "class_id": 61,
+    "MaLoaiCay": 62,
+    "original_label": "Ponytail Palm (Beaucarnea recurvata)",
+    "vietnamese_name": "Chân voi",
+    "scientific_name_as_label": "Beaucarnea recurvata",
+    "label_note": "Không phải cây cau thực sự."
+  },
+  {
+    "class_id": 62,
+    "MaLoaiCay": 63,
+    "original_label": "Prayer Plant (Maranta leuconeura)",
+    "vietnamese_name": "Đuôi công Maranta",
+    "scientific_name_as_label": "Maranta leuconeura",
+    "label_note": ""
+  },
+  {
+    "class_id": 63,
+    "MaLoaiCay": 64,
+    "original_label": "Rabbit Foot Fern (Davallia fejeensis)",
+    "vietnamese_name": "Dương xỉ chân thỏ",
+    "scientific_name_as_label": "Davallia fejeensis",
+    "label_note": "Nhãn không phải Dracaena dù mô hình từng nhầm."
+  },
+  {
+    "class_id": 64,
+    "MaLoaiCay": 65,
+    "original_label": "Raindrop Peperomia (Peperomia polybotrya)",
+    "vietnamese_name": "Trường sinh giọt nước",
+    "scientific_name_as_label": "Peperomia polybotrya",
+    "label_note": ""
+  },
+  {
+    "class_id": 65,
+    "MaLoaiCay": 66,
+    "original_label": "Rattlesnake Plant (Calathea lancifolia)",
+    "vietnamese_name": "Đuôi công lá dài",
+    "scientific_name_as_label": "Calathea lancifolia",
+    "label_note": "Tên Calathea lancifolia giữ theo nhãn; thường được chuyển sang Goeppertia insignis."
+  },
+  {
+    "class_id": 66,
+    "MaLoaiCay": 67,
+    "original_label": "Red-leaf Philodendron (Philodendron erubescens)",
+    "vietnamese_name": "Trầu bà đỏ",
+    "scientific_name_as_label": "Philodendron erubescens",
+    "label_note": "Giống lai mang tên thương mại có thể không tương ứng loài thuần."
+  },
+  {
+    "class_id": 67,
+    "MaLoaiCay": 68,
+    "original_label": "Rose-painted Calathea (Calathea roseopicta)",
+    "vietnamese_name": "Đuôi công hồng",
+    "scientific_name_as_label": "Calathea roseopicta",
+    "label_note": "Tên Calathea giữ theo nhãn mô hình; thường được chuyển sang Goeppertia."
+  },
+  {
+    "class_id": 68,
+    "MaLoaiCay": 69,
+    "original_label": "Round-leaf Calathea (Calathea orbifolia)",
+    "vietnamese_name": "Đuôi công lá tròn",
+    "scientific_name_as_label": "Calathea orbifolia",
+    "label_note": "Tên Calathea giữ theo nhãn mô hình; thường được chuyển sang Goeppertia."
+  },
+  {
+    "class_id": 69,
+    "MaLoaiCay": 70,
+    "original_label": "Rubber Plant (Ficus elastica)",
+    "vietnamese_name": "Đa búp đỏ",
+    "scientific_name_as_label": "Ficus elastica",
+    "label_note": ""
+  },
+  {
+    "class_id": 70,
+    "MaLoaiCay": 71,
+    "original_label": "Sago Palm (Cycas revoluta)",
+    "vietnamese_name": "Vạn tuế",
+    "scientific_name_as_label": "Cycas revoluta",
+    "label_note": "Thuộc nhóm tuế, không phải cau; không ăn các bộ phận cây."
+  },
+  {
+    "class_id": 71,
+    "MaLoaiCay": 72,
+    "original_label": "Schefflera",
+    "vietnamese_name": "Ngũ gia bì theo nhóm",
+    "scientific_name_as_label": "Schefflera spp. (nhãn mô hình)",
+    "label_note": "Không tự gán thành Heptapleurum arboricola nếu chưa xem ảnh và nguồn."
+  },
+  {
+    "class_id": 72,
+    "MaLoaiCay": 73,
+    "original_label": "Silver Pothos (Scindapsus pictus)",
+    "vietnamese_name": "Trầu bà bạc",
+    "scientific_name_as_label": "Scindapsus pictus",
+    "label_note": ""
+  },
+  {
+    "class_id": 73,
+    "MaLoaiCay": 74,
+    "original_label": "Snake plant (Sanseviera)",
+    "vietnamese_name": "Lưỡi hổ theo nhóm",
+    "scientific_name_as_label": "Sansevieria spp. (nhãn viết Sanseviera)",
+    "label_note": "Nhãn sai chính tả và chỉ ở cấp chi; nhiều loài được xếp trong Dracaena."
+  },
+  {
+    "class_id": 74,
+    "MaLoaiCay": 75,
+    "original_label": "Song of India (Dracaena reflexa)",
+    "vietnamese_name": "Trúc bách hợp",
+    "scientific_name_as_label": "Dracaena reflexa",
+    "label_note": "Song of India là dạng giống trồng, không đại diện mọi Dracaena reflexa."
+  },
+  {
+    "class_id": 75,
+    "MaLoaiCay": 76,
+    "original_label": "Spider Plant (Chlorophytum comosum)",
+    "vietnamese_name": "Lan chi",
+    "scientific_name_as_label": "Chlorophytum comosum",
+    "label_note": ""
+  },
+  {
+    "class_id": 76,
+    "MaLoaiCay": 77,
+    "original_label": "Staghorn Fern (Platycerium bifurcatum)",
+    "vietnamese_name": "Dương xỉ sừng hươu",
+    "scientific_name_as_label": "Platycerium bifurcatum",
+    "label_note": "Không bóc lá nền nâu chỉ vì chúng đã đổi màu."
+  },
+  {
+    "class_id": 77,
+    "MaLoaiCay": 78,
+    "original_label": "String of Pearls (Senecio rowleyanus)",
+    "vietnamese_name": "Sen đá chuỗi ngọc",
+    "scientific_name_as_label": "Senecio rowleyanus",
+    "label_note": "Tên cũ trong nhãn; thường dùng Curio rowleyanus."
+  },
+  {
+    "class_id": 78,
+    "MaLoaiCay": 79,
+    "original_label": "Swiss Cheese Vine (Monstera adansonii)",
+    "vietnamese_name": "Trầu bà lỗ",
+    "scientific_name_as_label": "Monstera adansonii",
+    "label_note": "Lá non hoặc thiếu sáng có thể ít lỗ; không tự kết luận sai nhãn chỉ vì không thấy lỗ."
+  },
+  {
+    "class_id": 79,
+    "MaLoaiCay": 80,
+    "original_label": "Tree Philodendron (Philodendron bipinnatifidum)",
+    "vietnamese_name": "Trầu bà thanh xuân",
+    "scientific_name_as_label": "Philodendron bipinnatifidum",
+    "label_note": "Tên cũ trong nhãn; thường dùng Thaumatophyllum bipinnatifidum."
+  },
+  {
+    "class_id": 80,
+    "MaLoaiCay": 81,
+    "original_label": "Tulip",
+    "vietnamese_name": "Hoa tulip",
+    "scientific_name_as_label": "Tulipa spp.",
+    "label_note": "Nhãn cấp chi/nhóm; không tự gán một loài."
+  },
+  {
+    "class_id": 81,
+    "MaLoaiCay": 82,
+    "original_label": "Venus Flytrap",
+    "vietnamese_name": "Cây bẫy kẹp",
+    "scientific_name_as_label": "Dionaea muscipula",
+    "label_note": "Không dùng đất giàu phân hoặc cho ăn thịt; không chạm bẫy để chơi."
+  },
+  {
+    "class_id": 82,
+    "MaLoaiCay": 83,
+    "original_label": "Watermelon Peperomia (Peperomia argyreia)",
+    "vietnamese_name": "Trường sinh dưa hấu",
+    "scientific_name_as_label": "Peperomia argyreia",
+    "label_note": "Kew chấp nhận Peperomia argyraea; giữ Peperomia argyreia theo nhãn mô hình."
+  },
+  {
+    "class_id": 83,
+    "MaLoaiCay": 84,
+    "original_label": "Weeping Fig (Ficus benjamina)",
+    "vietnamese_name": "Si cảnh",
+    "scientific_name_as_label": "Ficus benjamina",
+    "label_note": ""
+  },
+  {
+    "class_id": 84,
+    "MaLoaiCay": 85,
+    "original_label": "White Bird of Paradise (Strelitzia nicolai)",
+    "vietnamese_name": "Thiên điểu trắng",
+    "scientific_name_as_label": "Strelitzia nicolai",
+    "label_note": "Lá có thể rách tự nhiên dọc gân; khó phân biệt cây non chỉ từ lá xa."
+  },
+  {
+    "class_id": 85,
+    "MaLoaiCay": 86,
+    "original_label": "Yew Plum Pine (Podocarpus macrophyllus)",
+    "vietnamese_name": "Tùng la hán",
+    "scientific_name_as_label": "Podocarpus macrophyllus",
+    "label_note": ""
+  },
+  {
+    "class_id": 86,
+    "MaLoaiCay": 87,
+    "original_label": "Yucca",
+    "vietnamese_name": "Yucca cảnh",
+    "scientific_name_as_label": "Yucca spp.",
+    "label_note": "Nhãn cấp chi; không tự gán thành Yucca gigantea."
+  },
+  {
+    "class_id": 87,
+    "MaLoaiCay": 88,
+    "original_label": "ZZ Plant (Zamioculcas zamiifolia)",
+    "vietnamese_name": "Kim tiền",
+    "scientific_name_as_label": "Zamioculcas zamiifolia",
+    "label_note": ""
+  },
+  {
+    "class_id": 88,
+    "MaLoaiCay": 89,
+    "original_label": "Zebra Haworthia (Haworthiopsis attenuata)",
+    "vietnamese_name": "Sen đá móng rồng",
+    "scientific_name_as_label": "Haworthiopsis attenuata",
+    "label_note": "Dễ nhầm H. fasciata; cần xem bề mặt hai phía lá."
+  },
+  {
+    "class_id": 89,
+    "MaLoaiCay": 90,
+    "original_label": "Zebra Plant (Aphelandra squarrosa)",
+    "vietnamese_name": "Cây ngựa vằn Aphelandra",
+    "scientific_name_as_label": "Aphelandra squarrosa",
+    "label_note": "Không phải sen đá móng rồng dù cùng tên tiếng Anh Zebra."
+  }
+]

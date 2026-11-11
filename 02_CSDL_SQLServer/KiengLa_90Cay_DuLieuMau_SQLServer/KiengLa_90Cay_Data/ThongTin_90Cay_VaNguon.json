@@ -1,0 +1,1842 @@
+[
+  {
+    "class_id": 0,
+    "MaLoaiCay": 1,
+    "original_label": "African Violet (Saintpaulia ionantha)",
+    "ten_viet_goi_y": "Violet châu Phi",
+    "ten_khoa_hoc_theo_nhan": "Saintpaulia ionantha",
+    "phạm_vi_nhan": "Tên Saintpaulia trong nhãn là tên cũ; giữ nguyên liên kết mô hình.",
+    "dac_diem": "Lá mọc thành hoa thị, mềm và có lông; hoa nhỏ thường tím, hồng hoặc trắng.",
+    "xuat_xu": "Đông Phi",
+    "cham_soc_tom_tat": "Ánh sáng tán xạ; giá thể thoát nước; giữ ẩm vừa, tránh đọng nước trên ngọn.",
+    "gia_vnd_gia_lap": 85000,
+    "sources": [
+      {
+        "url": "https://plants.ces.ncsu.edu/plants/streptocarpus-ionanthus/",
+        "scope": "profile",
+        "heading": "Streptocarpus ionanthus"
+      }
+    ],
+    "date_accessed": "2026-10-14"
+  },
+  {
+    "class_id": 1,
+    "MaLoaiCay": 2,
+    "original_label": "Aloe Vera",
+    "ten_viet_goi_y": "Nha đam",
+    "ten_khoa_hoc_theo_nhan": "Aloe vera",
+    "phạm_vi_nhan": "Loài được ghi trong nhãn; chưa xác minh toàn bộ ảnh training",
+    "dac_diem": "Lá mọng nước dài, mép có răng nhỏ, mọc thành hoa thị; gel trong lá.",
+    "xuat_xu": "Bán đảo Ả Rập; được trồng rộng rãi",
+    "cham_soc_tom_tat": "Nơi sáng, tăng nắng từ từ; đất thoát nước nhanh; để đất khô giữa các lần tưới.",
+    "gia_vnd_gia_lap": 60000,
+    "sources": [
+      {
+        "url": "https://plants.ces.ncsu.edu/plants/aloe-vera/",
+        "scope": "profile",
+        "heading": "Aloe vera"
+      }
+    ],
+    "date_accessed": "2026-10-14"
+  },
+  {
+    "class_id": 2,
+    "MaLoaiCay": 3,
+    "original_label": "Anthurium (Anthurium andraeanum)",
+    "ten_viet_goi_y": "Hồng môn",
+    "ten_khoa_hoc_theo_nhan": "Anthurium andraeanum",
+    "phạm_vi_nhan": "Loài được ghi trong nhãn; chưa xác minh toàn bộ ảnh training",
+    "dac_diem": "Lá xanh hình tim; mo hoa có màu bao quanh trục hoa dạng bông dài.",
+    "xuat_xu": "Colombia và Ecuador",
+    "cham_soc_tom_tat": "Ánh sáng tán xạ; giữ ẩm nhẹ và thông thoáng; tránh nắng trưa, không để úng.",
+    "gia_vnd_gia_lap": 150000,
+    "sources": [
+      {
+        "url": "https://plants.ces.ncsu.edu/plants/anthurium-andraeanum/",
+        "scope": "profile",
+        "heading": "Anthurium andraeanum"
+      }
+    ],
+    "date_accessed": "2026-10-14"
+  },
+  {
+    "class_id": 3,
+    "MaLoaiCay": 4,
+    "original_label": "Areca Palm (Dypsis lutescens)",
+    "ten_viet_goi_y": "Cau vàng",
+    "ten_khoa_hoc_theo_nhan": "Dypsis lutescens",
+    "phạm_vi_nhan": "Tên chi Dypsis được giữ theo nhãn mô hình.",
+    "dac_diem": "Mọc thành bụi nhiều thân vàng; lá kép lông chim cong, nhiều lá chét hẹp.",
+    "xuat_xu": "Madagascar",
+    "cham_soc_tom_tat": "Nơi sáng tán xạ; tưới khi mặt đất se khô; chậu thoát nước, độ ẩm không khí vừa.",
+    "gia_vnd_gia_lap": 180000,
+    "sources": [
+      {
+        "url": "https://plants.ces.ncsu.edu/plants/chrysalidocarpus-lutescens/",
+        "scope": "profile",
+        "heading": "Chrysalidocarpus lutescens"
+      }
+    ],
+    "date_accessed": "2026-10-14"
+  },
+  {
+    "class_id": 4,
+    "MaLoaiCay": 5,
+    "original_label": "Arrowhead Plant (Syngonium podophyllum)",
+    "ten_viet_goi_y": "Trầu bà mũi tên (tróc bạc)",
+    "ten_khoa_hoc_theo_nhan": "Syngonium podophyllum",
+    "phạm_vi_nhan": "Tên Việt có thể khác theo địa phương; giữ liên kết Syngonium podophyllum.",
+    "dac_diem": "Cây leo; lá non hình mũi tên, lá trưởng thành có thể chia nhiều thùy.",
+    "xuat_xu": "Mexico và vùng nhiệt đới châu Mỹ",
+    "cham_soc_tom_tat": "Ánh sáng tán xạ; tưới khi lớp mặt đất khô; có thể làm trụ leo.",
+    "gia_vnd_gia_lap": 70000,
+    "sources": [
+      {
+        "url": "https://plants.ces.ncsu.edu/plants/syngonium-podophyllum/",
+        "scope": "profile",
+        "heading": "Syngonium podophyllum"
+      }
+    ],
+    "date_accessed": "2026-10-14"
+  },
+  {
+    "class_id": 5,
+    "MaLoaiCay": 6,
+    "original_label": "Asparagus Fern (Asparagus setaceus)",
+    "ten_viet_goi_y": "Măng tây cảnh",
+    "ten_khoa_hoc_theo_nhan": "Asparagus setaceus",
+    "phạm_vi_nhan": "Không phải dương xỉ thực sự.",
+    "dac_diem": "Cành mảnh phân nhiều nhánh; các cành lá giả nhỏ tạo tán mềm như lông chim.",
+    "xuat_xu": "Miền nam châu Phi",
+    "cham_soc_tom_tat": "Ánh sáng tán xạ; giữ đất ẩm vừa; tránh để khô kéo dài và tránh úng.",
+    "gia_vnd_gia_lap": 70000,
+    "sources": [
+      {
+        "url": "https://plants.ces.ncsu.edu/plants/asparagus-setaceus/",
+        "scope": "profile",
+        "heading": "Asparagus setaceus"
+      }
+    ],
+    "date_accessed": "2026-10-14"
+  },
+  {
+    "class_id": 6,
+    "MaLoaiCay": 7,
+    "original_label": "Baby Rubber Plant (Peperomia obtusifolia)",
+    "ten_viet_goi_y": "Trường sinh lá tròn",
+    "ten_khoa_hoc_theo_nhan": "Peperomia obtusifolia",
+    "phạm_vi_nhan": "Loài được ghi trong nhãn; chưa xác minh toàn bộ ảnh training",
+    "dac_diem": "Thân thấp, lá dày bóng hình bầu dục đầu tù; có dạng lá xanh hoặc loang màu.",
+    "xuat_xu": "Vùng nhiệt đới châu Mỹ",
+    "cham_soc_tom_tat": "Ánh sáng tán xạ; đất thoáng; để lớp mặt khô trước khi tưới, tránh dư nước.",
+    "gia_vnd_gia_lap": 85000,
+    "sources": [
+      {
+        "url": "https://plants.ces.ncsu.edu/plants/peperomia-obtusifolia/",
+        "scope": "profile",
+        "heading": "Peperomia obtusifolia"
+      }
+    ],
+    "date_accessed": "2026-10-14"
+  },
+  {
+    "class_id": 7,
+    "MaLoaiCay": 8,
+    "original_label": "Baby Tears (Soleirolia soleirolii)",
+    "ten_viet_goi_y": "Thảm nước mắt",
+    "ten_khoa_hoc_theo_nhan": "Soleirolia soleirolii",
+    "phạm_vi_nhan": "Tên Việt mô tả, chưa coi là tên địa phương thống nhất.",
+    "dac_diem": "Cây bò sát đất tạo thảm; lá rất nhỏ, tròn, màu xanh trên thân mảnh.",
+    "xuat_xu": "Khu vực Địa Trung Hải",
+    "cham_soc_tom_tat": "Ánh sáng dịu; duy trì ẩm đều nhưng không ngập nước; tránh nắng nóng trực tiếp.",
+    "gia_vnd_gia_lap": 65000,
+    "sources": [
+      {
+        "url": "https://plants.ces.ncsu.edu/plants/soleirolia-soleirolii/",
+        "scope": "profile",
+        "heading": "Soleirolia soleirolii"
+      }
+    ],
+    "date_accessed": "2026-10-14"
+  },
+  {
+    "class_id": 8,
+    "MaLoaiCay": 9,
+    "original_label": "Bird of Paradise (Strelitzia reginae)",
+    "ten_viet_goi_y": "Thiên điểu hoa cam",
+    "ten_khoa_hoc_theo_nhan": "Strelitzia reginae",
+    "phạm_vi_nhan": "Loài được ghi trong nhãn; chưa xác minh toàn bộ ảnh training",
+    "dac_diem": "Lá dài cứng dạng mái chèo; hoa cam và xanh mọc từ mo hoa giống đầu chim.",
+    "xuat_xu": "Nam Phi",
+    "cham_soc_tom_tat": "Nơi nhiều sáng hoặc nắng thích nghi; đất thoát nước; tưới khi mặt đất khô.",
+    "gia_vnd_gia_lap": 200000,
+    "sources": [
+      {
+        "url": "https://plants.ces.ncsu.edu/plants/strelitzia-reginae/",
+        "scope": "profile",
+        "heading": "Strelitzia reginae"
+      }
+    ],
+    "date_accessed": "2026-10-14"
+  },
+  {
+    "class_id": 9,
+    "MaLoaiCay": 10,
+    "original_label": "Birds Nest Fern (Asplenium nidus)",
+    "ten_viet_goi_y": "Dương xỉ tổ chim",
+    "ten_khoa_hoc_theo_nhan": "Asplenium nidus",
+    "phạm_vi_nhan": "Loài được ghi trong nhãn; chưa xác minh toàn bộ ảnh training",
+    "dac_diem": "Lá nguyên dài, bóng, gân giữa rõ; lá mọc tỏa từ tâm tạo dạng tổ chim.",
+    "xuat_xu": "Vùng nhiệt đới Cựu Thế giới",
+    "cham_soc_tom_tat": "Ánh sáng tán xạ; giá thể ẩm và thoáng; tưới quanh gốc, tránh đọng nước ở tâm.",
+    "gia_vnd_gia_lap": 120000,
+    "sources": [
+      {
+        "url": "https://plants.ces.ncsu.edu/plants/asplenium-nidus/",
+        "scope": "profile",
+        "heading": "Asplenium nidus"
+      }
+    ],
+    "date_accessed": "2026-10-14"
+  },
+  {
+    "class_id": 10,
+    "MaLoaiCay": 11,
+    "original_label": "Black Velvet Alocasia (Alocasia reginula)",
+    "ten_viet_goi_y": "Môn nhung đen",
+    "ten_khoa_hoc_theo_nhan": "Alocasia reginula",
+    "phạm_vi_nhan": "Loài được ghi trong nhãn; chưa xác minh toàn bộ ảnh training",
+    "dac_diem": "Lá nhỏ hình tim, mặt lá rất sẫm và mịn như nhung; gân sáng tương phản.",
+    "xuat_xu": "Có khả năng từ Borneo; theo Kew",
+    "cham_soc_tom_tat": "Ánh sáng tán xạ; giá thể thoáng; giữ ẩm vừa, tránh úng và không khí quá khô.",
+    "gia_vnd_gia_lap": 220000,
+    "sources": [
+      {
+        "url": "https://plants.ces.ncsu.edu/plants/alocasia/",
+        "scope": "genus_or_group",
+        "heading": "Alocasia"
+      },
+      {
+        "url": "https://powo.science.kew.org/taxon/urn:lsid:ipni.org:names:1006568-1",
+        "scope": "Loài; Kew ghi nguồn gốc có khả năng từ Borneo"
+      }
+    ],
+    "date_accessed": "2026-10-14"
+  },
+  {
+    "class_id": 11,
+    "MaLoaiCay": 12,
+    "original_label": "Blushing Bromeliad (Neoregelia carolinae)",
+    "ten_viet_goi_y": "Dứa cảnh tâm đỏ",
+    "ten_khoa_hoc_theo_nhan": "Neoregelia carolinae",
+    "phạm_vi_nhan": "Loài được ghi trong nhãn; chưa xác minh toàn bộ ảnh training",
+    "dac_diem": "Lá dài mọc hoa thị; vùng tâm chuyển đỏ khi ra hoa; hoa nhỏ ở giữa hoa thị.",
+    "xuat_xu": "Brazil",
+    "cham_soc_tom_tat": "Ánh sáng tán xạ mạnh; giá thể thoáng; dùng nước sạch và thay nước trong bẹ định kỳ.",
+    "gia_vnd_gia_lap": 130000,
+    "sources": [
+      {
+        "url": "https://plants.ces.ncsu.edu/plants/neoregelia/",
+        "scope": "genus_or_group",
+        "heading": "Neoregelia"
+      },
+      {
+        "url": "https://powo.science.kew.org/taxon/urn:lsid:ipni.org:names:169003-2",
+        "scope": "Loài; nguồn gốc"
+      }
+    ],
+    "date_accessed": "2026-10-14"
+  },
+  {
+    "class_id": 12,
+    "MaLoaiCay": 13,
+    "original_label": "Boston Fern (Nephrolepis exaltata)",
+    "ten_viet_goi_y": "Dương xỉ Boston",
+    "ten_khoa_hoc_theo_nhan": "Nephrolepis exaltata",
+    "phạm_vi_nhan": "Boston fern thường là giống trồng trong phạm vi loài này.",
+    "dac_diem": "Tàu lá cong dài gồm nhiều lá chét nhỏ; cây tạo bụi xanh mềm rủ xuống.",
+    "xuat_xu": "Châu Mỹ nhiệt đới và cận nhiệt đới",
+    "cham_soc_tom_tat": "Ánh sáng tán xạ; giữ ẩm đều, tăng độ ẩm không khí; không để rễ ngập nước.",
+    "gia_vnd_gia_lap": 90000,
+    "sources": [
+      {
+        "url": "https://plants.ces.ncsu.edu/plants/nephrolepis-exaltata/",
+        "scope": "profile",
+        "heading": "Nephrolepis exaltata"
+      }
+    ],
+    "date_accessed": "2026-10-14"
+  },
+  {
+    "class_id": 13,
+    "MaLoaiCay": 14,
+    "original_label": "Calla Lily (Zantedeschia aethiopica)",
+    "ten_viet_goi_y": "Hoa rum trắng",
+    "ten_khoa_hoc_theo_nhan": "Zantedeschia aethiopica",
+    "phạm_vi_nhan": "Loài được ghi trong nhãn; chưa xác minh toàn bộ ảnh training",
+    "dac_diem": "Lá lớn dạng mũi tên; mo hoa trắng hình phễu bao quanh trục hoa vàng.",
+    "xuat_xu": "Miền nam châu Phi",
+    "cham_soc_tom_tat": "Ánh sáng tốt; đất giàu hữu cơ và ẩm trong thời kỳ sinh trưởng; giảm tưới khi nghỉ.",
+    "gia_vnd_gia_lap": 140000,
+    "sources": [
+      {
+        "url": "https://plants.ces.ncsu.edu/plants/zantedeschia-aethiopica/",
+        "scope": "profile",
+        "heading": "Zantedeschia aethiopica"
+      }
+    ],
+    "date_accessed": "2026-10-14"
+  },
+  {
+    "class_id": 14,
+    "MaLoaiCay": 15,
+    "original_label": "Cast Iron Plant (Aspidistra elatior)",
+    "ten_viet_goi_y": "Tỏi rừng",
+    "ten_khoa_hoc_theo_nhan": "Aspidistra elatior",
+    "phạm_vi_nhan": "Loài được ghi trong nhãn; chưa xác minh toàn bộ ảnh training",
+    "dac_diem": "Lá dài hình mác, xanh sẫm, cuống mọc từ thân rễ; phát triển chậm.",
+    "xuat_xu": "Nhật Bản",
+    "cham_soc_tom_tat": "Bóng sáng hoặc ánh sáng tán xạ; đất thoát nước; để lớp mặt khô trước khi tưới.",
+    "gia_vnd_gia_lap": 130000,
+    "sources": [
+      {
+        "url": "https://plants.ces.ncsu.edu/plants/aspidistra-elatior/",
+        "scope": "profile",
+        "heading": "Aspidistra elatior"
+      }
+    ],
+    "date_accessed": "2026-10-14"
+  },
+  {
+    "class_id": 15,
+    "MaLoaiCay": 16,
+    "original_label": "China Doll Plant (Radermachera sinica)",
+    "ten_viet_goi_y": "Hạnh phúc",
+    "ten_khoa_hoc_theo_nhan": "Radermachera sinica",
+    "phạm_vi_nhan": "Loài được ghi trong nhãn; chưa xác minh toàn bộ ảnh training",
+    "dac_diem": "Cây thân gỗ, lá kép xanh bóng; nhiều lá chét nhỏ tạo tán dày.",
+    "xuat_xu": "Đông Himalaya đến nam Trung Quốc, bắc Đông Dương và Đài Loan",
+    "cham_soc_tom_tat": "Nơi sáng tán xạ; giữ đất ẩm vừa; tránh thay đổi môi trường đột ngột và tránh úng.",
+    "gia_vnd_gia_lap": 160000,
+    "sources": [
+      {
+        "url": "https://powo.science.kew.org/taxon/110522-1",
+        "scope": "Loài; nguồn gốc"
+      },
+      {
+        "url": "https://efloras.org/florataxon.aspx?flora_id=2&taxon_id=200021438",
+        "scope": "Flora of China; mô tả loài"
+      }
+    ],
+    "date_accessed": "2026-10-14"
+  },
+  {
+    "class_id": 16,
+    "MaLoaiCay": 17,
+    "original_label": "Chinese Evergreen Siam (Aglaonema commutatum)",
+    "ten_viet_goi_y": "Phú quý Siam",
+    "ten_khoa_hoc_theo_nhan": "Aglaonema commutatum",
+    "phạm_vi_nhan": "Siam là tên thương mại; cần xác minh giống cụ thể trước khi công bố loài/giống.",
+    "dac_diem": "Lá bầu dục thuôn, có thể có viền hoặc mảng đỏ ở giống trồng; thân dạng bụi.",
+    "xuat_xu": "Philippines và Sulawesi",
+    "cham_soc_tom_tat": "Ánh sáng tán xạ; đất thoáng; tưới khi lớp mặt khô, tránh nắng trưa.",
+    "gia_vnd_gia_lap": 110000,
+    "sources": [
+      {
+        "url": "https://plants.ces.ncsu.edu/plants/aglaonema/",
+        "scope": "genus_or_group",
+        "heading": "Aglaonema"
+      },
+      {
+        "url": "https://powo.science.kew.org/taxon/urn:lsid:ipni.org:names:84050-1",
+        "scope": "Loài; không xác nhận giống thương mại Siam"
+      }
+    ],
+    "date_accessed": "2026-10-14"
+  },
+  {
+    "class_id": 17,
+    "MaLoaiCay": 18,
+    "original_label": "Chinese Hibiscus (Hibiscus rosa-sinensis)",
+    "ten_viet_goi_y": "Dâm bụt",
+    "ten_khoa_hoc_theo_nhan": "Hibiscus rosa-sinensis",
+    "phạm_vi_nhan": "Không khẳng định một quốc gia xuất xứ duy nhất.",
+    "dac_diem": "Cây bụi lá bóng mép răng cưa; hoa lớn năm cánh, cột nhị nhô dài.",
+    "xuat_xu": "Cây trồng lâu đời; nguồn gốc tự nhiên còn được thảo luận",
+    "cham_soc_tom_tat": "Nơi có nắng; đất thoát nước; giữ ẩm khi sinh trưởng, cắt tỉa sau đợt hoa.",
+    "gia_vnd_gia_lap": 90000,
+    "sources": [
+      {
+        "url": "https://plants.ces.ncsu.edu/plants/hibiscus-rosa-sinensis/",
+        "scope": "profile",
+        "heading": "Hibiscus rosa-sinensis"
+      }
+    ],
+    "date_accessed": "2026-10-14"
+  },
+  {
+    "class_id": 18,
+    "MaLoaiCay": 19,
+    "original_label": "Chinese Money Plant (Pilea peperomioides)",
+    "ten_viet_goi_y": "Cỏ đồng tiền Trung Quốc",
+    "ten_khoa_hoc_theo_nhan": "Pilea peperomioides",
+    "phạm_vi_nhan": "Loài được ghi trong nhãn; chưa xác minh toàn bộ ảnh training",
+    "dac_diem": "Lá tròn gần như đồng xu; cuống lá gắn gần tâm phiến; thân đứng và dễ ra cây con.",
+    "xuat_xu": "Trung Quốc",
+    "cham_soc_tom_tat": "Ánh sáng tán xạ; xoay chậu để tán đều; tưới khi lớp mặt đất khô.",
+    "gia_vnd_gia_lap": 120000,
+    "sources": [
+      {
+        "url": "https://plants.ces.ncsu.edu/plants/pilea-peperomioides/",
+        "scope": "profile",
+        "heading": "Pilea peperomioides"
+      }
+    ],
+    "date_accessed": "2026-10-14"
+  },
+  {
+    "class_id": 19,
+    "MaLoaiCay": 20,
+    "original_label": "Christmas Cactus (Schlumbergera bridgesii)",
+    "ten_viet_goi_y": "Xương rồng Giáng sinh",
+    "ten_khoa_hoc_theo_nhan": "Schlumbergera bridgesii",
+    "phạm_vi_nhan": "Thường ghi Schlumbergera x bridgesii; nhãn mô hình bỏ ký hiệu lai.",
+    "dac_diem": "Thân dẹt nối thành đốt, mọc rủ; hoa hình ống ở đầu các đốt thân.",
+    "xuat_xu": "Giống lai trồng; tổ tiên từ Brazil",
+    "cham_soc_tom_tat": "Ánh sáng tán xạ; giá thể thoáng và ẩm vừa; cần chu kỳ đêm dài phù hợp để ra nụ.",
+    "gia_vnd_gia_lap": 130000,
+    "sources": [
+      {
+        "url": "https://plants.ces.ncsu.edu/plants/schlumbergera-x-buckleyi/",
+        "scope": "profile",
+        "heading": "Schlumbergera x buckleyi"
+      }
+    ],
+    "date_accessed": "2026-10-14"
+  },
+  {
+    "class_id": 20,
+    "MaLoaiCay": 21,
+    "original_label": "Chrysanthemum",
+    "ten_viet_goi_y": "Hoa cúc",
+    "ten_khoa_hoc_theo_nhan": "Chrysanthemum spp.",
+    "phạm_vi_nhan": "Nhãn cấp chi/nhóm, không đủ để xác định một loài.",
+    "dac_diem": "Lá thường có thùy và mép răng; cụm hoa đầu với nhiều hoa nhỏ, hình dạng tùy giống.",
+    "xuat_xu": "Phụ thuộc loài hoặc giống; nhiều giống trồng có nguồn gốc Đông Á",
+    "cham_soc_tom_tat": "Nơi sáng và có nắng phù hợp; đất thoát nước; tưới vào gốc, tránh để chậu khô kéo dài.",
+    "gia_vnd_gia_lap": 60000,
+    "sources": [
+      {
+        "url": "https://plants.ces.ncsu.edu/plants/chrysanthemum/",
+        "scope": "genus_or_group",
+        "heading": "Chrysanthemum"
+      }
+    ],
+    "date_accessed": "2026-10-14"
+  },
+  {
+    "class_id": 21,
+    "MaLoaiCay": 22,
+    "original_label": "Coleus (Coleus scutellarioides)",
+    "ten_viet_goi_y": "Tía tô cảnh",
+    "ten_khoa_hoc_theo_nhan": "Coleus scutellarioides",
+    "phạm_vi_nhan": "Loài được ghi trong nhãn; chưa xác minh toàn bộ ảnh training",
+    "dac_diem": "Lá đối, mép răng cưa; nhiều giống phối màu đỏ, tím, vàng và xanh.",
+    "xuat_xu": "Vùng nhiệt đới châu Á đến châu Đại Dương",
+    "cham_soc_tom_tat": "Ánh sáng tốt, tránh nắng quá gắt với giống mỏng lá; giữ ẩm vừa; bấm ngọn tạo bụi.",
+    "gia_vnd_gia_lap": 45000,
+    "sources": [
+      {
+        "url": "https://plants.ces.ncsu.edu/plants/coleus-scutellarioides/",
+        "scope": "profile",
+        "heading": "Coleus scutellarioides"
+      }
+    ],
+    "date_accessed": "2026-10-14"
+  },
+  {
+    "class_id": 22,
+    "MaLoaiCay": 23,
+    "original_label": "Coralberry (Ardisia crenata)",
+    "ten_viet_goi_y": "Kim ngân lượng",
+    "ten_khoa_hoc_theo_nhan": "Ardisia crenata",
+    "phạm_vi_nhan": "Loài được ghi trong nhãn; chưa xác minh toàn bộ ảnh training",
+    "dac_diem": "Cây bụi lá bóng, mép lượn hoặc khía; chùm quả đỏ nhỏ thường ở dưới tán lá.",
+    "xuat_xu": "Đông Á và Đông Nam Á",
+    "cham_soc_tom_tat": "Ánh sáng tán xạ; đất thoát nước giàu hữu cơ; giữ ẩm vừa, tránh úng.",
+    "gia_vnd_gia_lap": 180000,
+    "sources": [
+      {
+        "url": "https://plants.ces.ncsu.edu/plants/ardisia-crenata/",
+        "scope": "profile",
+        "heading": "Ardisia crenata"
+      }
+    ],
+    "date_accessed": "2026-10-14"
+  },
+  {
+    "class_id": 23,
+    "MaLoaiCay": 24,
+    "original_label": "Corn Plant (Dracaena fragrans)",
+    "ten_viet_goi_y": "Thiết mộc lan",
+    "ten_khoa_hoc_theo_nhan": "Dracaena fragrans",
+    "phạm_vi_nhan": "Loài được ghi trong nhãn; chưa xác minh toàn bộ ảnh training",
+    "dac_diem": "Thân gỗ dạng đốt; lá dài dạng dải, xanh hoặc có sọc sáng tùy giống.",
+    "xuat_xu": "Châu Phi nhiệt đới",
+    "cham_soc_tom_tat": "Ánh sáng tán xạ; tưới khi lớp đất mặt khô; tránh tích nước trong chậu.",
+    "gia_vnd_gia_lap": 200000,
+    "sources": [
+      {
+        "url": "https://plants.ces.ncsu.edu/plants/dracaena-fragrans/",
+        "scope": "profile",
+        "heading": "Dracaena fragrans"
+      }
+    ],
+    "date_accessed": "2026-10-14"
+  },
+  {
+    "class_id": 24,
+    "MaLoaiCay": 25,
+    "original_label": "Creeping Fig (Ficus pumila)",
+    "ten_viet_goi_y": "Vảy ốc",
+    "ten_khoa_hoc_theo_nhan": "Ficus pumila",
+    "phạm_vi_nhan": "Loài được ghi trong nhãn; chưa xác minh toàn bộ ảnh training",
+    "dac_diem": "Cây leo bám bằng rễ; lá non nhỏ hình tim hoặc bầu dục, lá trưởng thành lớn hơn.",
+    "xuat_xu": "Đông Á",
+    "cham_soc_tom_tat": "Ánh sáng tán xạ đến nắng thích nghi; giữ ẩm vừa; cắt tỉa để kiểm soát dây leo.",
+    "gia_vnd_gia_lap": 60000,
+    "sources": [
+      {
+        "url": "https://plants.ces.ncsu.edu/plants/ficus-pumila/",
+        "scope": "profile",
+        "heading": "Ficus pumila"
+      }
+    ],
+    "date_accessed": "2026-10-14"
+  },
+  {
+    "class_id": 25,
+    "MaLoaiCay": 26,
+    "original_label": "Crown of Thorns (Euphorbia milii)",
+    "ten_viet_goi_y": "Xương rồng bát tiên",
+    "ten_khoa_hoc_theo_nhan": "Euphorbia milii",
+    "phạm_vi_nhan": "Có nhựa mủ gây kích ứng; không phải họ Xương rồng.",
+    "dac_diem": "Thân mọng có gai; lá tập trung ở ngọn; lá bắc màu bao quanh hoa nhỏ.",
+    "xuat_xu": "Madagascar",
+    "cham_soc_tom_tat": "Nơi nhiều sáng và nắng thích nghi; đất thoát nước nhanh; để đất khô giữa các lần tưới.",
+    "gia_vnd_gia_lap": 90000,
+    "sources": [
+      {
+        "url": "https://plants.ces.ncsu.edu/plants/euphorbia-milii/",
+        "scope": "profile",
+        "heading": "Euphorbia milii"
+      }
+    ],
+    "date_accessed": "2026-10-14"
+  },
+  {
+    "class_id": 26,
+    "MaLoaiCay": 27,
+    "original_label": "Ctenanthe",
+    "ten_viet_goi_y": "Dong cảnh Ctenanthe",
+    "ten_khoa_hoc_theo_nhan": "Ctenanthe spp.",
+    "phạm_vi_nhan": "Nhãn cấp chi; không đủ xác định một loài.",
+    "dac_diem": "Lá bầu dục thường có sọc hoặc mảng sáng; mặt dưới nhiều dạng có màu tím.",
+    "xuat_xu": "Châu Mỹ nhiệt đới",
+    "cham_soc_tom_tat": "Ánh sáng tán xạ; ẩm không khí khá cao; giữ giá thể ẩm nhẹ, tránh nắng trực tiếp.",
+    "gia_vnd_gia_lap": 130000,
+    "sources": [
+      {
+        "url": "https://plants.ces.ncsu.edu/plants/ctenanthe-oppenheimiana/",
+        "scope": "Loài đại diện của chi; không gán nhãn thành loài này"
+      }
+    ],
+    "date_accessed": "2026-10-14"
+  },
+  {
+    "class_id": 27,
+    "MaLoaiCay": 28,
+    "original_label": "Daffodils (Narcissus spp.)",
+    "ten_viet_goi_y": "Thủy tiên Narcissus",
+    "ten_khoa_hoc_theo_nhan": "Narcissus spp.",
+    "phạm_vi_nhan": "Nhãn cấp chi; không mặc định là thủy tiên ta.",
+    "dac_diem": "Cây thân hành, lá dạng dải; hoa có vành bao hoa và phần tràng phụ ở giữa.",
+    "xuat_xu": "Phụ thuộc loài; chủ yếu châu Âu và vùng Địa Trung Hải",
+    "cham_soc_tom_tat": "Nơi sáng; đất thoát nước; tưới trong thời kỳ sinh trưởng, giảm tưới khi lá tàn.",
+    "gia_vnd_gia_lap": 85000,
+    "sources": [
+      {
+        "url": "https://plants.ces.ncsu.edu/plants/narcissus/",
+        "scope": "genus_or_group",
+        "heading": "Narcissus"
+      }
+    ],
+    "date_accessed": "2026-10-14"
+  },
+  {
+    "class_id": 28,
+    "MaLoaiCay": 29,
+    "original_label": "Dragon Tail (Epipremnum pinnatum)",
+    "ten_viet_goi_y": "Trầu bà đuôi rồng",
+    "ten_khoa_hoc_theo_nhan": "Epipremnum pinnatum",
+    "phạm_vi_nhan": "Loài được ghi trong nhãn; chưa xác minh toàn bộ ảnh training",
+    "dac_diem": "Dây leo; lá non nguyên, lá trưởng thành lớn và xẻ dọc theo hai bên gân chính.",
+    "xuat_xu": "Châu Á nhiệt đới và khu vực Thái Bình Dương",
+    "cham_soc_tom_tat": "Ánh sáng tán xạ; giá thể thoáng; tưới khi mặt đất khô; trụ leo giúp phát triển lá lớn.",
+    "gia_vnd_gia_lap": 130000,
+    "sources": [
+      {
+        "url": "https://plants.ces.ncsu.edu/plants/epipremnum-pinnatum/",
+        "scope": "profile",
+        "heading": "Epipremnum pinnatum"
+      }
+    ],
+    "date_accessed": "2026-10-14"
+  },
+  {
+    "class_id": 29,
+    "MaLoaiCay": 30,
+    "original_label": "Dumb Cane (Dieffenbachia spp.)",
+    "ten_viet_goi_y": "Vạn niên thanh Dieffenbachia",
+    "ten_khoa_hoc_theo_nhan": "Dieffenbachia spp.",
+    "phạm_vi_nhan": "Nhãn cấp chi; tên vạn niên thanh có thể dùng cho cây khác.",
+    "dac_diem": "Thân dạng đốt; lá lớn bầu dục, thường có mảng trắng hoặc vàng ở giữa.",
+    "xuat_xu": "Châu Mỹ nhiệt đới",
+    "cham_soc_tom_tat": "Ánh sáng tán xạ; giữ ẩm vừa; đất thoát nước; tránh tiếp xúc nhựa cây.",
+    "gia_vnd_gia_lap": 100000,
+    "sources": [
+      {
+        "url": "https://plants.ces.ncsu.edu/plants/dieffenbachia-seguine/",
+        "scope": "Loài đại diện của chi; không gán nhãn thành loài này"
+      }
+    ],
+    "date_accessed": "2026-10-14"
+  },
+  {
+    "class_id": 30,
+    "MaLoaiCay": 31,
+    "original_label": "English Ivy (Hedera helix)",
+    "ten_viet_goi_y": "Thường xuân",
+    "ten_khoa_hoc_theo_nhan": "Hedera helix",
+    "phạm_vi_nhan": "Loài được ghi trong nhãn; chưa xác minh toàn bộ ảnh training",
+    "dac_diem": "Dây leo có rễ bám; lá non thường chia ba đến năm thùy; lá trưởng thành có thể nguyên.",
+    "xuat_xu": "Châu Âu và vùng lân cận Tây Á, Bắc Phi",
+    "cham_soc_tom_tat": "Nơi sáng dịu và thông thoáng; tưới khi mặt đất se khô; tránh nóng ẩm bí kéo dài.",
+    "gia_vnd_gia_lap": 75000,
+    "sources": [
+      {
+        "url": "https://plants.ces.ncsu.edu/plants/hedera-helix/",
+        "scope": "profile",
+        "heading": "Hedera helix"
+      }
+    ],
+    "date_accessed": "2026-10-14"
+  },
+  {
+    "class_id": 31,
+    "MaLoaiCay": 32,
+    "original_label": "Fan Palm - Lady Palm (Rhapis excelsa)",
+    "ten_viet_goi_y": "Mật cật",
+    "ten_khoa_hoc_theo_nhan": "Rhapis excelsa",
+    "phạm_vi_nhan": "Loài được ghi trong nhãn; chưa xác minh toàn bộ ảnh training",
+    "dac_diem": "Cau dạng bụi, thân có sợi; lá hình quạt chia nhiều đoạn, đầu đoạn thường cụt.",
+    "xuat_xu": "Trung Quốc và Việt Nam",
+    "cham_soc_tom_tat": "Ánh sáng tán xạ; chậu thoát nước; tưới khi lớp mặt đất se khô.",
+    "gia_vnd_gia_lap": 230000,
+    "sources": [
+      {
+        "url": "https://plants.ces.ncsu.edu/plants/rhapis-excelsa/",
+        "scope": "profile",
+        "heading": "Rhapis excelsa"
+      }
+    ],
+    "date_accessed": "2026-10-14"
+  },
+  {
+    "class_id": 32,
+    "MaLoaiCay": 33,
+    "original_label": "Fiddle Leaf Fig (Ficus lyrata)",
+    "ten_viet_goi_y": "Bàng Singapore",
+    "ten_khoa_hoc_theo_nhan": "Ficus lyrata",
+    "phạm_vi_nhan": "Tên thương mại không phản ánh xuất xứ Singapore.",
+    "dac_diem": "Cây thân gỗ; lá lớn dày, đầu rộng, dáng như đàn vĩ cầm, gân nổi rõ.",
+    "xuat_xu": "Tây châu Phi nhiệt đới",
+    "cham_soc_tom_tat": "Ánh sáng tán xạ mạnh; tưới khi lớp mặt đất khô; tránh đổi vị trí và úng rễ.",
+    "gia_vnd_gia_lap": 250000,
+    "sources": [
+      {
+        "url": "https://plants.ces.ncsu.edu/plants/ficus-lyrata/",
+        "scope": "profile",
+        "heading": "Ficus lyrata"
+      }
+    ],
+    "date_accessed": "2026-10-14"
+  },
+  {
+    "class_id": 33,
+    "MaLoaiCay": 34,
+    "original_label": "French Hydrangea (Hydrangea macrophylla)",
+    "ten_viet_goi_y": "Cẩm tú cầu",
+    "ten_khoa_hoc_theo_nhan": "Hydrangea macrophylla",
+    "phạm_vi_nhan": "Màu hoa một số giống chịu ảnh hưởng của pH và nhôm, không áp dụng mọi giống.",
+    "dac_diem": "Lá đối lớn, mép răng cưa; cụm hoa tròn hoặc phẳng với hoa trang trí nổi bật.",
+    "xuat_xu": "Nhật Bản",
+    "cham_soc_tom_tat": "Ánh sáng sáng nhưng tránh nắng chiều nóng; giữ ẩm đều; giá thể thoát nước.",
+    "gia_vnd_gia_lap": 150000,
+    "sources": [
+      {
+        "url": "https://plants.ces.ncsu.edu/plants/hydrangea-macrophylla/",
+        "scope": "profile",
+        "heading": "Hydrangea macrophylla"
+      }
+    ],
+    "date_accessed": "2026-10-14"
+  },
+  {
+    "class_id": 34,
+    "MaLoaiCay": 35,
+    "original_label": "Garden Croton (Codiaeum variegatum)",
+    "ten_viet_goi_y": "Cô tòng",
+    "ten_khoa_hoc_theo_nhan": "Codiaeum variegatum",
+    "phạm_vi_nhan": "Loài được ghi trong nhãn; chưa xác minh toàn bộ ảnh training",
+    "dac_diem": "Lá dai, đa dạng hình dạng; nhiều giống có mảng xanh, vàng, đỏ, cam nổi bật.",
+    "xuat_xu": "Đông Nam Á và các đảo phía tây Thái Bình Dương",
+    "cham_soc_tom_tat": "Ánh sáng mạnh, thích nghi dần với nắng; giữ ẩm vừa; môi trường ấm, tránh úng.",
+    "gia_vnd_gia_lap": 100000,
+    "sources": [
+      {
+        "url": "https://plants.ces.ncsu.edu/plants/codiaeum-variegatum/",
+        "scope": "profile",
+        "heading": "Codiaeum variegatum"
+      }
+    ],
+    "date_accessed": "2026-10-14"
+  },
+  {
+    "class_id": 35,
+    "MaLoaiCay": 36,
+    "original_label": "Giant Taro (Alocasia macrorrhizos)",
+    "ten_viet_goi_y": "Môn khổng lồ",
+    "ten_khoa_hoc_theo_nhan": "Alocasia macrorrhizos",
+    "phạm_vi_nhan": "Dễ nhầm Alocasia odora; không phân biệt chỉ bằng kích thước lá.",
+    "dac_diem": "Lá rất lớn dạng mũi tên, cuống dày; thân và tán phát triển lớn khi đủ điều kiện.",
+    "xuat_xu": "Trung Malesia đến nhóm đảo Murray ở Queensland, Australia",
+    "cham_soc_tom_tat": "Ánh sáng tán xạ mạnh; đất giàu hữu cơ và thoáng; giữ ẩm trong thời kỳ sinh trưởng.",
+    "gia_vnd_gia_lap": 180000,
+    "sources": [
+      {
+        "url": "https://plants.ces.ncsu.edu/plants/alocasia/",
+        "scope": "genus_or_group",
+        "heading": "Alocasia"
+      },
+      {
+        "url": "https://powo.science.kew.org/taxon/urn:lsid:ipni.org:names:60444565-2",
+        "scope": "Loài; nguồn gốc"
+      }
+    ],
+    "date_accessed": "2026-10-14"
+  },
+  {
+    "class_id": 36,
+    "MaLoaiCay": 37,
+    "original_label": "Ginseng Ficus (Ficus microcarpa)",
+    "ten_viet_goi_y": "Sanh bonsai",
+    "ten_khoa_hoc_theo_nhan": "Ficus microcarpa",
+    "phạm_vi_nhan": "Ginseng là dạng tạo hình thương mại, không phải loài riêng.",
+    "dac_diem": "Lá nhỏ, bóng, bầu dục; dạng ginseng có gốc hoặc rễ phình nổi trong chậu bonsai.",
+    "xuat_xu": "Châu Á nhiệt đới và cận nhiệt đới đến Tây Thái Bình Dương",
+    "cham_soc_tom_tat": "Nhiều sáng; đất bonsai thoát nước; tưới khi mặt đất se khô, tỉa để giữ dáng.",
+    "gia_vnd_gia_lap": 220000,
+    "sources": [
+      {
+        "url": "https://plants.ces.ncsu.edu/plants/ficus-microcarpa/",
+        "scope": "profile",
+        "heading": "Ficus microcarpa"
+      }
+    ],
+    "date_accessed": "2026-10-14"
+  },
+  {
+    "class_id": 37,
+    "MaLoaiCay": 38,
+    "original_label": "Gold Dust Dracaena (Dracaena surculosa)",
+    "ten_viet_goi_y": "Trúc đốm",
+    "ten_khoa_hoc_theo_nhan": "Dracaena surculosa",
+    "phạm_vi_nhan": "Loài được ghi trong nhãn; chưa xác minh toàn bộ ảnh training",
+    "dac_diem": "Thân mảnh phân nhánh; lá bầu dục xanh với đốm trắng kem hoặc vàng.",
+    "xuat_xu": "Tây châu Phi nhiệt đới",
+    "cham_soc_tom_tat": "Ánh sáng tán xạ; giữ đất ẩm vừa, không để nước đọng; tránh nắng gắt làm cháy lá.",
+    "gia_vnd_gia_lap": 100000,
+    "sources": [
+      {
+        "url": "https://plants.ces.ncsu.edu/plants/dracaena-surculosa/",
+        "scope": "profile",
+        "heading": "Dracaena surculosa"
+      }
+    ],
+    "date_accessed": "2026-10-14"
+  },
+  {
+    "class_id": 38,
+    "MaLoaiCay": 39,
+    "original_label": "Hairy Philodendron (Philodendron squamiferum)",
+    "ten_viet_goi_y": "Trầu bà cuống lông",
+    "ten_khoa_hoc_theo_nhan": "Philodendron squamiferum",
+    "phạm_vi_nhan": "Loài được ghi trong nhãn; chưa xác minh toàn bộ ảnh training",
+    "dac_diem": "Dây leo; lá trưởng thành có thùy; cuống lá nổi bật bởi lớp lông hoặc vảy đỏ nâu.",
+    "xuat_xu": "Miền bắc Nam Mỹ",
+    "cham_soc_tom_tat": "Ánh sáng tán xạ; giá thể thoáng; độ ẩm khá cao; có trụ leo, tránh úng.",
+    "gia_vnd_gia_lap": 280000,
+    "sources": [
+      {
+        "url": "https://plants.ces.ncsu.edu/plants/philodendron/",
+        "scope": "genus_or_group",
+        "heading": "Philodendron"
+      },
+      {
+        "url": "https://powo.science.kew.org/taxon/urn:lsid:ipni.org:names:88023-1",
+        "scope": "Loài; nguồn gốc"
+      }
+    ],
+    "date_accessed": "2026-10-14"
+  },
+  {
+    "class_id": 39,
+    "MaLoaiCay": 40,
+    "original_label": "Heart of Jesus (Caladium bicolor)",
+    "ten_viet_goi_y": "Môn lá màu",
+    "ten_khoa_hoc_theo_nhan": "Caladium bicolor",
+    "phạm_vi_nhan": "Tên loài không đảm bảo mọi ảnh là Caladium bicolor thuần chủng.",
+    "dac_diem": "Lá mỏng hình tim hoặc mũi tên; các giống có mảng đỏ, hồng, trắng và xanh.",
+    "xuat_xu": "Châu Mỹ nhiệt đới",
+    "cham_soc_tom_tat": "Ánh sáng tán xạ; giữ ẩm khi có lá; giảm tưới khi cây ngủ nghỉ và lá tàn.",
+    "gia_vnd_gia_lap": 95000,
+    "sources": [
+      {
+        "url": "https://plants.ces.ncsu.edu/plants/caladium-bicolor/",
+        "scope": "profile",
+        "heading": "Caladium bicolor"
+      }
+    ],
+    "date_accessed": "2026-10-14"
+  },
+  {
+    "class_id": 40,
+    "MaLoaiCay": 41,
+    "original_label": "Heartleaf Philodendron (Philodendron cordatum)",
+    "ten_viet_goi_y": "Trầu bà lá tim theo nhãn",
+    "ten_khoa_hoc_theo_nhan": "Philodendron cordatum",
+    "phạm_vi_nhan": "Nhãn Heartleaf thường được dùng cho P. hederaceum; cần xác minh ảnh, không tự đổi nhãn mô hình.",
+    "dac_diem": "Dây leo có lá dạng tim; nhóm cây bán dưới tên này dễ chồng lấn các Philodendron khác.",
+    "xuat_xu": "Đông nam và miền nam Brazil, nếu đúng P. cordatum",
+    "cham_soc_tom_tat": "Ánh sáng tán xạ; giá thể thoáng; tưới khi lớp mặt khô; cho leo hoặc trồng rủ.",
+    "gia_vnd_gia_lap": 85000,
+    "sources": [
+      {
+        "url": "https://plants.ces.ncsu.edu/plants/philodendron/",
+        "scope": "genus_or_group",
+        "heading": "Philodendron"
+      },
+      {
+        "url": "https://powo.science.kew.org/taxon/urn:lsid:ipni.org:names:77073767-1",
+        "scope": "P. cordatum; không xác nhận ảnh nhãn Heartleaf là loài này"
+      }
+    ],
+    "date_accessed": "2026-10-14"
+  },
+  {
+    "class_id": 41,
+    "MaLoaiCay": 42,
+    "original_label": "Hyacinth (Hyacinthus orientalis)",
+    "ten_viet_goi_y": "Dạ lan hương",
+    "ten_khoa_hoc_theo_nhan": "Hyacinthus orientalis",
+    "phạm_vi_nhan": "Loài được ghi trong nhãn; chưa xác minh toàn bộ ảnh training",
+    "dac_diem": "Cây thân hành, lá dày dạng dải; nhiều hoa thơm tụ dày thành chùm trên trục đứng.",
+    "xuat_xu": "Đông Địa Trung Hải và Tây Á",
+    "cham_soc_tom_tat": "Nơi sáng và mát; giá thể thoát nước; tưới vừa ở gốc; giảm tưới sau khi lá tàn.",
+    "gia_vnd_gia_lap": 95000,
+    "sources": [
+      {
+        "url": "https://plants.ces.ncsu.edu/plants/hyacinthus-orientalis/",
+        "scope": "profile",
+        "heading": "Hyacinthus orientalis"
+      }
+    ],
+    "date_accessed": "2026-10-14"
+  },
+  {
+    "class_id": 42,
+    "MaLoaiCay": 43,
+    "original_label": "Indian Azalea (Rhododendron simsii)",
+    "ten_viet_goi_y": "Đỗ quyên Simsii",
+    "ten_khoa_hoc_theo_nhan": "Rhododendron simsii",
+    "phạm_vi_nhan": "Loài được ghi trong nhãn; chưa xác minh toàn bộ ảnh training",
+    "dac_diem": "Cây bụi lá nhỏ; hoa dạng phễu có nhiều màu tùy giống, thường ra thành cụm.",
+    "xuat_xu": "Đông Á và vùng lân cận châu Á",
+    "cham_soc_tom_tat": "Ánh sáng dịu; giá thể có tính acid và thoát nước; giữ ẩm đều, tránh nóng gắt.",
+    "gia_vnd_gia_lap": 180000,
+    "sources": [
+      {
+        "url": "https://plants.ces.ncsu.edu/plants/rhododendron/",
+        "scope": "genus_or_group",
+        "heading": "Rhododendron"
+      },
+      {
+        "url": "https://powo.science.kew.org/taxon/urn:lsid:ipni.org:names:333359-1",
+        "scope": "Loài; nguồn gốc"
+      }
+    ],
+    "date_accessed": "2026-10-14"
+  },
+  {
+    "class_id": 43,
+    "MaLoaiCay": 44,
+    "original_label": "Iron Cross begonia (Begonia masoniana)",
+    "ten_viet_goi_y": "Thu hải đường chữ thập",
+    "ten_khoa_hoc_theo_nhan": "Begonia masoniana",
+    "phạm_vi_nhan": "Loài được ghi trong nhãn; chưa xác minh toàn bộ ảnh training",
+    "dac_diem": "Lá lệch, bề mặt nhăn hoặc ráp; mảng sẫm gần giữa lá thường giống chữ thập.",
+    "xuat_xu": "Miền nam Trung Quốc và khu vực lân cận",
+    "cham_soc_tom_tat": "Ánh sáng tán xạ; giá thể thoáng; giữ ẩm nhẹ; tránh nước đọng trên lá và ngọn.",
+    "gia_vnd_gia_lap": 160000,
+    "sources": [
+      {
+        "url": "https://plants.ces.ncsu.edu/plants/begonia-masoniana/",
+        "scope": "profile",
+        "heading": "Begonia masoniana"
+      }
+    ],
+    "date_accessed": "2026-10-14"
+  },
+  {
+    "class_id": 44,
+    "MaLoaiCay": 45,
+    "original_label": "Jade plant (Crassula ovata)",
+    "ten_viet_goi_y": "Ngọc bích",
+    "ten_khoa_hoc_theo_nhan": "Crassula ovata",
+    "phạm_vi_nhan": "Loài được ghi trong nhãn; chưa xác minh toàn bộ ảnh training",
+    "dac_diem": "Cây mọng nước dạng bụi; lá dày bầu dục mọc đối, đôi khi viền đỏ khi đủ sáng.",
+    "xuat_xu": "Miền nam châu Phi",
+    "cham_soc_tom_tat": "Nhiều sáng, nắng thích nghi; đất thoát nước nhanh; để đất khô giữa các lần tưới.",
+    "gia_vnd_gia_lap": 85000,
+    "sources": [
+      {
+        "url": "https://plants.ces.ncsu.edu/plants/crassula-ovata/",
+        "scope": "profile",
+        "heading": "Crassula ovata"
+      }
+    ],
+    "date_accessed": "2026-10-14"
+  },
+  {
+    "class_id": 45,
+    "MaLoaiCay": 46,
+    "original_label": "Kalanchoe",
+    "ten_viet_goi_y": "Sống đời Kalanchoe",
+    "ten_khoa_hoc_theo_nhan": "Kalanchoe spp.",
+    "phạm_vi_nhan": "Nhãn cấp chi; không mặc định toàn bộ là K. blossfeldiana.",
+    "dac_diem": "Nhóm cây mọng nước; lá dày, hình dạng và mép lá đa dạng; nhiều loài có hoa thành chùm.",
+    "xuat_xu": "Phụ thuộc loài; nhiều loài từ Madagascar và châu Phi",
+    "cham_soc_tom_tat": "Nơi sáng; giá thể thoát nước nhanh; tưới sau khi đất khô; nhu cầu ra hoa tùy loài.",
+    "gia_vnd_gia_lap": 60000,
+    "sources": [
+      {
+        "url": "https://plants.ces.ncsu.edu/plants/kalanchoe/",
+        "scope": "genus_or_group",
+        "heading": "Kalanchoe"
+      }
+    ],
+    "date_accessed": "2026-10-14"
+  },
+  {
+    "class_id": 46,
+    "MaLoaiCay": 47,
+    "original_label": "Lily of the valley (Convallaria majalis)",
+    "ten_viet_goi_y": "Linh lan",
+    "ten_khoa_hoc_theo_nhan": "Convallaria majalis",
+    "phạm_vi_nhan": "Loài được ghi trong nhãn; chưa xác minh toàn bộ ảnh training",
+    "dac_diem": "Thân rễ; lá rộng có gân song song; chùm hoa trắng nhỏ rủ dạng chuông.",
+    "xuat_xu": "Âu-Á",
+    "cham_soc_tom_tat": "Nơi sáng dịu, mát; đất hữu cơ ẩm và thoát nước; không phù hợp nơi nóng quanh năm.",
+    "gia_vnd_gia_lap": 160000,
+    "sources": [
+      {
+        "url": "https://plants.ces.ncsu.edu/plants/convallaria-majalis/",
+        "scope": "profile",
+        "heading": "Convallaria majalis"
+      }
+    ],
+    "date_accessed": "2026-10-14"
+  },
+  {
+    "class_id": 47,
+    "MaLoaiCay": 48,
+    "original_label": "Madagascar Dragon Tree (Dracaena marginata)",
+    "ten_viet_goi_y": "Phất dụ mảnh",
+    "ten_khoa_hoc_theo_nhan": "Dracaena marginata",
+    "phạm_vi_nhan": "Giữ tên Dracaena marginata theo nhãn; có xử lý phân loại khác trong các nguồn.",
+    "dac_diem": "Thân gỗ mảnh; lá rất hẹp và dài tụ ở đầu cành, thường có viền đỏ.",
+    "xuat_xu": "Madagascar",
+    "cham_soc_tom_tat": "Ánh sáng tán xạ; để lớp mặt khô trước khi tưới; tránh úng và nước nhiều muối.",
+    "gia_vnd_gia_lap": 150000,
+    "sources": [
+      {
+        "url": "https://plants.ces.ncsu.edu/plants/dracaena-reflexa-var-angustifolia/",
+        "scope": "profile",
+        "heading": "Dracaena reflexa var. angustifolia"
+      }
+    ],
+    "date_accessed": "2026-10-14"
+  },
+  {
+    "class_id": 48,
+    "MaLoaiCay": 49,
+    "original_label": "Mexican Snowball (Echeveria elegans)",
+    "ten_viet_goi_y": "Sen đá bông hồng trắng",
+    "ten_khoa_hoc_theo_nhan": "Echeveria elegans",
+    "phạm_vi_nhan": "Loài được ghi trong nhãn; chưa xác minh toàn bộ ảnh training",
+    "dac_diem": "Lá mọng màu xanh nhạt phủ phấn, xếp hoa thị chặt; dễ tạo cây con quanh gốc.",
+    "xuat_xu": "Mexico",
+    "cham_soc_tom_tat": "Nhiều sáng và nắng thích nghi; giá thể thoát nước nhanh; tưới khi đất khô, tránh đọng nước ở tâm.",
+    "gia_vnd_gia_lap": 55000,
+    "sources": [
+      {
+        "url": "https://plants.ces.ncsu.edu/plants/echeveria-elegans/",
+        "scope": "profile",
+        "heading": "Echeveria elegans"
+      }
+    ],
+    "date_accessed": "2026-10-14"
+  },
+  {
+    "class_id": 49,
+    "MaLoaiCay": 50,
+    "original_label": "Money Tree (Pachira aquatica)",
+    "ten_viet_goi_y": "Kim ngân",
+    "ten_khoa_hoc_theo_nhan": "Pachira aquatica",
+    "phạm_vi_nhan": "Loài được ghi trong nhãn; chưa xác minh toàn bộ ảnh training",
+    "dac_diem": "Lá kép chân vịt thường gồm năm đến bảy lá chét; thân có thể được tết khi bán.",
+    "xuat_xu": "Trung Mỹ và miền bắc Nam Mỹ",
+    "cham_soc_tom_tat": "Ánh sáng tán xạ; đất thoát nước; tưới khi lớp mặt se khô; tránh úng trong chậu trang trí.",
+    "gia_vnd_gia_lap": 180000,
+    "sources": [
+      {
+        "url": "https://plants.ces.ncsu.edu/plants/pachira-aquatica/",
+        "scope": "profile",
+        "heading": "Pachira aquatica"
+      }
+    ],
+    "date_accessed": "2026-10-14"
+  },
+  {
+    "class_id": 50,
+    "MaLoaiCay": 51,
+    "original_label": "Monstera Deliciosa (Monstera deliciosa)",
+    "ten_viet_goi_y": "Trầu bà Nam Mỹ",
+    "ten_khoa_hoc_theo_nhan": "Monstera deliciosa",
+    "phạm_vi_nhan": "Lá non có thể chưa có lỗ hoặc đường xẻ.",
+    "dac_diem": "Lá trưởng thành lớn, có đường xẻ từ mép và có thể có lỗ trong phiến; có rễ khí sinh.",
+    "xuat_xu": "Mexico và Trung Mỹ",
+    "cham_soc_tom_tat": "Ánh sáng tán xạ; giá thể thoáng; tưới khi lớp mặt khô; làm trụ cho cây leo.",
+    "gia_vnd_gia_lap": 250000,
+    "sources": [
+      {
+        "url": "https://plants.ces.ncsu.edu/plants/monstera-deliciosa/",
+        "scope": "profile",
+        "heading": "Monstera deliciosa"
+      }
+    ],
+    "date_accessed": "2026-10-14"
+  },
+  {
+    "class_id": 51,
+    "MaLoaiCay": 52,
+    "original_label": "Moses in the Cradle (Tradescantia spathacea)",
+    "ten_viet_goi_y": "Lẻ bạn",
+    "ten_khoa_hoc_theo_nhan": "Tradescantia spathacea",
+    "phạm_vi_nhan": "Loài được ghi trong nhãn; chưa xác minh toàn bộ ảnh training",
+    "dac_diem": "Lá dài hình mác xếp hoa thị, mặt dưới thường tím; hoa nhỏ trong lá bắc dạng thuyền.",
+    "xuat_xu": "Mexico và Trung Mỹ",
+    "cham_soc_tom_tat": "Ánh sáng tốt; giá thể thoát nước; tưới khi lớp mặt khô; tránh úng gốc.",
+    "gia_vnd_gia_lap": 55000,
+    "sources": [
+      {
+        "url": "https://plants.ces.ncsu.edu/plants/tradescantia-spathacea/",
+        "scope": "profile",
+        "heading": "Tradescantia spathacea"
+      }
+    ],
+    "date_accessed": "2026-10-14"
+  },
+  {
+    "class_id": 52,
+    "MaLoaiCay": 53,
+    "original_label": "Nerve Plant (Fittonia albivenis)",
+    "ten_viet_goi_y": "Cẩm nhung",
+    "ten_khoa_hoc_theo_nhan": "Fittonia albivenis",
+    "phạm_vi_nhan": "Loài được ghi trong nhãn; chưa xác minh toàn bộ ảnh training",
+    "dac_diem": "Cây thấp; lá bầu dục với mạng gân trắng, hồng hoặc đỏ nổi rõ trên nền xanh.",
+    "xuat_xu": "Nam Mỹ nhiệt đới",
+    "cham_soc_tom_tat": "Ánh sáng tán xạ; giữ ẩm đều và độ ẩm không khí khá cao; không để úng hoặc nắng gắt.",
+    "gia_vnd_gia_lap": 60000,
+    "sources": [
+      {
+        "url": "https://plants.ces.ncsu.edu/plants/fittonia-albivenis/",
+        "scope": "profile",
+        "heading": "Fittonia albivenis"
+      }
+    ],
+    "date_accessed": "2026-10-14"
+  },
+  {
+    "class_id": 53,
+    "MaLoaiCay": 54,
+    "original_label": "Night-scented Lily (Alocasia odora)",
+    "ten_viet_goi_y": "Môn thơm",
+    "ten_khoa_hoc_theo_nhan": "Alocasia odora",
+    "phạm_vi_nhan": "Khó tách khỏi A. macrorrhizos từ ảnh xa; cần kiểm tra đặc điểm lá và hoa.",
+    "dac_diem": "Lá lớn dạng mũi tên trên cuống đứng; cụm hoa gồm mo và trục hoa, có thể có mùi thơm.",
+    "xuat_xu": "Đông Ấn Độ đến nam Nhật Bản và Borneo",
+    "cham_soc_tom_tat": "Ánh sáng tán xạ; đất thoáng, giàu hữu cơ; giữ ẩm vừa; không để chậu đọng nước.",
+    "gia_vnd_gia_lap": 150000,
+    "sources": [
+      {
+        "url": "https://plants.ces.ncsu.edu/plants/alocasia/",
+        "scope": "genus_or_group",
+        "heading": "Alocasia"
+      },
+      {
+        "url": "https://powo.science.kew.org/taxon/urn:lsid:ipni.org:names:60469948-2",
+        "scope": "Loài; nguồn gốc"
+      }
+    ],
+    "date_accessed": "2026-10-14"
+  },
+  {
+    "class_id": 54,
+    "MaLoaiCay": 55,
+    "original_label": "Orchid",
+    "ten_viet_goi_y": "Hoa lan",
+    "ten_khoa_hoc_theo_nhan": "Orchidaceae (nhóm chưa xác định)",
+    "phạm_vi_nhan": "Nhãn ở cấp họ/nhóm; không tự gán thành Phalaenopsis.",
+    "dac_diem": "Họ thực vật đa dạng; hoa thường đối xứng hai bên và có cánh môi; kiểu lá tùy nhóm.",
+    "xuat_xu": "Phụ thuộc chi và loài; phân bố ở nhiều vùng trên thế giới",
+    "cham_soc_tom_tat": "Xác định nhóm lan trước; với lan biểu sinh cần rễ thoáng và thoát nước, ánh sáng tùy nhóm.",
+    "gia_vnd_gia_lap": 180000,
+    "sources": [
+      {
+        "url": "https://plants.ces.ncsu.edu/plants/dendrobium/",
+        "scope": "Chi lan đại diện để tham khảo; không gán Orchid thành Dendrobium"
+      }
+    ],
+    "date_accessed": "2026-10-14"
+  },
+  {
+    "class_id": 55,
+    "MaLoaiCay": 56,
+    "original_label": "Parlor Palm (Chamaedorea elegans)",
+    "ten_viet_goi_y": "Cau tiểu trâm",
+    "ten_khoa_hoc_theo_nhan": "Chamaedorea elegans",
+    "phạm_vi_nhan": "Loài được ghi trong nhãn; chưa xác minh toàn bộ ảnh training",
+    "dac_diem": "Cau nhỏ thân mảnh; lá kép lông chim, lá chét hẹp màu xanh.",
+    "xuat_xu": "Mexico đến Honduras",
+    "cham_soc_tom_tat": "Ánh sáng tán xạ; giữ ẩm vừa; chậu thoát nước; tránh nắng trực tiếp kéo dài.",
+    "gia_vnd_gia_lap": 80000,
+    "sources": [
+      {
+        "url": "https://plants.ces.ncsu.edu/plants/chamaedorea-elegans/",
+        "scope": "profile",
+        "heading": "Chamaedorea elegans"
+      }
+    ],
+    "date_accessed": "2026-10-14"
+  },
+  {
+    "class_id": 56,
+    "MaLoaiCay": 57,
+    "original_label": "Parrot Flower (Heliconia psittacorum)",
+    "ten_viet_goi_y": "Chuối mỏ két",
+    "ten_khoa_hoc_theo_nhan": "Heliconia psittacorum",
+    "phạm_vi_nhan": "Loài được ghi trong nhãn; chưa xác minh toàn bộ ảnh training",
+    "dac_diem": "Lá dài giống lá chuối; cụm hoa có lá bắc đứng màu cam hoặc đỏ và hoa nhỏ.",
+    "xuat_xu": "Châu Mỹ nhiệt đới",
+    "cham_soc_tom_tat": "Ánh sáng mạnh; đất hữu cơ và thoát nước; giữ ẩm trong thời kỳ sinh trưởng.",
+    "gia_vnd_gia_lap": 140000,
+    "sources": [
+      {
+        "url": "https://powo.science.kew.org/taxon/urn:lsid:ipni.org:names:796972-1",
+        "scope": "Loài; nguồn gốc"
+      }
+    ],
+    "date_accessed": "2026-10-14"
+  },
+  {
+    "class_id": 57,
+    "MaLoaiCay": 58,
+    "original_label": "Peace lily",
+    "ten_viet_goi_y": "Lan ý",
+    "ten_khoa_hoc_theo_nhan": "Spathiphyllum spp.",
+    "phạm_vi_nhan": "Nhãn không nêu loài; không tự mặc định S. wallisii.",
+    "dac_diem": "Lá xanh hình mác, gân nổi; mo hoa thường trắng bao quanh trục hoa thẳng.",
+    "xuat_xu": "Châu Mỹ nhiệt đới và một số vùng châu Á, tùy loài",
+    "cham_soc_tom_tat": "Ánh sáng tán xạ; giữ ẩm vừa; chậu thoát nước; tránh nắng gắt và khô kéo dài.",
+    "gia_vnd_gia_lap": 100000,
+    "sources": [
+      {
+        "url": "https://plants.ces.ncsu.edu/plants/spathiphyllum/",
+        "scope": "genus_or_group",
+        "heading": "Spathiphyllum"
+      }
+    ],
+    "date_accessed": "2026-10-14"
+  },
+  {
+    "class_id": 58,
+    "MaLoaiCay": 59,
+    "original_label": "Peppermint (Mentha piperita)",
+    "ten_viet_goi_y": "Bạc hà",
+    "ten_khoa_hoc_theo_nhan": "Mentha x piperita",
+    "phạm_vi_nhan": "Giữ liên kết nhãn Mentha piperita; tên thực vật có ký hiệu lai.",
+    "dac_diem": "Thân thường vuông; lá mọc đối, mép răng cưa; lá có mùi bạc hà khi vò nhẹ.",
+    "xuat_xu": "Cây lai giữa bạc hà nước và bạc hà lục; được trồng rộng rãi",
+    "cham_soc_tom_tat": "Nơi sáng, nắng nhẹ; giữ đất ẩm và thoát nước; cắt tỉa, trồng chậu để hạn chế lan.",
+    "gia_vnd_gia_lap": 45000,
+    "sources": [
+      {
+        "url": "https://plants.ces.ncsu.edu/plants/mentha-x-piperita/",
+        "scope": "Hồ sơ cây lai peppermint"
+      }
+    ],
+    "date_accessed": "2026-10-14"
+  },
+  {
+    "class_id": 59,
+    "MaLoaiCay": 60,
+    "original_label": "Poinsettia (Euphorbia pulcherrima)",
+    "ten_viet_goi_y": "Trạng nguyên",
+    "ten_khoa_hoc_theo_nhan": "Euphorbia pulcherrima",
+    "phạm_vi_nhan": "Phần đỏ thường thấy là lá bắc, không phải cánh hoa.",
+    "dac_diem": "Cây bụi; lá bắc quanh cụm hoa đổi đỏ hoặc màu khác; hoa thật nhỏ ở giữa.",
+    "xuat_xu": "Mexico và Trung Mỹ",
+    "cham_soc_tom_tat": "Ánh sáng tán xạ mạnh; tưới khi mặt đất se khô; tránh úng; ra màu cần quang chu kỳ phù hợp.",
+    "gia_vnd_gia_lap": 120000,
+    "sources": [
+      {
+        "url": "https://plants.ces.ncsu.edu/plants/euphorbia-pulcherrima/",
+        "scope": "profile",
+        "heading": "Euphorbia pulcherrima"
+      }
+    ],
+    "date_accessed": "2026-10-14"
+  },
+  {
+    "class_id": 60,
+    "MaLoaiCay": 61,
+    "original_label": "Polka Dot Plant (Hypoestes phyllostachya)",
+    "ten_viet_goi_y": "Mặt nám",
+    "ten_khoa_hoc_theo_nhan": "Hypoestes phyllostachya",
+    "phạm_vi_nhan": "Loài được ghi trong nhãn; chưa xác minh toàn bộ ảnh training",
+    "dac_diem": "Lá bầu dục, nền xanh có nhiều đốm hồng, trắng hoặc đỏ tùy giống.",
+    "xuat_xu": "Madagascar",
+    "cham_soc_tom_tat": "Ánh sáng tán xạ; giữ ẩm vừa; bấm ngọn cho cây gọn, tránh nắng nóng trực tiếp.",
+    "gia_vnd_gia_lap": 60000,
+    "sources": [
+      {
+        "url": "https://plants.ces.ncsu.edu/plants/hypoestes-phyllostachya/",
+        "scope": "profile",
+        "heading": "Hypoestes phyllostachya"
+      }
+    ],
+    "date_accessed": "2026-10-14"
+  },
+  {
+    "class_id": 61,
+    "MaLoaiCay": 62,
+    "original_label": "Ponytail Palm (Beaucarnea recurvata)",
+    "ten_viet_goi_y": "Chân voi",
+    "ten_khoa_hoc_theo_nhan": "Beaucarnea recurvata",
+    "phạm_vi_nhan": "Không phải cây cau thực sự.",
+    "dac_diem": "Gốc thân phình lớn; lá rất dài, hẹp, cong rủ thành chùm trên ngọn.",
+    "xuat_xu": "Mexico",
+    "cham_soc_tom_tat": "Nhiều sáng; đất thoát nước nhanh; tưới thưa khi đất khô, tránh úng phần gốc.",
+    "gia_vnd_gia_lap": 240000,
+    "sources": [
+      {
+        "url": "https://plants.ces.ncsu.edu/plants/beaucarnea-recurvata/",
+        "scope": "profile",
+        "heading": "Beaucarnea recurvata"
+      }
+    ],
+    "date_accessed": "2026-10-14"
+  },
+  {
+    "class_id": 62,
+    "MaLoaiCay": 63,
+    "original_label": "Prayer Plant (Maranta leuconeura)",
+    "ten_viet_goi_y": "Đuôi công Maranta",
+    "ten_khoa_hoc_theo_nhan": "Maranta leuconeura",
+    "phạm_vi_nhan": "Loài được ghi trong nhãn; chưa xác minh toàn bộ ảnh training",
+    "dac_diem": "Lá bầu dục có họa tiết gân và mảng màu; lá có thể nâng hoặc khép vào ban đêm.",
+    "xuat_xu": "Brazil",
+    "cham_soc_tom_tat": "Ánh sáng tán xạ; độ ẩm khá cao; giữ đất ẩm nhẹ và thoát nước; tránh nắng gắt.",
+    "gia_vnd_gia_lap": 130000,
+    "sources": [
+      {
+        "url": "https://plants.ces.ncsu.edu/plants/maranta-leuconeura/",
+        "scope": "profile",
+        "heading": "Maranta leuconeura"
+      }
+    ],
+    "date_accessed": "2026-10-14"
+  },
+  {
+    "class_id": 63,
+    "MaLoaiCay": 64,
+    "original_label": "Rabbit Foot Fern (Davallia fejeensis)",
+    "ten_viet_goi_y": "Dương xỉ chân thỏ",
+    "ten_khoa_hoc_theo_nhan": "Davallia fejeensis",
+    "phạm_vi_nhan": "Nhãn không phải Dracaena dù mô hình từng nhầm.",
+    "dac_diem": "Thân rễ bò ngoài mặt chậu, phủ lông nâu sáng; lá xẻ nhỏ, tán nhẹ.",
+    "xuat_xu": "Fiji và khu vực Caroline",
+    "cham_soc_tom_tat": "Ánh sáng tán xạ; giá thể thoáng và ẩm nhẹ; không chôn kín thân rễ phủ lông.",
+    "gia_vnd_gia_lap": 120000,
+    "sources": [
+      {
+        "url": "https://plants.ces.ncsu.edu/plants/davallia-fejeensis/",
+        "scope": "profile",
+        "heading": "Davallia fejeensis"
+      }
+    ],
+    "date_accessed": "2026-10-14"
+  },
+  {
+    "class_id": 64,
+    "MaLoaiCay": 65,
+    "original_label": "Raindrop Peperomia (Peperomia polybotrya)",
+    "ten_viet_goi_y": "Trường sinh giọt nước",
+    "ten_khoa_hoc_theo_nhan": "Peperomia polybotrya",
+    "phạm_vi_nhan": "Loài được ghi trong nhãn; chưa xác minh toàn bộ ảnh training",
+    "dac_diem": "Lá dày bóng, hình giọt nước với đầu nhọn; tán nhỏ gọn, mọc từ thân đứng.",
+    "xuat_xu": "Colombia và Peru",
+    "cham_soc_tom_tat": "Ánh sáng tán xạ; đất thoáng; để lớp mặt khô trước khi tưới, tránh úng.",
+    "gia_vnd_gia_lap": 110000,
+    "sources": [
+      {
+        "url": "https://plants.ces.ncsu.edu/plants/peperomia-polybotrya/",
+        "scope": "profile",
+        "heading": "Peperomia polybotrya"
+      }
+    ],
+    "date_accessed": "2026-10-14"
+  },
+  {
+    "class_id": 65,
+    "MaLoaiCay": 66,
+    "original_label": "Rattlesnake Plant (Calathea lancifolia)",
+    "ten_viet_goi_y": "Đuôi công lá dài",
+    "ten_khoa_hoc_theo_nhan": "Calathea lancifolia",
+    "phạm_vi_nhan": "Tên Calathea lancifolia giữ theo nhãn; thường được chuyển sang Goeppertia insignis.",
+    "dac_diem": "Lá dài hẹp, mép lượn, nền sáng có các đốm sẫm dọc gân; mặt dưới thường tím.",
+    "xuat_xu": "Brazil",
+    "cham_soc_tom_tat": "Ánh sáng tán xạ; độ ẩm khá cao; giữ đất ẩm nhẹ và thoát nước; hạn chế nước nhiều muối.",
+    "gia_vnd_gia_lap": 150000,
+    "sources": [
+      {
+        "url": "https://plants.ces.ncsu.edu/plants/goeppertia-insignis/",
+        "scope": "profile",
+        "heading": "Goeppertia insignis"
+      }
+    ],
+    "date_accessed": "2026-10-14"
+  },
+  {
+    "class_id": 66,
+    "MaLoaiCay": 67,
+    "original_label": "Red-leaf Philodendron (Philodendron erubescens)",
+    "ten_viet_goi_y": "Trầu bà đỏ",
+    "ten_khoa_hoc_theo_nhan": "Philodendron erubescens",
+    "phạm_vi_nhan": "Giống lai mang tên thương mại có thể không tương ứng loài thuần.",
+    "dac_diem": "Dây leo; lá thuôn hình tim hoặc mũi tên; cuống và bẹ có sắc đỏ ở nhiều dạng.",
+    "xuat_xu": "Colombia",
+    "cham_soc_tom_tat": "Ánh sáng tán xạ; giá thể thoáng; tưới khi lớp mặt khô; cung cấp trụ leo.",
+    "gia_vnd_gia_lap": 160000,
+    "sources": [
+      {
+        "url": "https://plants.ces.ncsu.edu/plants/philodendron-erubescens/",
+        "scope": "profile",
+        "heading": "Philodendron erubescens"
+      }
+    ],
+    "date_accessed": "2026-10-14"
+  },
+  {
+    "class_id": 67,
+    "MaLoaiCay": 68,
+    "original_label": "Rose-painted Calathea (Calathea roseopicta)",
+    "ten_viet_goi_y": "Đuôi công hồng",
+    "ten_khoa_hoc_theo_nhan": "Calathea roseopicta",
+    "phạm_vi_nhan": "Tên Calathea giữ theo nhãn mô hình; thường được chuyển sang Goeppertia.",
+    "dac_diem": "Lá bầu dục rộng, có vòng hoặc mảng hoa văn sáng; một số giống có sắc hồng, mặt dưới tím.",
+    "xuat_xu": "Miền tây Nam Mỹ đến miền tây Brazil",
+    "cham_soc_tom_tat": "Ánh sáng tán xạ; giữ ẩm nhẹ và độ ẩm không khí khá cao; tránh nắng trực tiếp, không úng.",
+    "gia_vnd_gia_lap": 160000,
+    "sources": [
+      {
+        "url": "https://plants.ces.ncsu.edu/plants/goeppertia-roseopicta/",
+        "scope": "profile",
+        "heading": "Goeppertia roseopicta"
+      }
+    ],
+    "date_accessed": "2026-10-14"
+  },
+  {
+    "class_id": 68,
+    "MaLoaiCay": 69,
+    "original_label": "Round-leaf Calathea (Calathea orbifolia)",
+    "ten_viet_goi_y": "Đuôi công lá tròn",
+    "ten_khoa_hoc_theo_nhan": "Calathea orbifolia",
+    "phạm_vi_nhan": "Tên Calathea giữ theo nhãn mô hình; thường được chuyển sang Goeppertia.",
+    "dac_diem": "Lá lớn gần tròn, có các dải xanh và bạc song song theo gân, cuống dài.",
+    "xuat_xu": "Miền đông Brazil",
+    "cham_soc_tom_tat": "Ánh sáng tán xạ; ẩm không khí khá cao; đất ẩm nhẹ, thoát nước; tránh nắng và nước nhiều muối.",
+    "gia_vnd_gia_lap": 200000,
+    "sources": [
+      {
+        "url": "https://plants.ces.ncsu.edu/plants/goeppertia-orbifolia/",
+        "scope": "profile",
+        "heading": "Goeppertia orbifolia"
+      },
+      {
+        "url": "https://powo.science.kew.org/taxon/urn:lsid:ipni.org:names:60461168-2",
+        "scope": "Tên chấp nhận và nguồn gốc miền đông Brazil"
+      }
+    ],
+    "date_accessed": "2026-10-14"
+  },
+  {
+    "class_id": 69,
+    "MaLoaiCay": 70,
+    "original_label": "Rubber Plant (Ficus elastica)",
+    "ten_viet_goi_y": "Đa búp đỏ",
+    "ten_khoa_hoc_theo_nhan": "Ficus elastica",
+    "phạm_vi_nhan": "Loài được ghi trong nhãn; chưa xác minh toàn bộ ảnh training",
+    "dac_diem": "Lá lớn, dày, bóng; chồi non thường được bao bởi bẹ đỏ; có nhựa mủ trắng.",
+    "xuat_xu": "Nam Á và Đông Nam Á",
+    "cham_soc_tom_tat": "Ánh sáng tán xạ mạnh; để lớp mặt đất khô trước khi tưới; lau lá, tránh úng.",
+    "gia_vnd_gia_lap": 180000,
+    "sources": [
+      {
+        "url": "https://plants.ces.ncsu.edu/plants/ficus-elastica/",
+        "scope": "profile",
+        "heading": "Ficus elastica"
+      }
+    ],
+    "date_accessed": "2026-10-14"
+  },
+  {
+    "class_id": 70,
+    "MaLoaiCay": 71,
+    "original_label": "Sago Palm (Cycas revoluta)",
+    "ten_viet_goi_y": "Vạn tuế",
+    "ten_khoa_hoc_theo_nhan": "Cycas revoluta",
+    "phạm_vi_nhan": "Thuộc nhóm tuế, không phải cau; không ăn các bộ phận cây.",
+    "dac_diem": "Thân cứng; lá kép lông chim cứng, mọc thành vòng; lá chét hẹp, mép hơi cuộn.",
+    "xuat_xu": "Nhật Bản và khu vực lân cận",
+    "cham_soc_tom_tat": "Nhiều sáng; đất thoát nước; tưới khi lớp mặt khô; tránh giữ tâm ngọn ướt kéo dài.",
+    "gia_vnd_gia_lap": 300000,
+    "sources": [
+      {
+        "url": "https://plants.ces.ncsu.edu/plants/cycas-revoluta/",
+        "scope": "profile",
+        "heading": "Cycas revoluta"
+      }
+    ],
+    "date_accessed": "2026-10-14"
+  },
+  {
+    "class_id": 71,
+    "MaLoaiCay": 72,
+    "original_label": "Schefflera",
+    "ten_viet_goi_y": "Ngũ gia bì theo nhóm",
+    "ten_khoa_hoc_theo_nhan": "Schefflera spp. (nhãn mô hình)",
+    "phạm_vi_nhan": "Không tự gán thành Heptapleurum arboricola nếu chưa xem ảnh và nguồn.",
+    "dac_diem": "Lá kép chân vịt, nhiều lá chét tỏa từ một điểm; kiểu tán và kích thước tùy loài.",
+    "xuat_xu": "Phụ thuộc loài; nhãn chưa đủ xác định vùng bản địa",
+    "cham_soc_tom_tat": "Ánh sáng tán xạ; đất thoát nước; tưới khi lớp mặt khô; tỉa để giữ tán gọn.",
+    "gia_vnd_gia_lap": 130000,
+    "sources": [
+      {
+        "url": "https://plants.ces.ncsu.edu/plants/heptapleurum-arboricola/common-name/parasol-plant/",
+        "scope": "Loài đại diện nhóm được bán tên Schefflera; không gán thành loài này"
+      }
+    ],
+    "date_accessed": "2026-10-14"
+  },
+  {
+    "class_id": 72,
+    "MaLoaiCay": 73,
+    "original_label": "Silver Pothos (Scindapsus pictus)",
+    "ten_viet_goi_y": "Trầu bà bạc",
+    "ten_khoa_hoc_theo_nhan": "Scindapsus pictus",
+    "phạm_vi_nhan": "Loài được ghi trong nhãn; chưa xác minh toàn bộ ảnh training",
+    "dac_diem": "Dây leo; lá dạng tim xanh với mảng hoặc đốm bạc, bề mặt thường hơi mịn.",
+    "xuat_xu": "Đông Nam Á",
+    "cham_soc_tom_tat": "Ánh sáng tán xạ; giá thể thoáng; tưới khi lớp mặt khô; cho leo hoặc trồng rủ.",
+    "gia_vnd_gia_lap": 95000,
+    "sources": [
+      {
+        "url": "https://plants.ces.ncsu.edu/plants/scindapsus-pictus/",
+        "scope": "profile",
+        "heading": "Scindapsus pictus"
+      }
+    ],
+    "date_accessed": "2026-10-14"
+  },
+  {
+    "class_id": 73,
+    "MaLoaiCay": 74,
+    "original_label": "Snake plant (Sanseviera)",
+    "ten_viet_goi_y": "Lưỡi hổ theo nhóm",
+    "ten_khoa_hoc_theo_nhan": "Sansevieria spp. (nhãn viết Sanseviera)",
+    "phạm_vi_nhan": "Nhãn sai chính tả và chỉ ở cấp chi; nhiều loài được xếp trong Dracaena.",
+    "dac_diem": "Lá mọng thường mọc thẳng từ gốc; nhiều dạng có vân ngang hoặc viền vàng.",
+    "xuat_xu": "Phụ thuộc loài; nhiều loài từ châu Phi",
+    "cham_soc_tom_tat": "Nơi sáng tán xạ; đất thoát nước nhanh; để đất khô giữa các lần tưới, tránh úng.",
+    "gia_vnd_gia_lap": 100000,
+    "sources": [
+      {
+        "url": "https://plants.ces.ncsu.edu/plants/dracaena/",
+        "scope": "genus_or_group",
+        "heading": "Dracaena"
+      }
+    ],
+    "date_accessed": "2026-10-14"
+  },
+  {
+    "class_id": 74,
+    "MaLoaiCay": 75,
+    "original_label": "Song of India (Dracaena reflexa)",
+    "ten_viet_goi_y": "Trúc bách hợp",
+    "ten_khoa_hoc_theo_nhan": "Dracaena reflexa",
+    "phạm_vi_nhan": "Song of India là dạng giống trồng, không đại diện mọi Dracaena reflexa.",
+    "dac_diem": "Lá hẹp thuôn, mọc dày ở đầu cành; dạng Song of India thường có viền vàng.",
+    "xuat_xu": "Madagascar, Mozambique và các đảo tây Ấn Độ Dương",
+    "cham_soc_tom_tat": "Ánh sáng tán xạ mạnh; đất thoát nước; để lớp mặt se khô trước khi tưới.",
+    "gia_vnd_gia_lap": 150000,
+    "sources": [
+      {
+        "url": "https://plants.ces.ncsu.edu/plants/dracaena/",
+        "scope": "genus_or_group",
+        "heading": "Dracaena"
+      },
+      {
+        "url": "https://powo.science.kew.org/taxon/534338-1",
+        "scope": "Loài; nguồn gốc"
+      }
+    ],
+    "date_accessed": "2026-10-14"
+  },
+  {
+    "class_id": 75,
+    "MaLoaiCay": 76,
+    "original_label": "Spider Plant (Chlorophytum comosum)",
+    "ten_viet_goi_y": "Lan chi",
+    "ten_khoa_hoc_theo_nhan": "Chlorophytum comosum",
+    "phạm_vi_nhan": "Loài được ghi trong nhãn; chưa xác minh toàn bộ ảnh training",
+    "dac_diem": "Lá dài hẹp mọc thành bụi; có dạng sọc trắng; cuống dài mang hoa nhỏ và cây con.",
+    "xuat_xu": "Các vùng châu Phi nhiệt đới và miền nam châu Phi",
+    "cham_soc_tom_tat": "Ánh sáng tán xạ; tưới khi lớp mặt đất se khô; thoát nước tốt, tách cây con để nhân giống.",
+    "gia_vnd_gia_lap": 55000,
+    "sources": [
+      {
+        "url": "https://plants.ces.ncsu.edu/plants/chlorophytum-comosum/",
+        "scope": "profile",
+        "heading": "Chlorophytum comosum"
+      }
+    ],
+    "date_accessed": "2026-10-14"
+  },
+  {
+    "class_id": 76,
+    "MaLoaiCay": 77,
+    "original_label": "Staghorn Fern (Platycerium bifurcatum)",
+    "ten_viet_goi_y": "Dương xỉ sừng hươu",
+    "ten_khoa_hoc_theo_nhan": "Platycerium bifurcatum",
+    "phạm_vi_nhan": "Không bóc lá nền nâu chỉ vì chúng đã đổi màu.",
+    "dac_diem": "Có lá nền áp sát giá đỡ và lá hữu thụ phân nhánh như sừng hươu.",
+    "xuat_xu": "Java đến New Caledonia",
+    "cham_soc_tom_tat": "Ánh sáng tán xạ; giá thể hoặc giá đỡ thoáng; tưới đẫm rồi để bề mặt se khô.",
+    "gia_vnd_gia_lap": 180000,
+    "sources": [
+      {
+        "url": "https://plants.ces.ncsu.edu/plants/platycerium-bifurcatum/",
+        "scope": "profile",
+        "heading": "Platycerium bifurcatum"
+      }
+    ],
+    "date_accessed": "2026-10-14"
+  },
+  {
+    "class_id": 77,
+    "MaLoaiCay": 78,
+    "original_label": "String of Pearls (Senecio rowleyanus)",
+    "ten_viet_goi_y": "Sen đá chuỗi ngọc",
+    "ten_khoa_hoc_theo_nhan": "Senecio rowleyanus",
+    "phạm_vi_nhan": "Tên cũ trong nhãn; thường dùng Curio rowleyanus.",
+    "dac_diem": "Thân nhỏ rủ; lá mọng gần hình cầu xếp như chuỗi hạt, có đường cửa sổ trên lá.",
+    "xuat_xu": "Miền nam châu Phi",
+    "cham_soc_tom_tat": "Nơi sáng, nắng nhẹ thích nghi; đất thoát nước nhanh; để đất khô giữa các lần tưới.",
+    "gia_vnd_gia_lap": 80000,
+    "sources": [
+      {
+        "url": "https://plants.ces.ncsu.edu/plants/curio-rowleyanus/",
+        "scope": "profile",
+        "heading": "Curio rowleyanus"
+      }
+    ],
+    "date_accessed": "2026-10-14"
+  },
+  {
+    "class_id": 78,
+    "MaLoaiCay": 79,
+    "original_label": "Swiss Cheese Vine (Monstera adansonii)",
+    "ten_viet_goi_y": "Trầu bà lỗ",
+    "ten_khoa_hoc_theo_nhan": "Monstera adansonii",
+    "phạm_vi_nhan": "Lá non hoặc thiếu sáng có thể ít lỗ; không tự kết luận sai nhãn chỉ vì không thấy lỗ.",
+    "dac_diem": "Dây leo; lá có lỗ nằm trong phiến khi phát triển, mép thường còn nguyên.",
+    "xuat_xu": "Trung Mỹ và Nam Mỹ nhiệt đới",
+    "cham_soc_tom_tat": "Ánh sáng tán xạ; đất thoáng; tưới khi lớp mặt khô; có thể leo trụ hoặc trồng rủ.",
+    "gia_vnd_gia_lap": 100000,
+    "sources": [
+      {
+        "url": "https://plants.ces.ncsu.edu/plants/monstera-adansonii/",
+        "scope": "profile",
+        "heading": "Monstera adansonii"
+      }
+    ],
+    "date_accessed": "2026-10-14"
+  },
+  {
+    "class_id": 79,
+    "MaLoaiCay": 80,
+    "original_label": "Tree Philodendron (Philodendron bipinnatifidum)",
+    "ten_viet_goi_y": "Trầu bà thanh xuân",
+    "ten_khoa_hoc_theo_nhan": "Philodendron bipinnatifidum",
+    "phạm_vi_nhan": "Tên cũ trong nhãn; thường dùng Thaumatophyllum bipinnatifidum.",
+    "dac_diem": "Lá rất lớn, xẻ nhiều thùy sâu; cây trưởng thành phát triển thân và tán rộng.",
+    "xuat_xu": "Nam Mỹ",
+    "cham_soc_tom_tat": "Ánh sáng tán xạ mạnh; đất thoáng; giữ ẩm vừa; chừa không gian cho tán lớn.",
+    "gia_vnd_gia_lap": 240000,
+    "sources": [
+      {
+        "url": "https://plants.ces.ncsu.edu/plants/philodendron-bipinnatifidum/",
+        "scope": "profile",
+        "heading": "Philodendron bipinnatifidum"
+      }
+    ],
+    "date_accessed": "2026-10-14"
+  },
+  {
+    "class_id": 80,
+    "MaLoaiCay": 81,
+    "original_label": "Tulip",
+    "ten_viet_goi_y": "Hoa tulip",
+    "ten_khoa_hoc_theo_nhan": "Tulipa spp.",
+    "phạm_vi_nhan": "Nhãn cấp chi/nhóm; không tự gán một loài.",
+    "dac_diem": "Cây thân hành, lá rộng hoặc dạng dải; hoa thường dạng chén ở đầu cuống.",
+    "xuat_xu": "Phụ thuộc loài; nhiều loài ở Trung Á và khu vực lân cận",
+    "cham_soc_tom_tat": "Nơi sáng, khí hậu mát; giá thể thoát nước; tưới trong mùa sinh trưởng; cần xử lý lạnh tùy giống.",
+    "gia_vnd_gia_lap": 100000,
+    "sources": [
+      {
+        "url": "https://plants.ces.ncsu.edu/plants/tulipa/",
+        "scope": "genus_or_group",
+        "heading": "Tulipa"
+      }
+    ],
+    "date_accessed": "2026-10-14"
+  },
+  {
+    "class_id": 81,
+    "MaLoaiCay": 82,
+    "original_label": "Venus Flytrap",
+    "ten_viet_goi_y": "Cây bẫy kẹp",
+    "ten_khoa_hoc_theo_nhan": "Dionaea muscipula",
+    "phạm_vi_nhan": "Không dùng đất giàu phân hoặc cho ăn thịt; không chạm bẫy để chơi.",
+    "dac_diem": "Lá có hai thùy tạo bẫy, mép có răng dài; lông cảm ứng kích hoạt đóng bẫy.",
+    "xuat_xu": "Vùng ven biển Bắc Carolina và Nam Carolina, Hoa Kỳ",
+    "cham_soc_tom_tat": "Nắng tốt sau thích nghi; dùng nước mưa hoặc nước ít khoáng, giá thể nghèo dinh dưỡng; cần mùa nghỉ.",
+    "gia_vnd_gia_lap": 120000,
+    "sources": [
+      {
+        "url": "https://plants.ces.ncsu.edu/plants/dionaea-muscipula/",
+        "scope": "profile",
+        "heading": "Dionaea muscipula"
+      }
+    ],
+    "date_accessed": "2026-10-14"
+  },
+  {
+    "class_id": 82,
+    "MaLoaiCay": 83,
+    "original_label": "Watermelon Peperomia (Peperomia argyreia)",
+    "ten_viet_goi_y": "Trường sinh dưa hấu",
+    "ten_khoa_hoc_theo_nhan": "Peperomia argyreia",
+    "phạm_vi_nhan": "Kew chấp nhận Peperomia argyraea; giữ Peperomia argyreia theo nhãn mô hình.",
+    "dac_diem": "Lá bầu dục gần tròn, có sọc bạc và xanh như vỏ dưa hấu; cuống thường đỏ.",
+    "xuat_xu": "Brazil",
+    "cham_soc_tom_tat": "Ánh sáng tán xạ; giá thể thoáng; để lớp mặt khô trước khi tưới; tránh úng.",
+    "gia_vnd_gia_lap": 110000,
+    "sources": [
+      {
+        "url": "https://plants.ces.ncsu.edu/plants/peperomia-argyraea/",
+        "scope": "profile",
+        "heading": "Peperomia argyraea"
+      },
+      {
+        "url": "https://powo.science.kew.org/taxon/678020-1",
+        "scope": "Tên chấp nhận P. argyraea; nguồn gốc Brazil"
+      }
+    ],
+    "date_accessed": "2026-10-14"
+  },
+  {
+    "class_id": 83,
+    "MaLoaiCay": 84,
+    "original_label": "Weeping Fig (Ficus benjamina)",
+    "ten_viet_goi_y": "Si cảnh",
+    "ten_khoa_hoc_theo_nhan": "Ficus benjamina",
+    "phạm_vi_nhan": "Loài được ghi trong nhãn; chưa xác minh toàn bộ ảnh training",
+    "dac_diem": "Cây thân gỗ, cành mảnh hơi rủ; lá nhỏ bóng, bầu dục có đầu nhọn dài.",
+    "xuat_xu": "Châu Á nhiệt đới đến Bắc Australia",
+    "cham_soc_tom_tat": "Ánh sáng tán xạ mạnh; tưới khi mặt đất se khô; tránh đổi vị trí hoặc nhiệt độ đột ngột.",
+    "gia_vnd_gia_lap": 160000,
+    "sources": [
+      {
+        "url": "https://plants.ces.ncsu.edu/plants/ficus-benjamina/",
+        "scope": "profile",
+        "heading": "Ficus benjamina"
+      }
+    ],
+    "date_accessed": "2026-10-14"
+  },
+  {
+    "class_id": 84,
+    "MaLoaiCay": 85,
+    "original_label": "White Bird of Paradise (Strelitzia nicolai)",
+    "ten_viet_goi_y": "Thiên điểu trắng",
+    "ten_khoa_hoc_theo_nhan": "Strelitzia nicolai",
+    "phạm_vi_nhan": "Lá có thể rách tự nhiên dọc gân; khó phân biệt cây non chỉ từ lá xa.",
+    "dac_diem": "Tán lớn, lá dài rộng giống lá chuối; hoa có phần trắng và xanh, mo sẫm.",
+    "xuat_xu": "Miền nam châu Phi",
+    "cham_soc_tom_tat": "Nhiều sáng; đất thoát nước; tưới khi mặt đất se khô; chừa không gian cho tán lớn.",
+    "gia_vnd_gia_lap": 300000,
+    "sources": [
+      {
+        "url": "https://plants.ces.ncsu.edu/plants/strelitzia-nicolai/",
+        "scope": "profile",
+        "heading": "Strelitzia nicolai"
+      }
+    ],
+    "date_accessed": "2026-10-14"
+  },
+  {
+    "class_id": 85,
+    "MaLoaiCay": 86,
+    "original_label": "Yew Plum Pine (Podocarpus macrophyllus)",
+    "ten_viet_goi_y": "Tùng la hán",
+    "ten_khoa_hoc_theo_nhan": "Podocarpus macrophyllus",
+    "phạm_vi_nhan": "Loài được ghi trong nhãn; chưa xác minh toàn bộ ảnh training",
+    "dac_diem": "Cây gỗ thường xanh; lá hẹp hình dải, dai, gân giữa rõ; cây trưởng thành có cấu trúc hạt đặc trưng.",
+    "xuat_xu": "Đông Á",
+    "cham_soc_tom_tat": "Nơi sáng và nắng thích nghi; đất thoát nước; tưới khi lớp mặt se khô; tỉa tạo dáng.",
+    "gia_vnd_gia_lap": 250000,
+    "sources": [
+      {
+        "url": "https://plants.ces.ncsu.edu/plants/podocarpus-macrophyllus/",
+        "scope": "profile",
+        "heading": "Podocarpus macrophyllus"
+      }
+    ],
+    "date_accessed": "2026-10-14"
+  },
+  {
+    "class_id": 86,
+    "MaLoaiCay": 87,
+    "original_label": "Yucca",
+    "ten_viet_goi_y": "Yucca cảnh",
+    "ten_khoa_hoc_theo_nhan": "Yucca spp.",
+    "phạm_vi_nhan": "Nhãn cấp chi; không tự gán thành Yucca gigantea.",
+    "dac_diem": "Lá cứng dài dạng kiếm xếp hoa thị; một số dạng có thân gỗ, hình dáng tùy loài.",
+    "xuat_xu": "Châu Mỹ, tùy loài",
+    "cham_soc_tom_tat": "Nhiều sáng; giá thể thoát nước nhanh; tưới sau khi đất se khô; tránh úng.",
+    "gia_vnd_gia_lap": 200000,
+    "sources": [
+      {
+        "url": "https://plants.ces.ncsu.edu/plants/yucca-filamentosa/common-name/spoonleaf-yucca/",
+        "scope": "Loài đại diện của chi; không gán Yucca thành loài này"
+      }
+    ],
+    "date_accessed": "2026-10-14"
+  },
+  {
+    "class_id": 87,
+    "MaLoaiCay": 88,
+    "original_label": "ZZ Plant (Zamioculcas zamiifolia)",
+    "ten_viet_goi_y": "Kim tiền",
+    "ten_khoa_hoc_theo_nhan": "Zamioculcas zamiifolia",
+    "phạm_vi_nhan": "Loài được ghi trong nhãn; chưa xác minh toàn bộ ảnh training",
+    "dac_diem": "Cuống lá dày mọc từ thân rễ; nhiều lá chét dày bóng xếp dọc cuống.",
+    "xuat_xu": "Đông châu Phi",
+    "cham_soc_tom_tat": "Ánh sáng tán xạ; giá thể thoát nước; để đất khô giữa các lần tưới; tránh úng thân rễ.",
+    "gia_vnd_gia_lap": 150000,
+    "sources": [
+      {
+        "url": "https://plants.ces.ncsu.edu/plants/zamioculcas-zamiifolia/",
+        "scope": "profile",
+        "heading": "Zamioculcas zamiifolia"
+      }
+    ],
+    "date_accessed": "2026-10-14"
+  },
+  {
+    "class_id": 88,
+    "MaLoaiCay": 89,
+    "original_label": "Zebra Haworthia (Haworthiopsis attenuata)",
+    "ten_viet_goi_y": "Sen đá móng rồng",
+    "ten_khoa_hoc_theo_nhan": "Haworthiopsis attenuata",
+    "phạm_vi_nhan": "Dễ nhầm H. fasciata; cần xem bề mặt hai phía lá.",
+    "dac_diem": "Lá mọng nhọn xếp hoa thị; bề mặt có các hàng u trắng nổi như vằn.",
+    "xuat_xu": "Nam Phi",
+    "cham_soc_tom_tat": "Nơi sáng dịu; đất thoát nước nhanh; tưới khi đất khô, tránh nắng trưa và nước đọng tâm.",
+    "gia_vnd_gia_lap": 60000,
+    "sources": [
+      {
+        "url": "https://plants.ces.ncsu.edu/plants/haworthiopsis-attenuata/",
+        "scope": "profile",
+        "heading": "Haworthiopsis attenuata"
+      }
+    ],
+    "date_accessed": "2026-10-14"
+  },
+  {
+    "class_id": 89,
+    "MaLoaiCay": 90,
+    "original_label": "Zebra Plant (Aphelandra squarrosa)",
+    "ten_viet_goi_y": "Cây ngựa vằn Aphelandra",
+    "ten_khoa_hoc_theo_nhan": "Aphelandra squarrosa",
+    "phạm_vi_nhan": "Không phải sen đá móng rồng dù cùng tên tiếng Anh Zebra.",
+    "dac_diem": "Lá xanh sẫm, gân trắng nổi rõ; cụm lá bắc vàng có thể xuất hiện ở ngọn.",
+    "xuat_xu": "Brazil",
+    "cham_soc_tom_tat": "Ánh sáng tán xạ; giữ ẩm vừa và độ ẩm không khí khá cao; không để úng hoặc nắng gắt.",
+    "gia_vnd_gia_lap": 150000,
+    "sources": [
+      {
+        "url": "https://plants.ces.ncsu.edu/plants/aphelandra-squarrosa/",
+        "scope": "profile",
+        "heading": "Aphelandra squarrosa"
+      }
+    ],
+    "date_accessed": "2026-10-14"
+  }
+]
