@@ -4,7 +4,7 @@ import { useCart } from '../context/CartContext';
 import { apiFetch, getApiBaseUrl } from '../config';
 
 export default function AdminDashboardPage({ onBackToStore, onSelectProduct }) {
-  const [activeTab, setActiveTab] = useState('overview'); // overview, products, orders, ai_logs, species
+  const [activeTab, setActiveTab] = useState('overview'); // overview, products, orders, users, ai_logs, species
   const [stats, setStats] = useState({
     tong_doanh_thu: 38500000,
     tong_don_hang: 142,
@@ -17,6 +17,7 @@ export default function AdminDashboardPage({ onBackToStore, onSelectProduct }) {
 
   const [products, setProducts] = useState([]);
   const [orders, setOrders] = useState([]);
+  const [users, setUsers] = useState([]);
   const [aiLogs, setAiLogs] = useState([]);
   const [speciesList, setSpeciesList] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -25,10 +26,25 @@ export default function AdminDashboardPage({ onBackToStore, onSelectProduct }) {
   const [productSearch, setProductSearch] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [orderFilter, setOrderFilter] = useState('all');
+  const [userSearch, setUserSearch] = useState('');
+  const [userRoleFilter, setUserRoleFilter] = useState('all');
+  const [userStatusFilter, setUserStatusFilter] = useState('all');
 
   // Modals state
   const [editingProduct, setEditingProduct] = useState(null);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [editingUser, setEditingUser] = useState(null);
+  const [isAddUserModalOpen, setIsAddUserModalOpen] = useState(false);
+
+  const [newUser, setNewUser] = useState({
+    taiKhoan: '',
+    matKhau: '',
+    hoTen: '',
+    email: '',
+    diaChi: '',
+    vaiTro: 'KhachHang',
+    trangThaiTaiKhoan: 'HoatDong'
+  });
   const [newProduct, setNewProduct] = useState({
     MaLoaiCay: 1,
     TenSanPham: '',
@@ -66,14 +82,21 @@ export default function AdminDashboardPage({ onBackToStore, onSelectProduct }) {
         setOrders(data);
       }
 
-      // 4. AI Logs
+      // 4. Tài khoản người dùng & nhân viên
+      const resUsers = await apiFetch('/api/admin/nguoi-dung');
+      if (resUsers.ok) {
+        const data = await resUsers.json();
+        setUsers(data);
+      }
+
+      // 5. AI Logs
       const resLogs = await apiFetch('/api/admin/ai-logs');
       if (resLogs.ok) {
         const data = await resLogs.json();
         setAiLogs(data);
       }
 
-      // 5. Loài cây
+      // 6. Loài cây
       const resSpecies = await apiFetch('/api/loai-cay');
       if (resSpecies.ok) {
         const data = await resSpecies.json();
@@ -192,6 +215,136 @@ export default function AdminDashboardPage({ onBackToStore, onSelectProduct }) {
     return orders.filter((o) => (o.TrangThaiDonHang || o.trangthaidonhang) === orderFilter);
   }, [orders, orderFilter]);
 
+  // User management handlers
+  const handleCreateUser = async (e) => {
+    e.preventDefault();
+    if (!newUser.taiKhoan || !newUser.matKhau || !newUser.hoTen) {
+      showToast('⚠️ Vui lòng điền đủ Tên tài khoản, Mật khẩu và Họ tên!');
+      return;
+    }
+    try {
+      const res = await apiFetch('/api/admin/nguoi-dung', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newUser)
+      });
+      if (res.ok) {
+        showToast('🎉 Đã tạo tài khoản nhân sự / người dùng mới thành công!');
+        setIsAddUserModalOpen(false);
+        setNewUser({
+          taiKhoan: '',
+          matKhau: '',
+          hoTen: '',
+          email: '',
+          diaChi: '',
+          vaiTro: 'KhachHang',
+          trangThaiTaiKhoan: 'HoatDong'
+        });
+        fetchAllData();
+      } else {
+        const err = await res.json().catch(() => ({}));
+        showToast(`❌ ${err.detail || 'Không thể tạo tài khoản'}`);
+      }
+    } catch (e) {
+      showToast('❌ Lỗi khi gửi dữ liệu tạo tài khoản');
+    }
+  };
+
+  const handleSaveUser = async (e) => {
+    e.preventDefault();
+    if (!editingUser) return;
+    const uid = editingUser.MaNguoiDung || editingUser.manguoidung;
+    try {
+      const res = await apiFetch(`/api/admin/nguoi-dung/${uid}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          hoTen: editingUser.HoTen || editingUser.hoten,
+          email: editingUser.Email || editingUser.email,
+          diaChi: editingUser.DiaChi || editingUser.diachi,
+          vaiTro: editingUser.VaiTro || editingUser.vaitro,
+          trangThaiTaiKhoan: editingUser.TrangThaiTaiKhoan || editingUser.trangthaitaikhoan,
+          matKhau: editingUser.MatKhauMoi || undefined
+        })
+      });
+      if (res.ok) {
+        showToast('✅ Đã cập nhật thông tin tài khoản thành công!');
+        setEditingUser(null);
+        fetchAllData();
+      } else {
+        showToast('❌ Lỗi khi lưu cập nhật tài khoản');
+      }
+    } catch (e) {
+      showToast('❌ Không thể kết nối để cập nhật');
+    }
+  };
+
+  const handleToggleUserStatus = async (uid, currentStatus) => {
+    const nextStatus = currentStatus === 'HoatDong' ? 'BiKhoa' : 'HoatDong';
+    try {
+      const res = await apiFetch(`/api/admin/nguoi-dung/${uid}/trang-thai`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ trangThai: nextStatus })
+      });
+      if (res.ok) {
+        showToast(`✅ Đã chuyển trạng thái tài khoản #${uid} -> ${nextStatus === 'HoatDong' ? 'Đang hoạt động' : 'Bị khóa'}`);
+        fetchAllData();
+      }
+    } catch (e) {
+      showToast('❌ Không thể cập nhật trạng thái tài khoản');
+    }
+  };
+
+  const handleChangeUserRole = async (uid, newRole) => {
+    try {
+      const res = await apiFetch(`/api/admin/nguoi-dung/${uid}/vai-tro`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ vaiTro: newRole })
+      });
+      if (res.ok) {
+        showToast(`✅ Đã phân quyền tài khoản #${uid} -> ${newRole}`);
+        fetchAllData();
+      }
+    } catch (e) {
+      showToast('❌ Không thể đổi vai trò');
+    }
+  };
+
+  const handleDeleteUser = async (uid, accountName) => {
+    if (!window.confirm(`Bạn có chắc chắn muốn xóa/khóa tài khoản "${accountName}" (#${uid}) không?`)) return;
+    try {
+      const res = await apiFetch(`/api/admin/nguoi-dung/${uid}`, { method: 'DELETE' });
+      if (res.ok) {
+        const d = await res.json().catch(() => ({}));
+        showToast(d.message || `Đã xử lý tài khoản #${uid}`);
+        fetchAllData();
+      }
+    } catch (e) {
+      showToast('❌ Lỗi khi xóa tài khoản');
+    }
+  };
+
+  // Filtered users
+  const filteredUsers = useMemo(() => {
+    return users.filter((u) => {
+      const tk = (u.TaiKhoan || u.taikhoan || '').toLowerCase();
+      const ht = (u.HoTen || u.hoten || '').toLowerCase();
+      const em = (u.Email || u.email || '').toLowerCase();
+      const q = userSearch.toLowerCase();
+      const matchSearch = !q || tk.includes(q) || ht.includes(q) || em.includes(q);
+
+      const role = u.VaiTro || u.vaitro || '';
+      const matchRole = userRoleFilter === 'all' || role === userRoleFilter;
+
+      const st = u.TrangThaiTaiKhoan || u.trangthaitaikhoan || '';
+      const matchStatus = userStatusFilter === 'all' || st === userStatusFilter;
+
+      return matchSearch && matchRole && matchStatus;
+    });
+  }, [users, userSearch, userRoleFilter, userStatusFilter]);
+
   return (
     <div className="min-h-screen bg-[#f4f7f4] flex text-gray-800 font-['Plus_Jakarta_Sans']">
       {/* 1. SIDEBAR */}
@@ -253,6 +406,21 @@ export default function AdminDashboardPage({ onBackToStore, onSelectProduct }) {
               <span>Đơn hàng</span>
               <span className="ml-auto bg-amber-400/20 text-amber-300 px-2 py-0.5 rounded-full text-[10px] font-bold">
                 {orders.length || '12+'}
+              </span>
+            </button>
+
+            <button
+              onClick={() => setActiveTab('users')}
+              className={`w-full flex items-center gap-3 px-3.5 py-3 rounded-2xl transition-all ${
+                activeTab === 'users'
+                  ? 'bg-emerald-600 text-white font-bold shadow-md shadow-emerald-900/40'
+                  : 'text-emerald-100/70 hover:bg-emerald-900/40 hover:text-white'
+              }`}
+            >
+              <span className="material-symbols-outlined text-lg">manage_accounts</span>
+              <span>Tài khoản &amp; Nhân sự</span>
+              <span className="ml-auto bg-blue-400/20 text-blue-300 px-2 py-0.5 rounded-full text-[10px] font-bold">
+                {users.length || '5+'}
               </span>
             </button>
 
@@ -326,6 +494,7 @@ export default function AdminDashboardPage({ onBackToStore, onSelectProduct }) {
                 {activeTab === 'overview' && 'Bảng Điều Khiển & Chỉ Số KPI'}
                 {activeTab === 'products' && 'Quản Lý Danh Mục Chậu Cây (SAN_PHAM)'}
                 {activeTab === 'orders' && 'Quản Lý Đơn Hàng & Vận Chuyển (DON_HANG)'}
+                {activeTab === 'users' && 'Quản Lý Tài Khoản, Phân Quyền & Nhân Sự (NGUOI_DUNG)'}
                 {activeTab === 'ai_logs' && 'Nhật Ký Giám Định AI (MobileNetV2 - TIM_ANH)'}
                 {activeTab === 'species' && 'Tri Thức 90 Loài Thực Vật Học (LOAI_CAY)'}
               </h1>
@@ -828,6 +997,176 @@ export default function AdminDashboardPage({ onBackToStore, onSelectProduct }) {
           )}
 
           {/* ======================================================== */}
+          {/* TAB 4: QUẢN LÝ TÀI KHOẢN, PHÂN QUYỀN & NHÂN SỰ (NGUOI_DUNG) */}
+          {/* ======================================================== */}
+          {activeTab === 'users' && (
+            <div className="space-y-6">
+              {/* Header Action: Tìm kiếm & Thêm tài khoản */}
+              <div className="bg-white p-5 rounded-3xl border border-gray-200/80 shadow-xs flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
+                <div className="flex flex-1 flex-wrap items-center gap-3">
+                  <div className="relative flex-1 min-w-[200px] max-w-md">
+                    <span className="material-symbols-outlined absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 text-lg">
+                      search
+                    </span>
+                    <input
+                      type="text"
+                      placeholder="Tìm tài khoản, họ tên, email..."
+                      value={userSearch}
+                      onChange={(e) => setUserSearch(e.target.value)}
+                      className="w-full pl-10 pr-4 py-2.5 rounded-2xl border border-gray-200 text-xs focus:outline-emerald-600 bg-gray-50/50"
+                    />
+                  </div>
+
+                  {/* Lọc Vai trò */}
+                  <select
+                    value={userRoleFilter}
+                    onChange={(e) => setUserRoleFilter(e.target.value)}
+                    className="px-3.5 py-2.5 rounded-2xl border border-gray-200 text-xs bg-white text-gray-700 font-semibold focus:outline-emerald-600"
+                  >
+                    <option value="all">Tất cả vai trò</option>
+                    <option value="Admin">Admin (Quản trị)</option>
+                    <option value="NhanVien">Nhân viên kho / Bán hàng</option>
+                    <option value="KhachHang">Khách hàng</option>
+                  </select>
+
+                  {/* Lọc Trạng thái */}
+                  <select
+                    value={userStatusFilter}
+                    onChange={(e) => setUserStatusFilter(e.target.value)}
+                    className="px-3.5 py-2.5 rounded-2xl border border-gray-200 text-xs bg-white text-gray-700 font-semibold focus:outline-emerald-600"
+                  >
+                    <option value="all">Tất cả trạng thái</option>
+                    <option value="HoatDong">Đang hoạt động</option>
+                    <option value="BiKhoa">Bị khóa</option>
+                  </select>
+                </div>
+
+                <button
+                  onClick={() => setIsAddUserModalOpen(true)}
+                  className="flex items-center justify-center gap-2 px-5 py-2.5 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition-all shadow-md shadow-emerald-700/20 active:scale-95 whitespace-nowrap"
+                >
+                  <span className="material-symbols-outlined text-base">person_add</span>
+                  <span>Thêm tài khoản / nhân sự mới</span>
+                </button>
+              </div>
+
+              {/* Bảng danh sách người dùng */}
+              <div className="bg-white rounded-3xl border border-gray-200/80 shadow-xs overflow-hidden">
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-xs text-gray-600">
+                    <thead className="bg-gray-50/80 text-[11px] uppercase font-bold text-gray-700 border-b border-gray-200">
+                      <tr>
+                        <th className="py-3.5 px-4">Mã ND</th>
+                        <th className="py-3.5 px-4">Tài khoản &amp; Họ tên</th>
+                        <th className="py-3.5 px-4">Email / Địa chỉ</th>
+                        <th className="py-3.5 px-4">Vai trò (Phân quyền)</th>
+                        <th className="py-3.5 px-4">Số đơn / Chi tiêu</th>
+                        <th className="py-3.5 px-4">Trạng thái</th>
+                        <th className="py-3.5 px-4 text-center">Thao tác</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-100 font-medium">
+                      {filteredUsers.length > 0 ? (
+                        filteredUsers.map((u) => {
+                          const uid = u.MaNguoiDung || u.manguoidung;
+                          const tk = u.TaiKhoan || u.taikhoan;
+                          const ht = u.HoTen || u.hoten || tk;
+                          const em = u.Email || u.email || 'Chưa cập nhật';
+                          const dc = u.DiaChi || u.diachi || '—';
+                          const role = u.VaiTro || u.vaitro || 'KhachHang';
+                          const st = u.TrangThaiTaiKhoan || u.trangthaitaikhoan || 'HoatDong';
+                          const donCount = Number(u.SoLuongDonHang || u.sotruongdonhang || 0);
+                          const spend = Number(u.TongChiTieu || u.tongchitieu || 0);
+
+                          return (
+                            <tr key={uid} className="hover:bg-emerald-50/30 transition-colors">
+                              <td className="py-3.5 px-4 font-mono font-bold text-emerald-900">#{uid}</td>
+                              <td className="py-3.5 px-4">
+                                <div className="flex items-center gap-2.5">
+                                  <div className="w-8 h-8 rounded-full bg-emerald-100 text-emerald-800 font-bold flex items-center justify-center text-xs">
+                                    {(ht || tk).charAt(0).toUpperCase()}
+                                  </div>
+                                  <div>
+                                    <div className="font-bold text-gray-900">{ht}</div>
+                                    <div className="text-[11px] text-gray-400 font-mono">@{tk}</div>
+                                  </div>
+                                </div>
+                              </td>
+                              <td className="py-3.5 px-4">
+                                <div className="text-gray-800">{em}</div>
+                                <div className="text-[10px] text-gray-400 truncate max-w-xs">{dc}</div>
+                              </td>
+                              <td className="py-3.5 px-4">
+                                <select
+                                  value={role}
+                                  onChange={(e) => handleChangeUserRole(uid, e.target.value)}
+                                  className={`px-2.5 py-1 rounded-xl text-[11px] font-bold border transition-all ${
+                                    role === 'Admin'
+                                      ? 'bg-purple-50 text-purple-800 border-purple-200'
+                                      : role === 'NhanVien'
+                                      ? 'bg-blue-50 text-blue-800 border-blue-200'
+                                      : 'bg-gray-100 text-gray-700 border-gray-200'
+                                  }`}
+                                >
+                                  <option value="Admin">Admin (Quản trị)</option>
+                                  <option value="NhanVien">Nhân viên</option>
+                                  <option value="KhachHang">Khách hàng</option>
+                                </select>
+                              </td>
+                              <td className="py-3.5 px-4">
+                                <div className="font-bold text-gray-900">{donCount} đơn</div>
+                                <div className="text-[10px] text-emerald-700 font-mono">{spend.toLocaleString('vi-VN')} ₫</div>
+                              </td>
+                              <td className="py-3.5 px-4">
+                                <button
+                                  onClick={() => handleToggleUserStatus(uid, st)}
+                                  className={`px-2.5 py-1 rounded-full text-[10px] font-bold flex items-center gap-1 transition-all ${
+                                    st === 'HoatDong'
+                                      ? 'bg-emerald-100 text-emerald-800 hover:bg-emerald-200'
+                                      : 'bg-rose-100 text-rose-800 hover:bg-rose-200'
+                                  }`}
+                                  title="Bấm để Đổi trạng thái Hoạt động / Bị khóa"
+                                >
+                                  <span className={`w-1.5 h-1.5 rounded-full ${st === 'HoatDong' ? 'bg-emerald-500' : 'bg-rose-500'}`}></span>
+                                  <span>{st === 'HoatDong' ? 'Hoạt động' : 'Bị khóa'}</span>
+                                </button>
+                              </td>
+                              <td className="py-3.5 px-4">
+                                <div className="flex items-center justify-center gap-1.5">
+                                  <button
+                                    onClick={() => setEditingUser(u)}
+                                    className="p-1.5 rounded-lg text-emerald-700 hover:bg-emerald-50 transition-colors"
+                                    title="Sửa thông tin tài khoản"
+                                  >
+                                    <span className="material-symbols-outlined text-base">edit</span>
+                                  </button>
+                                  <button
+                                    onClick={() => handleDeleteUser(uid, tk)}
+                                    className="p-1.5 rounded-lg text-rose-600 hover:bg-rose-50 transition-colors"
+                                    title="Xóa hoặc khóa tài khoản"
+                                  >
+                                    <span className="material-symbols-outlined text-base">delete</span>
+                                  </button>
+                                </div>
+                              </td>
+                            </tr>
+                          );
+                        })
+                      ) : (
+                        <tr>
+                          <td colSpan="7" className="py-10 text-center text-gray-400">
+                            Không tìm thấy tài khoản người dùng phù hợp
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* ======================================================== */}
           {/* TAB 5: TRI THỨC 90 LOÀI CÂY (SPECIES WIKI) */}
           {/* ======================================================== */}
           {activeTab === 'species' && (
@@ -1094,6 +1433,248 @@ export default function AdminDashboardPage({ onBackToStore, onSelectProduct }) {
                   className="px-5 py-2 rounded-xl bg-[#012d1d] hover:bg-[#1b4332] text-white font-bold shadow-sm"
                 >
                   Xác nhận thêm
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ======================================================== */}
+      {/* MODAL: THÊM TÀI KHOẢN / NHÂN SỰ MỚI */}
+      {/* ======================================================== */}
+      {isAddUserModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
+          <div className="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl space-y-4 animate-scale">
+            <div className="flex items-center justify-between pb-3 border-b border-gray-100">
+              <h3 className="font-extrabold text-base text-gray-900 flex items-center gap-2">
+                <span className="material-symbols-outlined text-emerald-600">person_add</span>
+                <span>Thêm tài khoản / nhân sự mới</span>
+              </h3>
+              <button
+                onClick={() => setIsAddUserModalOpen(false)}
+                className="p-1 rounded-lg text-gray-400 hover:bg-gray-100"
+              >
+                <span className="material-symbols-outlined text-xl">close</span>
+              </button>
+            </div>
+
+            <form onSubmit={handleCreateUser} className="space-y-3.5 text-xs">
+              <div>
+                <label className="font-bold text-gray-700 block mb-1">Tên tài khoản (Username): *</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="Ví dụ: nhanvien_kho, hoanganh..."
+                  value={newUser.taiKhoan}
+                  onChange={(e) => setNewUser({ ...newUser, taiKhoan: e.target.value })}
+                  className="w-full p-2.5 rounded-xl border border-gray-200 text-gray-900 focus:outline-emerald-600"
+                />
+              </div>
+
+              <div>
+                <label className="font-bold text-gray-700 block mb-1">Mật khẩu khởi tạo: *</label>
+                <input
+                  type="password"
+                  required
+                  placeholder="Nhập mật khẩu..."
+                  value={newUser.matKhau}
+                  onChange={(e) => setNewUser({ ...newUser, matKhau: e.target.value })}
+                  className="w-full p-2.5 rounded-xl border border-gray-200 text-gray-900 focus:outline-emerald-600"
+                />
+              </div>
+
+              <div>
+                <label className="font-bold text-gray-700 block mb-1">Họ và tên: *</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="Ví dụ: Nguyễn Văn Hoàng"
+                  value={newUser.hoTen}
+                  onChange={(e) => setNewUser({ ...newUser, hoTen: e.target.value })}
+                  className="w-full p-2.5 rounded-xl border border-gray-200 text-gray-900 focus:outline-emerald-600"
+                />
+              </div>
+
+              <div>
+                <label className="font-bold text-gray-700 block mb-1">Email liên hệ:</label>
+                <input
+                  type="email"
+                  placeholder="email@example.com"
+                  value={newUser.email}
+                  onChange={(e) => setNewUser({ ...newUser, email: e.target.value })}
+                  className="w-full p-2.5 rounded-xl border border-gray-200 text-gray-900 focus:outline-emerald-600"
+                />
+              </div>
+
+              <div>
+                <label className="font-bold text-gray-700 block mb-1">Địa chỉ:</label>
+                <input
+                  type="text"
+                  placeholder="Địa chỉ giao hàng / làm việc"
+                  value={newUser.diaChi}
+                  onChange={(e) => setNewUser({ ...newUser, diaChi: e.target.value })}
+                  className="w-full p-2.5 rounded-xl border border-gray-200 text-gray-900 focus:outline-emerald-600"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="font-bold text-gray-700 block mb-1">Vai trò:</label>
+                  <select
+                    value={newUser.vaiTro}
+                    onChange={(e) => setNewUser({ ...newUser, vaiTro: e.target.value })}
+                    className="w-full p-2.5 rounded-xl border border-gray-200 text-gray-900 focus:outline-emerald-600"
+                  >
+                    <option value="KhachHang">Khách hàng</option>
+                    <option value="NhanVien">Nhân viên kho</option>
+                    <option value="Admin">Admin (Quản trị)</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="font-bold text-gray-700 block mb-1">Trạng thái:</label>
+                  <select
+                    value={newUser.trangThaiTaiKhoan}
+                    onChange={(e) => setNewUser({ ...newUser, trangThaiTaiKhoan: e.target.value })}
+                    className="w-full p-2.5 rounded-xl border border-gray-200 text-gray-900 focus:outline-emerald-600"
+                  >
+                    <option value="HoatDong">Đang hoạt động</option>
+                    <option value="BiKhoa">Bị khóa</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="pt-3 flex items-center justify-end gap-2 border-t border-gray-100">
+                <button
+                  type="button"
+                  onClick={() => setIsAddUserModalOpen(false)}
+                  className="px-4 py-2 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold"
+                >
+                  Hủy bỏ
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold shadow-sm"
+                >
+                  Tạo tài khoản
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ======================================================== */}
+      {/* MODAL: CHỈNH SỬA TÀI KHOẢN NGƯỜI DÙNG */}
+      {/* ======================================================== */}
+      {editingUser && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
+          <div className="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl space-y-4 animate-scale">
+            <div className="flex items-center justify-between pb-3 border-b border-gray-100">
+              <h3 className="font-extrabold text-base text-gray-900 flex items-center gap-2">
+                <span className="material-symbols-outlined text-emerald-600">manage_accounts</span>
+                <span>Chỉnh sửa tài khoản #{editingUser.MaNguoiDung || editingUser.manguoidung}</span>
+              </h3>
+              <button
+                onClick={() => setEditingUser(null)}
+                className="p-1 rounded-lg text-gray-400 hover:bg-gray-100"
+              >
+                <span className="material-symbols-outlined text-xl">close</span>
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveUser} className="space-y-3.5 text-xs">
+              <div>
+                <label className="font-bold text-gray-700 block mb-1">Tài khoản:</label>
+                <input
+                  type="text"
+                  disabled
+                  value={editingUser.TaiKhoan || editingUser.taikhoan || ''}
+                  className="w-full p-2.5 rounded-xl border border-gray-200 bg-gray-100 text-gray-500 font-mono"
+                />
+              </div>
+
+              <div>
+                <label className="font-bold text-gray-700 block mb-1">Họ và tên:</label>
+                <input
+                  type="text"
+                  required
+                  value={editingUser.HoTen || editingUser.hoten || ''}
+                  onChange={(e) => setEditingUser({ ...editingUser, HoTen: e.target.value, hoten: e.target.value })}
+                  className="w-full p-2.5 rounded-xl border border-gray-200 text-gray-900 focus:outline-emerald-600"
+                />
+              </div>
+
+              <div>
+                <label className="font-bold text-gray-700 block mb-1">Email:</label>
+                <input
+                  type="email"
+                  value={editingUser.Email || editingUser.email || ''}
+                  onChange={(e) => setEditingUser({ ...editingUser, Email: e.target.value, email: e.target.value })}
+                  className="w-full p-2.5 rounded-xl border border-gray-200 text-gray-900 focus:outline-emerald-600"
+                />
+              </div>
+
+              <div>
+                <label className="font-bold text-gray-700 block mb-1">Địa chỉ:</label>
+                <input
+                  type="text"
+                  value={editingUser.DiaChi || editingUser.diachi || ''}
+                  onChange={(e) => setEditingUser({ ...editingUser, DiaChi: e.target.value, diachi: e.target.value })}
+                  className="w-full p-2.5 rounded-xl border border-gray-200 text-gray-900 focus:outline-emerald-600"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="font-bold text-gray-700 block mb-1">Vai trò:</label>
+                  <select
+                    value={editingUser.VaiTro || editingUser.vaitro || 'KhachHang'}
+                    onChange={(e) => setEditingUser({ ...editingUser, VaiTro: e.target.value, vaitro: e.target.value })}
+                    className="w-full p-2.5 rounded-xl border border-gray-200 text-gray-900 focus:outline-emerald-600"
+                  >
+                    <option value="KhachHang">Khách hàng</option>
+                    <option value="NhanVien">Nhân viên</option>
+                    <option value="Admin">Admin (Quản trị)</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="font-bold text-gray-700 block mb-1">Trạng thái:</label>
+                  <select
+                    value={editingUser.TrangThaiTaiKhoan || editingUser.trangthaitaikhoan || 'HoatDong'}
+                    onChange={(e) => setEditingUser({ ...editingUser, TrangThaiTaiKhoan: e.target.value, trangthaitaikhoan: e.target.value })}
+                    className="w-full p-2.5 rounded-xl border border-gray-200 text-gray-900 focus:outline-emerald-600"
+                  >
+                    <option value="HoatDong">Đang hoạt động</option>
+                    <option value="BiKhoa">Bị khóa</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="font-bold text-gray-700 block mb-1">Đổi mật khẩu mới (để trống nếu không đổi):</label>
+                <input
+                  type="password"
+                  placeholder="Nhập mật khẩu mới..."
+                  value={editingUser.MatKhauMoi || ''}
+                  onChange={(e) => setEditingUser({ ...editingUser, MatKhauMoi: e.target.value })}
+                  className="w-full p-2.5 rounded-xl border border-gray-200 text-gray-900 focus:outline-emerald-600"
+                />
+              </div>
+
+              <div className="pt-3 flex items-center justify-end gap-2 border-t border-gray-100">
+                <button
+                  type="button"
+                  onClick={() => setEditingUser(null)}
+                  className="px-4 py-2 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold"
+                >
+                  Hủy bỏ
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold shadow-sm"
+                >
+                  Lưu thay đổi
                 </button>
               </div>
             </form>

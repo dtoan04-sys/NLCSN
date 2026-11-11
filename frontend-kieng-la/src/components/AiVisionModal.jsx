@@ -15,7 +15,12 @@ export default function AiVisionModal({ onClose, onSelectProduct, onFilterBySpec
 
   // State nhận diện AI
   const [isScanning, setIsScanning] = useState(false);
+  const [scanMode, setScanMode] = useState('single'); // 'single' (Đơn cây) | 'multi' (Đa cây)
   const [aiResult, setAiResult] = useState(null);
+  const [multiResult, setMultiResult] = useState(null);
+  const [selectedMultiIndex, setSelectedMultiIndex] = useState(0);
+  const [showAnnotatedBox, setShowAnnotatedBox] = useState(true);
+  const [rawFile, setRawFile] = useState(null);
   const [lastScanId, setLastScanId] = useState(null);
   const [feedbackGiven, setFeedbackGiven] = useState(null);
   const [errorMsg, setErrorMsg] = useState('');
@@ -292,6 +297,56 @@ export default function AiVisionModal({ onClose, onSelectProduct, onFilterBySpec
     }
   };
 
+  // 3B. Quét đa cây trên toàn khung hình (Multi-Plant Detection)
+  const triggerMultiAiScan = async (blobOrFile, previewUrlParam) => {
+    if (!blobOrFile) return;
+
+    setIsScanning(true);
+    setErrorMsg('');
+
+    const formData = new FormData();
+    formData.append('file', blobOrFile, 'multi_scan.jpg');
+
+    const targetPath = user ? `/api/nhan-dien-da-cay?user_id=${user.id}` : '/api/nhan-dien-da-cay';
+
+    try {
+      const response = await apiFetch(targetPath, {
+        method: 'POST',
+        body: formData
+      });
+
+      if (!response.ok) {
+        throw new Error(`Lỗi nhận diện đa cây (${response.status})`);
+      }
+
+      const data = await response.json();
+      setMultiResult(data);
+      setSelectedMultiIndex(0);
+      setShowAnnotatedBox(true);
+      if (window.AndroidNative?.vibrate) window.AndroidNative.vibrate(50);
+
+      const firstPlant = data.danh_sach_cay?.[0];
+      const record = addScanRecord({
+        imageUrl: previewUrlParam || capturedUrl,
+        thumbnailDataUrl: null,
+        result: {
+          loai_du_doan: firstPlant ? `Đa cây: ${firstPlant.tenthuonggoi} (+${data.tong_so_cay - 1} loài khác)` : 'Nhận diện đa cây',
+          loai_goc: firstPlant?.tenkhoahoc || 'Multi-Plant Detection',
+          do_chinh_xac: (firstPlant?.do_chinh_xac || 80) / 100,
+          ma_loai_cay: firstPlant?.maloaicay || 1,
+          is_multi: true,
+          danh_sach_cay: data.danh_sach_cay
+        },
+        userId: user ? user.id : null
+      });
+      setLastScanId(record.id);
+    } catch (err) {
+      setErrorMsg('Không thể quét đa cây. Kiểm tra kết nối AI Server!');
+    } finally {
+      setIsScanning(false);
+    }
+  };
+
   const handleSaveServerUrl = (e) => {
     e.preventDefault();
     setCustomApiBaseUrl(serverUrlInput);
@@ -304,6 +359,32 @@ export default function AiVisionModal({ onClose, onSelectProduct, onFilterBySpec
   const handleSnapLive = async () => {
     if (isScanning) return;
     if (window.AndroidNative?.vibrate) window.AndroidNative.vibrate(35);
+
+    if (scanMode === 'multi') {
+      // Chụp toàn khung hình
+      if (!videoRef.current) return;
+      const video = videoRef.current;
+      const canvas = document.createElement('canvas');
+      canvas.width = video.videoWidth || 1280;
+      canvas.height = video.videoHeight || 720;
+      const ctx = canvas.getContext('2d');
+      if (facingMode === 'user') {
+        ctx.translate(canvas.width, 0);
+        ctx.scale(-1, 1);
+      }
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+      canvas.toBlob(async (blob) => {
+        cleanupPreviewUrl();
+        const previewUrl = URL.createObjectURL(blob);
+        prevObjectUrlRef.current = previewUrl;
+        setCapturedUrl(previewUrl);
+        stopCamera();
+        setIsLiveCamera(false);
+        await triggerMultiAiScan(blob, previewUrl);
+      }, 'image/jpeg', 0.9);
+      return;
+    }
+
     const frame = await captureFrame();
     if (!frame) return;
 
@@ -319,6 +400,9 @@ export default function AiVisionModal({ onClose, onSelectProduct, onFilterBySpec
     cleanupPreviewUrl();
     setCapturedUrl(null);
     setAiResult(null);
+    setMultiResult(null);
+    setSelectedMultiIndex(0);
+    setRawFile(null);
     setFeedbackGiven(null);
     setErrorMsg('');
     startCamera(facingMode);
@@ -327,7 +411,7 @@ export default function AiVisionModal({ onClose, onSelectProduct, onFilterBySpec
   // Chọn ảnh từ thư viện hoặc Camera Gốc Android
   const handleFileChange = async (e) => {
     const file = e.target.files?.[0];
-    e.target.value = ''; // Reset để có thể chụp liên tiếp nhiều tấm không bị kẹt sự kiện onChange
+    e.target.value = '';
     if (file) {
       if (!file.type.startsWith('image/')) {
         return;
@@ -335,12 +419,22 @@ export default function AiVisionModal({ onClose, onSelectProduct, onFilterBySpec
       stopCamera();
       setIsLiveCamera(false);
       setAiResult(null);
+      setMultiResult(null);
       setFeedbackGiven(null);
       setErrorMsg('');
+      setRawFile(file);
 
-      const compressed = await compressSelectedFile(file);
-      setCapturedUrl(compressed.previewUrl);
-      await triggerAiScan(compressed.blob, compressed.previewUrl, compressed.thumbnailDataUrl);
+      if (scanMode === 'multi') {
+        const previewUrl = URL.createObjectURL(file);
+        cleanupPreviewUrl();
+        prevObjectUrlRef.current = previewUrl;
+        setCapturedUrl(previewUrl);
+        await triggerMultiAiScan(file, previewUrl);
+      } else {
+        const compressed = await compressSelectedFile(file);
+        setCapturedUrl(compressed.previewUrl);
+        await triggerAiScan(compressed.blob, compressed.previewUrl, compressed.thumbnailDataUrl);
+      }
     }
   };
 
@@ -403,12 +497,47 @@ export default function AiVisionModal({ onClose, onSelectProduct, onFilterBySpec
               <div className="flex items-center gap-2">
                 <h2 className="text-base sm:text-lg font-bold text-gray-900 tracking-tight">AI Plant Vision</h2>
                 <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 uppercase font-bold">
-                  {isLiveCamera ? 'Khung ngắm Live' : 'Kết quả chụp'}
+                  {isLiveCamera ? (scanMode === 'multi' ? 'Live Đa Cây' : 'Live Đơn Cây') : (multiResult ? 'Đa cây' : 'Kết quả')}
                 </span>
               </div>
-              <p className="text-[11px] text-gray-500">Nhận diện 90 loài kiểng lá • Chống tràn bộ nhớ Android</p>
+              <p className="text-[11px] text-gray-500">Nhận diện 90 loài kiểng lá • Hỗ trợ cụm nhiều cây</p>
             </div>
           </div>
+
+          {/* Chuyển chế độ: Đơn cây vs Đa cây */}
+          <div className="flex items-center bg-gray-100 p-1 rounded-2xl text-xs font-bold">
+            <button
+              type="button"
+              onClick={() => {
+                setScanMode('single');
+                if (multiResult) handleResumeLive();
+              }}
+              className={`px-2.5 sm:px-3 py-1.5 rounded-xl transition-all flex items-center gap-1.5 ${
+                scanMode === 'single'
+                  ? 'bg-emerald-700 text-white shadow-xs'
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              <span className="material-symbols-outlined text-sm">filter_center_focus</span>
+              <span className="hidden sm:inline">Đơn cây</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setScanMode('multi');
+                if (aiResult) handleResumeLive();
+              }}
+              className={`px-2.5 sm:px-3 py-1.5 rounded-xl transition-all flex items-center gap-1.5 ${
+                scanMode === 'multi'
+                  ? 'bg-emerald-700 text-white shadow-xs'
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              <span className="material-symbols-outlined text-sm">grid_view</span>
+              <span>Đa cây (2-3 cây)</span>
+            </button>
+          </div>
+
           <div className="flex items-center gap-1">
             <button
               type="button"
@@ -552,12 +681,32 @@ export default function AiVisionModal({ onClose, onSelectProduct, onFilterBySpec
                   </>
                 ) : capturedUrl ? (
                   <div className="relative w-full h-full">
-                    <img alt="Captured leaf" className="w-full h-full object-cover" src={capturedUrl} />
+                    <img
+                      alt="Captured plant"
+                      className="w-full h-full object-contain bg-black"
+                      src={
+                        multiResult && showAnnotatedBox && multiResult.anh_ve_box_url
+                          ? `${getApiBaseUrl()}${multiResult.anh_ve_box_url}`
+                          : capturedUrl
+                      }
+                    />
+                    {multiResult && multiResult.anh_ve_box_url && (
+                      <button
+                        type="button"
+                        onClick={() => setShowAnnotatedBox((v) => !v)}
+                        className="absolute bottom-2 left-2 z-10 px-2.5 py-1 rounded-full bg-black/70 backdrop-blur text-white text-[10px] font-bold flex items-center gap-1 border border-white/20 hover:bg-black/90 shadow-sm"
+                      >
+                        <span className="material-symbols-outlined text-xs">
+                          {showAnnotatedBox ? 'visibility' : 'visibility_off'}
+                        </span>
+                        <span>{showAnnotatedBox ? 'Ẩn Bounding Box' : 'Hiện Bounding Box'}</span>
+                      </button>
+                    )}
                     {isScanning && (
-                      <div className="absolute inset-0 bg-black/45 backdrop-blur-xs flex flex-col items-center justify-center p-4">
+                      <div className="absolute inset-0 bg-black/45 backdrop-blur-xs flex flex-col items-center justify-center p-4 z-20">
                         <div className="w-12 h-12 border-4 border-emerald-400 border-t-transparent rounded-full animate-spin mb-3"></div>
                         <span className="text-white text-xs font-bold tracking-wide uppercase bg-black/60 px-3 py-1 rounded-full">
-                          Đang phân tích hình thái lá...
+                          {scanMode === 'multi' ? 'Đang quét phân vùng đa cây...' : 'Đang phân tích hình thái lá...'}
                         </span>
                       </div>
                     )}
@@ -663,7 +812,150 @@ export default function AiVisionModal({ onClose, onSelectProduct, onFilterBySpec
 
             {/* Cột phải: Kết quả nhận diện AI & Tiện ích Android */}
             <div className="lg:col-span-6 flex flex-col gap-3.5">
-              {aiResult ? (
+              {/* TRƯỜNG HỢP 1: KẾT QUẢ QUÉT ĐA CÂY (MULTI-PLANT DETECTION) */}
+              {multiResult ? (
+                <>
+                  <div className="p-4 rounded-2xl bg-gradient-to-br from-emerald-50 to-teal-50 border border-emerald-200 space-y-3">
+                    <div className="flex items-center justify-between pb-1">
+                      <div className="flex items-center gap-2">
+                        <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                        <span className="text-xs font-black text-emerald-950 uppercase tracking-wide">
+                          Phát hiện {multiResult.tong_so_cay || multiResult.danh_sach_cay?.length} loài cây
+                        </span>
+                      </div>
+                      <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-800 text-white font-bold">
+                        Multi-Crop NMS
+                      </span>
+                    </div>
+
+                    {/* Danh sách tab chọn cây đã phát hiện */}
+                    <div className="flex gap-2 overflow-x-auto pb-1.5 pt-0.5">
+                      {multiResult.danh_sach_cay?.map((item, idx) => {
+                        const isSelected = selectedMultiIndex === idx;
+                        return (
+                          <button
+                            key={idx}
+                            type="button"
+                            onClick={() => setSelectedMultiIndex(idx)}
+                            className={`px-3 py-2 rounded-2xl flex items-center gap-2 border transition-all shrink-0 text-left ${
+                              isSelected
+                                ? 'bg-[#012d1d] text-white border-[#012d1d] shadow-md scale-102'
+                                : 'bg-white text-gray-700 border-gray-200 hover:bg-emerald-50'
+                            }`}
+                          >
+                            <span
+                              className="w-3.5 h-3.5 rounded-full shrink-0 border border-white/50"
+                              style={{ backgroundColor: item.mau_sac || '#00FF66' }}
+                            ></span>
+                            <div>
+                              <div className="text-xs font-bold leading-tight line-clamp-1">{item.tenthuonggoi}</div>
+                              <div className={`text-[10px] font-mono ${isSelected ? 'text-emerald-300' : 'text-gray-400'}`}>
+                                #{idx + 1} • {item.do_chinh_xac}%
+                              </div>
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+
+                    {/* Chi tiết cây đang được chọn */}
+                    {(() => {
+                      const activePlant = multiResult.danh_sach_cay?.[selectedMultiIndex] || multiResult.danh_sach_cay?.[0];
+                      if (!activePlant) return null;
+                      const detail = activePlant.thong_tin_chi_tiet || {};
+
+                      return (
+                        <div className="bg-white/90 rounded-2xl p-3.5 border border-emerald-100 space-y-2.5 text-xs shadow-xs">
+                          <div className="flex items-start justify-between">
+                            <div>
+                              <div className="flex items-center gap-2">
+                                <span
+                                  className="w-2.5 h-2.5 rounded-full"
+                                  style={{ backgroundColor: activePlant.mau_sac || '#00FF66' }}
+                                ></span>
+                                <h4 className="text-lg font-black text-gray-900 leading-tight">
+                                  {activePlant.tenthuonggoi}
+                                </h4>
+                              </div>
+                              <span className="text-[11px] italic text-emerald-800 font-semibold block mt-0.5">
+                                {activePlant.tenkhoahoc}
+                              </span>
+                            </div>
+                            <span className="px-2.5 py-1 rounded-xl bg-emerald-100 text-emerald-900 font-bold font-mono text-[11px]">
+                              {activePlant.do_chinh_xac}% Khớp
+                            </span>
+                          </div>
+
+                          {/* Thông số sinh học & chăm sóc */}
+                          <div className="grid grid-cols-2 gap-2 text-[11px] pt-1">
+                            <div className="bg-emerald-50/60 p-2 rounded-xl">
+                              <span className="text-[9px] text-gray-400 font-bold uppercase block">Ánh sáng</span>
+                              <span className="font-semibold text-gray-800 line-clamp-2">
+                                {detail.anhsang || 'Ánh sáng tán xạ gián tiếp'}
+                              </span>
+                            </div>
+                            <div className="bg-emerald-50/60 p-2 rounded-xl">
+                              <span className="text-[9px] text-gray-400 font-bold uppercase block">Độ ẩm &amp; Nhiệt độ</span>
+                              <span className="font-semibold text-gray-800 line-clamp-2">
+                                {detail.doam || '60-70%'} • {detail.nhietdo || '18-30°C'}
+                              </span>
+                            </div>
+                          </div>
+
+                          {detail.huongdanchamsoc && (
+                            <div className="text-[11px] text-gray-600 bg-gray-50 p-2 rounded-xl border border-gray-100">
+                              <strong className="text-emerald-900">Chăm sóc: </strong>
+                              {detail.huongdanchamsoc}
+                            </div>
+                          )}
+
+                          {/* Nút hành động cho cây được chọn */}
+                          <div className="pt-1 flex flex-col sm:flex-row gap-2">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                stopCamera();
+                                cleanupPreviewUrl();
+                                onClose();
+                                if (onFilterBySpecies) {
+                                  onFilterBySpecies(activePlant.tenthuonggoi);
+                                }
+                              }}
+                              className="flex-1 py-2.5 px-3 rounded-xl bg-[#012d1d] hover:bg-[#1b4332] text-white text-xs font-bold flex items-center justify-center gap-1.5 shadow-sm transition-all"
+                            >
+                              <span className="material-symbols-outlined text-base text-emerald-400">filter_alt</span>
+                              <span>Lọc chậu cây loài này tại cửa hàng</span>
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })()}
+                  </div>
+
+                  {/* Nút chụp tiếp */}
+                  <div className="flex gap-2 pt-1">
+                    <button
+                      type="button"
+                      onClick={handleResumeLive}
+                      className="flex-1 py-2.5 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold flex items-center justify-center gap-1.5 shadow-sm transition-all"
+                    >
+                      <span className="material-symbols-outlined text-base">photo_camera</span>
+                      <span>Quét tiếp</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setScanMode('single');
+                        handleResumeLive();
+                      }}
+                      className="py-2.5 px-4 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-bold transition-all"
+                    >
+                      <span>Về chế độ đơn cây</span>
+                    </button>
+                  </div>
+                </>
+              ) : aiResult ? (
+                /* TRƯỜNG HỢP 2: KẾT QUẢ QUÉT ĐƠN CÂY */
                 <>
                   <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-200">
                     <div className="flex items-center justify-between pb-1.5">
@@ -715,8 +1007,29 @@ export default function AiVisionModal({ onClose, onSelectProduct, onFilterBySpec
                       </div>
                     )}
 
+                    {/* Gợi ý nếu ảnh có nhiều cây */}
+                    <div className="mt-3 pt-2.5 border-t border-emerald-200/60">
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          setScanMode('multi');
+                          if (rawFile) {
+                            await triggerMultiAiScan(rawFile, capturedUrl);
+                          } else if (capturedUrl) {
+                            // Chuyển blob từ capturedUrl
+                            const blob = await fetch(capturedUrl).then((r) => r.blob());
+                            await triggerMultiAiScan(blob, capturedUrl);
+                          }
+                        }}
+                        className="w-full py-2 px-3 rounded-xl bg-white hover:bg-emerald-100 text-emerald-900 border border-emerald-300 text-xs font-bold flex items-center justify-center gap-1.5 transition-all shadow-2xs"
+                      >
+                        <span className="material-symbols-outlined text-sm text-emerald-600">grid_view</span>
+                        <span>Ảnh có 2-3 cây? Bấm để chuyển sang Quét Đa Cây</span>
+                      </button>
+                    </div>
+
                     {/* Phản hồi đúng/sai */}
-                    <div className="mt-3 pt-2.5 border-t border-emerald-200/60 flex items-center justify-between">
+                    <div className="mt-2.5 pt-2 border-t border-emerald-200/40 flex items-center justify-between">
                       <span className="text-[11px] text-gray-600 font-medium">Kết quả AI chuẩn xác?</span>
                       {feedbackGiven !== null ? (
                         <span className="text-xs font-bold text-emerald-700 flex items-center gap-1">
@@ -804,13 +1117,20 @@ export default function AiVisionModal({ onClose, onSelectProduct, onFilterBySpec
                   </div>
                 </>
               ) : (
+                /* TRƯỜNG HỢP 3: CHƯA QUÉT (TRẠNG THÁI CHỜ) */
                 <div className="h-56 sm:h-72 flex flex-col items-center justify-center border-2 border-dashed border-gray-200 rounded-2xl text-gray-400 p-5 text-center">
                   <div className="w-14 h-14 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center mb-2.5">
-                    <span className="material-symbols-outlined text-3xl">camera_alt</span>
+                    <span className="material-symbols-outlined text-3xl">
+                      {scanMode === 'multi' ? 'grid_view' : 'camera_alt'}
+                    </span>
                   </div>
-                  <p className="text-sm font-bold text-gray-800">Sẵn sàng Giám định 90 Loài Cây</p>
+                  <p className="text-sm font-bold text-gray-800">
+                    {scanMode === 'multi' ? 'Sẵn sàng Quét Đa Cây (2-3 Cây)' : 'Sẵn sàng Giám định 90 Loài Cây'}
+                  </p>
                   <p className="text-xs text-gray-400 mt-1 max-w-xs leading-relaxed">
-                    Bạn có thể bấm nút chụp tròn ở giữa, dùng <strong>Camera Gốc</strong> của điện thoại, hoặc tải ảnh từ <strong>Thư viện</strong> để AI phân tích tức thì.
+                    {scanMode === 'multi'
+                      ? 'AI sẽ tự động quét lưới và gộp phân vùng (NMS) để nhận diện cùng lúc nhiều loài cây trong ảnh.'
+                      : 'Bạn có thể bấm nút chụp tròn ở giữa, dùng Camera Gốc của điện thoại, hoặc tải ảnh từ Thư viện.'}
                   </p>
                 </div>
               )}

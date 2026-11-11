@@ -565,6 +565,250 @@ async def nhan_dien_cay(
         "KetQua": ket_qua_tra_ve
     }
 
+# =====================================================================
+# 2B. NHẬN DIỆN ĐA CÂY TRÊN 1 KHUNG HÌNH (MULTI-PLANT DETECTION & NMS)
+# Hỗ trợ ảnh chứa 2-3 cây hoặc cụm cây ngoài trời như ảnh cô giáo yêu cầu
+# =====================================================================
+@app.post("/nhan-dien-da-cay")
+@app.post("/api/nhan-dien-da-cay")
+async def nhan_dien_da_cay(
+    file: UploadFile = File(...),
+    user_id: Optional[int] = None,
+    ma_nguoi_dung: Optional[int] = Form(None)
+):
+    if model is None:
+        raise HTTPException(status_code=500, detail="Model AI chưa được tải")
+
+    user_id_val = user_id or ma_nguoi_dung
+    ext = os.path.splitext(file.filename)[1] or ".jpg"
+    ts = int(datetime.now().timestamp() * 1000)
+    raw_filename = f"multi_raw_{ts}{ext}"
+    raw_filepath = os.path.join(UPLOAD_DIR, raw_filename)
+
+    with open(raw_filepath, "wb") as buffer:
+        shutil.copyfileobj(file.file, buffer)
+
+    try:
+        orig_im = Image.open(raw_filepath)
+        orig_im = ImageOps.exif_transpose(orig_im).convert("RGB")
+        w, h = orig_im.size
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Không thể đọc file ảnh: {e}")
+
+    # Tạo các patch quét đa tỷ lệ (Sliding Windows + Quadrants + Center)
+    patches = []
+    win_w = int(w * 0.45)
+    win_h = int(h * 0.45)
+    step_x = int(w * 0.25)
+    step_y = int(h * 0.25)
+
+    for y in range(0, max(1, h - win_h + 1), max(1, step_y)):
+        for x in range(0, max(1, w - win_w + 1), max(1, step_x)):
+            patches.append((x, y, min(w, x + win_w), min(h, y + win_h)))
+
+    patches.append((int(w * 0.1), int(h * 0.1), int(w * 0.9), int(h * 0.9)))  # Trung tâm
+    patches.append((0, 0, int(w * 0.7), int(h * 0.6)))                        # Góc trên trái
+    patches.append((int(w * 0.3), 0, w, int(h * 0.6)))                        # Góc trên phải
+    patches.append((0, int(h * 0.4), int(w * 0.7), h))                        # Góc dưới trái
+    patches.append((int(w * 0.3), int(h * 0.4), w, h))                        # Góc dưới phải
+
+    def predict_crop_box(crop_box):
+        crop_img = orig_im.crop(crop_box).resize((224, 224), Image.Resampling.BILINEAR)
+        arr = np.array(crop_img, dtype=np.float32)
+        batch = np.expand_dims(arr, axis=0)
+
+        if ensemble_models:
+            combined = np.zeros(90, dtype=np.float32)
+            tot_w = 0.0
+            for ens_m, ens_w, _ in ensemble_models:
+                p = ens_m(batch, training=False).numpy()[0]
+                combined += ens_w * p
+                tot_w += ens_w
+            preds = combined / max(tot_w, 1e-6)
+        else:
+            preds = model(batch, training=False).numpy()[0]
+
+        top_i = int(np.argmax(preds))
+        conf_val = float(preds[top_i])
+        clipped = np.clip(preds, 1e-12, 1.0)
+        ent = float(-np.sum(clipped * np.log(clipped)) / np.log(len(preds)))
+        return top_i, conf_val, ent
+
+    raw_candidates = []
+    for box in patches:
+        top_i, conf_val, ent = predict_crop_box(box)
+        if conf_val >= 0.25 and ent <= 0.88:
+            mapped_info = class_mapping.get(top_i, {})
+            raw_candidates.append({
+                "box": box,
+                "class_id": top_i,
+                "ma_loai_cay": mapped_info.get("MaLoaiCay", top_i + 1),
+                "ten_vn": mapped_info.get("vietnamese_name", f"Loài cây #{top_i + 1}"),
+                "ten_khoa_hoc": mapped_info.get("original_label", f"Class #{top_i}"),
+                "conf": conf_val,
+                "entropy": ent
+            })
+
+    # Non-Maximum Suppression (NMS)
+    raw_candidates.sort(key=lambda x: x["conf"], reverse=True)
+    kept_plants = []
+
+    def calc_iou(b1, b2):
+        x1 = max(b1[0], b2[0])
+        y1 = max(b1[1], b2[1])
+        x2 = min(b1[2], b2[2])
+        y2 = min(b1[3], b2[3])
+        inter = max(0, x2 - x1) * max(0, y2 - y1)
+        area1 = (b1[2] - b1[0]) * (b1[3] - b1[1])
+        area2 = (b2[2] - b2[0]) * (b2[3] - b2[1])
+        union = area1 + area2 - inter
+        return inter / max(union, 1e-6)
+
+    for cand in raw_candidates:
+        suppress = False
+        for k in kept_plants:
+            ov = calc_iou(cand["box"], k["box"])
+            if (cand["class_id"] == k["class_id"] and ov > 0.35) or ov > 0.68:
+                suppress = True
+                break
+        if not suppress:
+            kept_plants.append(cand)
+        if len(kept_plants) >= 6:
+            break
+
+    # Nếu không phát hiện patch nào trên ngưỡng -> Lấy kết quả toàn khung hình
+    if not kept_plants:
+        top_i, conf_val, ent = predict_crop_box((0, 0, w, h))
+        mapped_info = class_mapping.get(top_i, {})
+        kept_plants.append({
+            "box": (0, 0, w, h),
+            "class_id": top_i,
+            "ma_loai_cay": mapped_info.get("MaLoaiCay", top_i + 1),
+            "ten_vn": mapped_info.get("vietnamese_name", f"Loài cây #{top_i + 1}"),
+            "ten_khoa_hoc": mapped_info.get("original_label", f"Class #{top_i}"),
+            "conf": conf_val,
+            "entropy": ent
+        })
+
+    # Vẽ bounding boxes trực quan chuẩn ảnh cô giáo
+    annotated_im = orig_im.copy()
+    from PIL import ImageDraw, ImageFont
+    draw = ImageDraw.Draw(annotated_im)
+    colors = ["#00FF66", "#00E5FF", "#FFB300", "#FF3D00", "#D500F9", "#76FF03"]
+
+    try:
+        font = ImageFont.truetype("arial.ttf", max(24, int(w * 0.022)))
+    except Exception:
+        font = ImageFont.load_default()
+
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    # Lưu lịch sử tìm kiếm vào TIM_ANH
+    cursor.execute("SELECT ISNULL(MAX(MATIMKIEM), 0) + 1 FROM TIM_ANH")
+    ma_tim_kiem = cursor.fetchone()[0]
+    cursor.execute("""
+        INSERT INTO TIM_ANH (MATIMKIEM, MANGUOIDUNG, HINHANHURL, THOIGIAN, NENTANG, PHIENBANMODEL, TRANGTHAINHANDIEN)
+        VALUES (?, ?, ?, GETDATE(), N'Web', N'v2.0-MultiPlant', N'Đa cây thành công')
+    """, (ma_tim_kiem, user_id_val, f"/uploads/{raw_filename}"))
+
+    danh_sach_cay = []
+    for i, p in enumerate(kept_plants):
+        c = colors[i % len(colors)]
+        box = p["box"]
+        draw.rectangle(box, outline=c, width=max(4, int(w * 0.005)))
+        label_text = f"{p['ten_vn']} {p['conf']*100:.1f}%"
+        text_w = int(len(label_text) * max(14, int(w * 0.013)))
+        text_h = max(36, int(w * 0.028))
+        draw.rectangle((box[0], box[1], box[0] + text_w, box[1] + text_h), fill="#000000")
+        draw.text((box[0] + 8, box[1] + 6), label_text, fill=c, font=font)
+
+        # Lấy thông tin loài & sản phẩm liên quan từ CSDL
+        cursor.execute("""
+            SELECT MALOAICAY, TENKHOAHOC, TENTHUONGGOI, XUATXU, GIATHAMKHAO, DACDIEMNHANDANG, HUONGDANCHAMSOC,
+                   ANHSANG, DOAM, NHIETDO, DOCTINH, PHONGTHUY
+            FROM LOAI_CAY WHERE MALOAICAY = ?
+        """, (p["ma_loai_cay"],))
+        crow = cursor.fetchone()
+
+        thong_tin = {
+            "maloaicay": p["ma_loai_cay"],
+            "tenkhoahoc": crow[1] if crow else p["ten_khoa_hoc"],
+            "tenthuonggoi": crow[2] if crow else p["ten_vn"],
+            "xuatxu": crow[3] if crow else "Nhiệt đới",
+            "giathamkhao": float(crow[4] or 0) if crow else 150000.0,
+            "dacdiem": crow[5] if crow else "Cây sinh trưởng tốt ngoài tự nhiên và chậu kiểng.",
+            "huongdanchamsoc": crow[6] if crow else "Ánh sáng tán xạ 60-70%, tưới khi mặt đất se khô.",
+            "anhsang": crow[7] if crow else "Ánh sáng tán xạ gián tiếp",
+            "doam": crow[8] if crow else "60% - 75%",
+            "nhietdo": crow[9] if crow else "18°C - 32°C",
+            "doctinh": crow[10] if crow else "An toàn khi ngắm, tránh để thú cưng cắn lá",
+            "phongthuy": crow[11] if crow else "Mang lại sinh khí may mắn và hài hòa tự nhiên",
+            "urlanh": f"/plants/{p['ma_loai_cay']}.jpg"
+        }
+
+        # Lưu vào KET_QUA_NHAN_DIEN
+        cursor.execute("SELECT ISNULL(MAX(MAKETQUA), 0) + 1 FROM KET_QUA_NHAN_DIEN")
+        ma_kq = cursor.fetchone()[0]
+        cursor.execute("""
+            INSERT INTO KET_QUA_NHAN_DIEN (MALOAICAY, MATIMKIEM, MAKETQUA, THUHANG, XACSUATCHINHXAC)
+            VALUES (?, ?, ?, ?, ?)
+        """, (p["ma_loai_cay"], ma_tim_kiem, ma_kq, i + 1, round(p["conf"] * 100, 2)))
+
+        # Sản phẩm liên quan
+        cursor.execute("""
+            SELECT TOP 3 sp.MASANPHAM, sp.TENSANPHAM, sp.SOLUONGTONKHO, sp.KICHTHUOCCAY,
+                   (SELECT TOP 1 URLANH FROM HINH_ANH_SAN_PHAM ha WHERE ha.MASANPHAM = sp.MASANPHAM ORDER BY LAANHCHINH DESC) AS URLANH,
+                   ISNULL((SELECT TOP 1 GIABAN FROM LICH_SU_GIA_SAN_PHAM lsg WHERE lsg.MASANPHAM = sp.MASANPHAM ORDER BY MALICHSUGIA DESC), lc.GIATHAMKHAO) AS GIABAN
+            FROM SAN_PHAM sp
+            JOIN LOAI_CAY lc ON sp.MALOAICAY = lc.MALOAICAY
+            WHERE sp.MALOAICAY = ?
+        """, (p["ma_loai_cay"],))
+        rel_products = []
+        for sp in cursor.fetchall():
+            rel_products.append({
+                "id": sp[0],
+                "name": sp[1],
+                "stock": sp[2],
+                "size": sp[3],
+                "image": sp[4] or f"/plants/{p['ma_loai_cay']}.jpg",
+                "price": float(sp[5] or 0)
+            })
+
+        danh_sach_cay.append({
+            "stt": i + 1,
+            "maloaicay": p["ma_loai_cay"],
+            "tenthuonggoi": p["ten_vn"],
+            "tenkhoahoc": p["ten_khoa_hoc"],
+            "do_chinh_xac": round(p["conf"] * 100, 1),
+            "mau_sac": c,
+            "box_px": list(box),
+            "box_normalized": [
+                round(box[1] / h, 4), # ymin
+                round(box[0] / w, 4), # xmin
+                round(box[3] / h, 4), # ymax
+                round(box[2] / w, 4)  # xmax
+            ],
+            "thong_tin_chi_tiet": thong_tin,
+            "san_pham_lien_quan": rel_products
+        })
+
+    conn.commit()
+    conn.close()
+
+    annotated_filename = f"multi_annotated_{ts}.jpg"
+    annotated_filepath = os.path.join(UPLOAD_DIR, annotated_filename)
+    annotated_im.save(annotated_filepath, quality=90)
+
+    return {
+        "thanh_cong": True,
+        "tong_so_cay": len(danh_sach_cay),
+        "matimkiem": ma_tim_kiem,
+        "anh_goc_url": f"/uploads/{raw_filename}",
+        "anh_ve_box_url": f"/uploads/{annotated_filename}",
+        "danh_sach_cay": danh_sach_cay
+    }
+
 @app.get("/api/gio-hang/{ma_nguoi_dung}")
 def get_gio_hang(ma_nguoi_dung: int):
     gio = query_db(
@@ -785,6 +1029,23 @@ class UpdateUserStatusRequest(BaseModel):
 class UpdateUserRoleRequest(BaseModel):
     vaiTro: str
 
+class CreateUserAdminRequest(BaseModel):
+    taiKhoan: str
+    matKhau: str
+    hoTen: str
+    email: Optional[str] = ""
+    diaChi: Optional[str] = ""
+    vaiTro: str = "KhachHang"
+    trangThaiTaiKhoan: str = "HoatDong"
+
+class UpdateUserAdminRequest(BaseModel):
+    hoTen: Optional[str] = None
+    email: Optional[str] = None
+    diaChi: Optional[str] = None
+    vaiTro: Optional[str] = None
+    trangThaiTaiKhoan: Optional[str] = None
+    matKhau: Optional[str] = None
+
 @app.get("/api/admin/nguoi-dung")
 def get_admin_users():
     conn = get_db_connection()
@@ -824,6 +1085,70 @@ def update_user_role(ma_nguoi_dung: int, req: UpdateUserRoleRequest):
     conn.commit()
     conn.close()
     return {"message": f"Đã đổi vai trò người dùng thành {req.vaiTro}", "MaNguoiDung": ma_nguoi_dung, "VaiTroMoi": req.vaiTro}
+
+@app.post("/api/admin/nguoi-dung")
+def create_admin_user(req: CreateUserAdminRequest):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT MANGUOIDUNG FROM NGUOI_DUNG WHERE LOWER(TAIKHOAN) = LOWER(?)", (req.taiKhoan.strip(),))
+    if cursor.fetchone():
+        conn.close()
+        raise HTTPException(status_code=400, detail="Tên tài khoản này đã tồn tại, vui lòng chọn tên khác!")
+
+    cursor.execute("SELECT ISNULL(MAX(MANGUOIDUNG), 0) + 1 FROM NGUOI_DUNG")
+    next_id = cursor.fetchone()[0]
+
+    cursor.execute("""
+        INSERT INTO NGUOI_DUNG (MANGUOIDUNG, TAIKHOAN, MATKHAU, HOTEN, EMAIL, DIACHI, VAITRO, TRANGTHAITAIKHOAN, NGAYDANGKY)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, GETDATE())
+    """, (next_id, req.taiKhoan.strip(), req.matKhau.strip(), req.hoTen.strip(), req.email.strip() if req.email else "", req.diaChi.strip() if req.diaChi else "", req.vaiTro, req.trangThaiTaiKhoan))
+    conn.commit()
+    conn.close()
+    return {"message": "Tạo tài khoản / nhân sự mới thành công!", "MaNguoiDung": next_id, "TaiKhoan": req.taiKhoan}
+
+@app.put("/api/admin/nguoi-dung/{ma_nguoi_dung}")
+def update_admin_user(ma_nguoi_dung: int, req: UpdateUserAdminRequest):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT MANGUOIDUNG FROM NGUOI_DUNG WHERE MANGUOIDUNG = ?", (ma_nguoi_dung,))
+    if not cursor.fetchone():
+        conn.close()
+        raise HTTPException(status_code=404, detail="Không tìm thấy người dùng")
+
+    if req.hoTen is not None:
+        cursor.execute("UPDATE NGUOI_DUNG SET HOTEN = ? WHERE MANGUOIDUNG = ?", (req.hoTen, ma_nguoi_dung))
+    if req.email is not None:
+        cursor.execute("UPDATE NGUOI_DUNG SET EMAIL = ? WHERE MANGUOIDUNG = ?", (req.email, ma_nguoi_dung))
+    if req.diaChi is not None:
+        cursor.execute("UPDATE NGUOI_DUNG SET DIACHI = ? WHERE MANGUOIDUNG = ?", (req.diaChi, ma_nguoi_dung))
+    if req.vaiTro is not None:
+        cursor.execute("UPDATE NGUOI_DUNG SET VAITRO = ? WHERE MANGUOIDUNG = ?", (req.vaiTro, ma_nguoi_dung))
+    if req.trangThaiTaiKhoan is not None:
+        cursor.execute("UPDATE NGUOI_DUNG SET TRANGTHAITAIKHOAN = ? WHERE MANGUOIDUNG = ?", (req.trangThaiTaiKhoan, ma_nguoi_dung))
+    if req.matKhau is not None and req.matKhau.strip():
+        cursor.execute("UPDATE NGUOI_DUNG SET MATKHAU = ? WHERE MANGUOIDUNG = ?", (req.matKhau.strip(), ma_nguoi_dung))
+
+    conn.commit()
+    conn.close()
+    return {"message": "Cập nhật tài khoản thành công!", "MaNguoiDung": ma_nguoi_dung}
+
+@app.delete("/api/admin/nguoi-dung/{ma_nguoi_dung}")
+def delete_admin_user(ma_nguoi_dung: int):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT COUNT(*) FROM DON_HANG WHERE MANGUOIDUNG = ?", (ma_nguoi_dung,))
+    order_count = cursor.fetchone()[0]
+    if order_count > 0:
+        cursor.execute("UPDATE NGUOI_DUNG SET TRANGTHAITAIKHOAN = N'BiKhoa' WHERE MANGUOIDUNG = ?", (ma_nguoi_dung,))
+        conn.commit()
+        conn.close()
+        return {"message": "Người dùng đã có đơn hàng trong hệ thống nên được chuyển sang trạng thái 'Bị khóa' để bảo toàn dữ liệu!", "action": "locked"}
+
+    cursor.execute("DELETE FROM GIO_HANG WHERE MANGUOIDUNG = ?", (ma_nguoi_dung,))
+    cursor.execute("DELETE FROM NGUOI_DUNG WHERE MANGUOIDUNG = ?", (ma_nguoi_dung,))
+    conn.commit()
+    conn.close()
+    return {"message": "Đã xóa tài khoản thành công!", "action": "deleted"}
 
 @app.get("/api/admin/don-hang")
 def get_admin_don_hang():
