@@ -63,6 +63,7 @@ function MainApp({ isAuthOpen, setIsAuthOpen }) {
   const [selectedProduct, setSelectedProduct] = useState(PRODUCTS[0]);
   const [activeCategory, setActiveCategory] = useState('all');
   const [activeSpeciesFilter, setActiveSpeciesFilter] = useState(null);
+  const [searchKeyword, setSearchKeyword] = useState('');
   const { user, isAuthenticated } = useAuth();
 
   // Modals state
@@ -259,6 +260,16 @@ function MainApp({ isAuthOpen, setIsAuthOpen }) {
   const handleSelectCategory = (catId) => {
     setActiveCategory(catId);
     setActiveSpeciesFilter(null);
+    setSearchKeyword('');
+    navStackRef.current.push('products');
+    setCurrentPage('products');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleSearch = (keyword) => {
+    setSearchKeyword(keyword || '');
+    setActiveSpeciesFilter(null);
+    setActiveCategory('all');
     navStackRef.current.push('products');
     setCurrentPage('products');
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -297,6 +308,8 @@ function MainApp({ isAuthOpen, setIsAuthOpen }) {
         onOpenHistory={() => setIsHistoryOpen(true)}
         onOpenProfile={() => setIsProfileOpen(true)}
         onOpenOrders={() => setIsOrdersOpen(true)}
+        onSearch={handleSearch}
+        searchKeyword={searchKeyword}
       />
 
       {/* Cảnh báo mất kết nối mạng trên điện thoại */}
@@ -307,8 +320,8 @@ function MainApp({ isAuthOpen, setIsAuthOpen }) {
         </div>
       )}
 
-      {/* 2. Main Page Content (Khoảng cách dưới Navbar 2 tầng chuẩn Thế Giới Di Động) */}
-      <main className="pt-28 sm:pt-30 flex-1">
+      {/* 2. Main Page Content (Khoảng cách dưới Header Shopee 3 tầng) */}
+      <main className="pt-32 sm:pt-36 md:pt-40 flex-1">
         {currentPage === 'home' && (
           <HomePage
             onOpenAiModal={() => setIsAiModalOpen(true)}
@@ -324,6 +337,8 @@ function MainApp({ isAuthOpen, setIsAuthOpen }) {
             activeCategory={activeCategory}
             activeSpeciesFilter={activeSpeciesFilter}
             onClearSpeciesFilter={() => setActiveSpeciesFilter(null)}
+            searchKeyword={searchKeyword}
+            onSearchChange={setSearchKeyword}
           />
         )}
 

@@ -1233,7 +1233,7 @@ export default function AdminDashboardPage({ onBackToStore, onSelectProduct }) {
       {/* ======================================================== */}
       {editingProduct && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
-          <div className="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl space-y-4 animate-scale">
+          <div className="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl space-y-4 animate-scale max-h-[92vh] overflow-y-auto">
             <div className="flex items-center justify-between pb-3 border-b border-gray-100">
               <h3 className="font-extrabold text-base text-gray-900">
                 Chỉnh sửa chậu cây #{editingProduct.MaSanPham || editingProduct.masanpham}
@@ -1339,7 +1339,7 @@ export default function AdminDashboardPage({ onBackToStore, onSelectProduct }) {
       {/* ======================================================== */}
       {isAddModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
-          <div className="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl space-y-4 animate-scale">
+          <div className="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl space-y-4 animate-scale max-h-[92vh] overflow-y-auto">
             <div className="flex items-center justify-between pb-3 border-b border-gray-100">
               <h3 className="font-extrabold text-base text-gray-900">
                 Thêm chậu cây mới vào kho hàng

@@ -8,14 +8,26 @@ export default function ProductsPage({
   onSelectProduct,
   activeCategory = 'all',
   activeSpeciesFilter = null,
-  onClearSpeciesFilter
+  onClearSpeciesFilter,
+  searchKeyword = '',
+  onSearchChange
 }) {
   const [selectedCategory, setSelectedCategory] = useState(activeCategory);
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState(searchKeyword);
   const [sortOption, setSortOption] = useState('default'); // default | price-asc | price-desc
   const [products, setProducts] = useState(PRODUCTS);
   const [isLiveDb, setIsLiveDb] = useState(false);
   const { addToCart } = useCart();
+
+  useEffect(() => {
+    setSelectedCategory(activeCategory);
+  }, [activeCategory]);
+
+  useEffect(() => {
+    if (searchKeyword !== undefined) {
+      setSearchQuery(searchKeyword);
+    }
+  }, [searchKeyword]);
 
   useEffect(() => {
     let isMounted = true;

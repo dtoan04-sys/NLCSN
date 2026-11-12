@@ -4,6 +4,17 @@ import { useAuth } from '../context/AuthContext';
 import { getInitials } from './ProfileModal';
 import { CATEGORIES } from '../data/mockData';
 
+const TRENDING_KEYWORDS = [
+  'Monstera Albo',
+  'Trầu bà lá xẻ',
+  'Kim tiền tài lộc',
+  'Lưỡi hổ lọc khí',
+  'Sen đá cẩm thạch',
+  'Cây để bàn',
+  'Lan ý hoa trắng',
+  'Cây phong thủy'
+];
+
 export default function Navbar({
   currentPage,
   onNavigate,
@@ -13,27 +24,33 @@ export default function Navbar({
   onOpenAuth,
   onOpenHistory,
   onOpenProfile,
-  onOpenOrders
+  onOpenOrders,
+  onSearch,
+  searchKeyword = ''
 }) {
   const { totalCount } = useCart();
   const { user, logout, isAuthenticated } = useAuth();
+
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [isCatMenuOpen, setIsCatMenuOpen] = useState(false);
+  const [searchValue, setSearchValue] = useState(searchKeyword);
+
   const userMenuRef = useRef(null);
   const catMenuRef = useRef(null);
-  const subCatMenuRef = useRef(null);
+
+  // Sync internal search value with external prop if provided
+  useEffect(() => {
+    if (searchKeyword !== undefined) {
+      setSearchValue(searchKeyword);
+    }
+  }, [searchKeyword]);
 
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (userMenuRef.current && !userMenuRef.current.contains(event.target)) {
         setIsUserMenuOpen(false);
       }
-      if (
-        catMenuRef.current &&
-        !catMenuRef.current.contains(event.target) &&
-        subCatMenuRef.current &&
-        !subCatMenuRef.current.contains(event.target)
-      ) {
+      if (catMenuRef.current && !catMenuRef.current.contains(event.target)) {
         setIsCatMenuOpen(false);
       }
     };
@@ -41,21 +58,227 @@ export default function Navbar({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  const handleExecuteSearch = (term) => {
+    const query = (term !== undefined ? term : searchValue).trim();
+    if (onSearch) {
+      onSearch(query);
+    } else {
+      onNavigate('products');
+    }
+  };
+
+  const handleKeyDown = (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      handleExecuteSearch();
+    }
+  };
+
   return (
     <header className="fixed top-0 left-0 w-full z-40 bg-[#004830] text-white shadow-md">
-      {/* 1. Main Header Bar (chuẩn form Thế Giới Di Động / Điện Máy Xanh) */}
-      <div className="max-w-[1440px] mx-auto h-16 sm:h-18 px-3 sm:px-6 lg:px-8 flex items-center justify-between gap-3 sm:gap-6">
-        
-        {/* Logo Thương Hiệu */}
+      {/* ========================================================================= */}
+      {/* 1. TẦNG MICRO TOP BAR (Chuẩn cấu trúc Shopee) */}
+      {/* ========================================================================= */}
+      <div className="w-full bg-[#003822] text-emerald-100/90 text-[11px] border-b border-emerald-900/60 hidden sm:block">
+        <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 h-8 flex items-center justify-between">
+          {/* Cụm trái: Kênh Người Bán / Admin, Tra cứu, Kết nối MXH */}
+          <div className="flex items-center gap-3">
+            {user?.role === 'ADMIN' ? (
+              <button
+                type="button"
+                onClick={() => onNavigate('admin')}
+                className="hover:text-white flex items-center gap-1 font-semibold text-amber-300 transition-colors"
+              >
+                <span className="material-symbols-outlined text-[14px]">storefront</span>
+                <span>Kênh Quản Trị / Bán Hàng</span>
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={onOpenAuth}
+                className="hover:text-white flex items-center gap-1 font-medium transition-colors"
+              >
+                <span className="material-symbols-outlined text-[14px]">storefront</span>
+                <span>Kênh Người Bán Flora</span>
+              </button>
+            )}
+            <span className="text-emerald-700/80">|</span>
+            <button
+              type="button"
+              onClick={() => onNavigate('wiki')}
+              className="hover:text-white flex items-center gap-1 transition-colors"
+            >
+              <span>Bách khoa 90 loài thực vật</span>
+            </button>
+            <span className="text-emerald-700/80">|</span>
+            <div className="flex items-center gap-1.5 text-emerald-200/90">
+              <span>Kết nối:</span>
+              <span
+                className="material-symbols-outlined text-[14px] hover:text-white cursor-pointer transition-colors"
+                title="Fanpage Facebook"
+                onClick={() => window.open('https://facebook.com', '_blank')}
+              >
+                public
+              </span>
+              <span
+                className="material-symbols-outlined text-[14px] hover:text-white cursor-pointer transition-colors"
+                title="Chat Zalo hỗ trợ"
+                onClick={() => window.open('https://zalo.me', '_blank')}
+              >
+                chat
+              </span>
+            </div>
+          </div>
+
+          {/* Cụm phải: Thông báo, Hỗ trợ, Ngôn ngữ, Tài khoản / Đăng nhập */}
+          <div className="flex items-center gap-3.5">
+            <button
+              type="button"
+              onClick={onOpenOrders}
+              className="flex items-center gap-1 hover:text-white transition-colors cursor-pointer"
+            >
+              <span className="material-symbols-outlined text-[14px]">notifications</span>
+              <span>Thông Báo</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => onNavigate('wiki')}
+              className="flex items-center gap-1 hover:text-white transition-colors cursor-pointer"
+            >
+              <span className="material-symbols-outlined text-[14px]">help_outline</span>
+              <span>Hỗ Trợ 24/7</span>
+            </button>
+            <div className="flex items-center gap-1 text-emerald-200">
+              <span className="material-symbols-outlined text-[14px]">language</span>
+              <span>Tiếng Việt</span>
+            </div>
+
+            <span className="text-emerald-700/80">|</span>
+
+            {isAuthenticated ? (
+              <div className="relative" ref={userMenuRef}>
+                <button
+                  type="button"
+                  onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
+                  className="flex items-center gap-1.5 hover:text-[#ffd400] font-bold text-white transition-colors cursor-pointer"
+                >
+                  <div className="w-5 h-5 rounded-full bg-[#ffd400] text-[#004830] font-black text-[10px] flex items-center justify-center">
+                    {getInitials(user?.fullName || user?.username)}
+                  </div>
+                  <span className="truncate max-w-[110px]">{user?.fullName || user?.username}</span>
+                  <span className="material-symbols-outlined text-xs">
+                    {isUserMenuOpen ? 'expand_less' : 'expand_more'}
+                  </span>
+                </button>
+
+                {isUserMenuOpen && (
+                  <div className="absolute right-0 mt-2 w-60 bg-white text-gray-800 rounded-2xl shadow-2xl border border-gray-100 py-2 z-50 text-xs animate-fadeIn">
+                    <div className="px-4 py-2.5 border-b border-gray-100 bg-emerald-50/50">
+                      <p className="text-[11px] text-gray-500">Tài khoản</p>
+                      <p className="font-bold text-gray-900 truncate">{user?.fullName || user?.username}</p>
+                      <p className="text-[11px] text-emerald-800 truncate">{user?.email || 'Khách hàng'}</p>
+                    </div>
+                    <div className="p-1">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsUserMenuOpen(false);
+                          onOpenProfile();
+                        }}
+                        className="w-full flex items-center gap-2 px-3 py-2 font-semibold hover:bg-gray-50 rounded-xl"
+                      >
+                        <span className="material-symbols-outlined text-base text-emerald-700">person</span>
+                        <span>Thông tin tài khoản</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsUserMenuOpen(false);
+                          onOpenOrders();
+                        }}
+                        className="w-full flex items-center gap-2 px-3 py-2 font-semibold hover:bg-gray-50 rounded-xl"
+                      >
+                        <span className="material-symbols-outlined text-base text-emerald-700">receipt_long</span>
+                        <span>Đơn mua của tôi</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsUserMenuOpen(false);
+                          onOpenHistory();
+                        }}
+                        className="w-full flex items-center gap-2 px-3 py-2 font-semibold hover:bg-gray-50 rounded-xl"
+                      >
+                        <span className="material-symbols-outlined text-base text-emerald-700">history</span>
+                        <span>Lịch sử tìm kiếm cây</span>
+                      </button>
+                      {user?.role === 'ADMIN' && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setIsUserMenuOpen(false);
+                            onNavigate('admin');
+                          }}
+                          className="w-full flex items-center gap-2 px-3 py-2 font-bold text-amber-700 hover:bg-amber-50 rounded-xl"
+                        >
+                          <span className="material-symbols-outlined text-base">admin_panel_settings</span>
+                          <span>Quản trị Admin Hub</span>
+                        </button>
+                      )}
+                    </div>
+                    <div className="border-t border-gray-100 p-1">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsUserMenuOpen(false);
+                          logout();
+                        }}
+                        className="w-full flex items-center gap-2 px-3 py-2 font-bold text-red-600 hover:bg-red-50 rounded-xl"
+                      >
+                        <span className="material-symbols-outlined text-base">logout</span>
+                        <span>Đăng xuất</span>
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="flex items-center gap-2 font-bold">
+                <button
+                  type="button"
+                  onClick={onOpenAuth}
+                  className="hover:text-[#ffd400] transition-colors"
+                >
+                  Đăng Ký
+                </button>
+                <span className="text-emerald-700">/</span>
+                <button
+                  type="button"
+                  onClick={onOpenAuth}
+                  className="hover:text-[#ffd400] transition-colors"
+                >
+                  Đăng Nhập
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* ========================================================================= */}
+      {/* 2. TẦNG MAIN HEADER (Logo bên trái, Thanh Search rộng ở giữa, Giỏ hàng bên phải) */}
+      {/* ========================================================================= */}
+      <div className="max-w-[1440px] mx-auto px-3 sm:px-6 lg:px-8 pt-2.5 pb-2.5 flex items-center justify-between gap-3 sm:gap-6">
+        {/* LOGO THƯƠNG HIỆU */}
         <div
           onClick={() => onNavigate('home')}
-          className="flex items-center gap-2.5 cursor-pointer select-none group shrink-0"
+          className="flex items-center gap-2 sm:gap-3 cursor-pointer select-none group shrink-0"
         >
-          <div className="w-10 h-10 rounded-xl bg-[#ffd400] text-[#004830] flex items-center justify-center font-extrabold shadow-sm group-hover:scale-105 transition-transform">
-            <span className="material-symbols-outlined text-2xl font-bold">potted_plant</span>
+          <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-[#ffd400] text-[#004830] flex items-center justify-center font-extrabold shadow-sm group-hover:scale-105 transition-transform">
+            <span className="material-symbols-outlined text-2xl sm:text-3xl font-bold">potted_plant</span>
           </div>
           <div>
-            <div className="text-lg sm:text-2xl font-black tracking-tight text-white leading-none">
+            <div className="text-xl sm:text-2xl font-black tracking-tight text-white leading-none">
               FloraBotanic<span className="text-[#ffd400]">.AI</span>
             </div>
             <span className="text-[10px] text-emerald-200/90 font-semibold tracking-wider uppercase block mt-1 hidden xs:block">
@@ -64,210 +287,103 @@ export default function Navbar({
           </div>
         </div>
 
-        {/* Nút Danh Mục Cây ở góc trên bên trái (cạnh Logo) */}
-        <div className="relative hidden lg:block" ref={catMenuRef}>
-          <button
-            type="button"
-            onClick={() => setIsCatMenuOpen(!isCatMenuOpen)}
-            className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition-all border cursor-pointer ${
-              isCatMenuOpen
-                ? 'bg-[#ffd400] text-[#003822] border-[#ffd400] shadow-sm'
-                : 'bg-white/10 hover:bg-white/20 text-white border-white/20'
-            }`}
-          >
-            <span className="material-symbols-outlined text-lg">menu</span>
-            <span>Danh mục cây</span>
-            <span className={`material-symbols-outlined text-base transition-transform duration-200 ${isCatMenuOpen ? 'rotate-180' : ''}`}>
-              expand_more
-            </span>
-          </button>
+        {/* CỤM TÌM KIẾM KHỔNG LỒ PHONG CÁCH SHOPEE (TRỌNG TÂM Ở GIỮA) */}
+        <div className="flex-1 max-w-2xl lg:max-w-3xl flex flex-col justify-center">
+          {/* Ô input tìm kiếm màu trắng với nút Search & Camera AI tích hợp bên trong */}
+          <div className="bg-white rounded-lg p-1 sm:p-1.5 shadow-md flex items-center gap-1 sm:gap-2">
+            <input
+              type="text"
+              value={searchValue}
+              onChange={(e) => setSearchValue(e.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder="FloraBotanic bao trọn 90 loài kiểng lá - Nhập tên cây, mã #1-90, Monstera..."
+              className="flex-1 px-3 py-1.5 sm:py-2 text-xs sm:text-sm text-gray-800 placeholder-gray-400 bg-transparent focus:outline-none"
+            />
 
-          {isCatMenuOpen && (
-            <div className="absolute left-0 top-full mt-2 w-80 bg-white rounded-2xl shadow-2xl border border-gray-100 p-2 z-50 text-gray-800 animate-in fade-in duration-150">
-              <div className="px-3 py-2 border-b border-gray-100 flex items-center justify-between">
-                <span className="text-[11px] font-bold text-gray-900 uppercase tracking-wide">
-                  Danh mục theo nhu cầu
-                </span>
-                <span className="text-[10px] text-emerald-800 font-bold bg-emerald-50 px-2 py-0.5 rounded-full">
-                  6 Danh mục
-                </span>
-              </div>
-              <div className="p-1 space-y-1">
-                {CATEGORIES.map((cat) => (
-                  <button
-                    key={cat.id}
-                    type="button"
-                    onClick={() => {
-                      setIsCatMenuOpen(false);
-                      if (onSelectCategory) onSelectCategory(cat.id);
-                      onNavigate('products');
-                    }}
-                    className="w-full flex items-start gap-3 p-2.5 rounded-xl hover:bg-emerald-50 text-left transition-colors group cursor-pointer"
-                  >
-                    <div className="w-8 h-8 rounded-lg bg-emerald-100 text-emerald-800 group-hover:bg-[#004830] group-hover:text-emerald-300 flex items-center justify-center shrink-0 transition-colors">
-                      <span className="material-symbols-outlined text-lg">{cat.icon}</span>
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="text-xs font-bold text-gray-900 group-hover:text-emerald-800 line-clamp-1">
-                        {cat.name}
-                      </div>
-                      <div className="text-[10px] text-gray-400 line-clamp-1 mt-0.5">{cat.desc}</div>
-                    </div>
-                    <span className="material-symbols-outlined text-sm text-gray-300 group-hover:text-emerald-700 my-auto">
-                      chevron_right
-                    </span>
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
+            {/* NÚT QUÉT ẢNH AI TÍCH HỢP TRONG THANH SEARCH (Giống tính năng chụp hình tìm kiếm của Shopee) */}
+            <button
+              type="button"
+              onClick={onOpenAiModal}
+              className="flex items-center gap-1 sm:gap-1.5 px-2.5 py-1.5 sm:py-2 rounded-md bg-emerald-50 hover:bg-emerald-100 text-emerald-900 text-xs font-bold transition-all border border-emerald-200/80 cursor-pointer shrink-0"
+              title="Quét ảnh lá cây bằng AI để nhận diện và tìm chậu mua"
+            >
+              <span className="material-symbols-outlined text-lg sm:text-xl text-[#004830]">photo_camera</span>
+              <span className="hidden sm:inline">Quét Ảnh AI</span>
+            </button>
+
+            {/* NÚT TÌM KIẾM CHÍNH (Nút bấm hình chữ nhật nổi bật bên phải thanh search giống Shopee) */}
+            <button
+              type="button"
+              onClick={() => handleExecuteSearch()}
+              className="bg-[#004830] hover:bg-[#005e3e] text-white px-4 sm:px-6 py-2 rounded-md font-bold text-xs flex items-center justify-center cursor-pointer transition-colors shadow-xs shrink-0"
+              title="Tìm kiếm"
+            >
+              <span className="material-symbols-outlined text-lg font-bold">search</span>
+            </button>
+          </div>
+
+          {/* DÒNG TỪ KHÓA TÌM KIẾM HOT DƯỚI THANH SEARCH (Chuẩn Shopee) */}
+          <div className="hidden md:flex items-center gap-2.5 sm:gap-3.5 mt-1.5 text-[11px] text-emerald-100/90 overflow-x-auto no-scrollbar whitespace-nowrap pl-1">
+            {TRENDING_KEYWORDS.map((kw) => (
+              <button
+                key={kw}
+                type="button"
+                onClick={() => {
+                  setSearchValue(kw);
+                  handleExecuteSearch(kw);
+                }}
+                className="hover:text-[#ffd400] hover:underline transition-colors cursor-pointer"
+              >
+                {kw}
+              </button>
+            ))}
+          </div>
         </div>
 
-        {/* Thanh tìm kiếm nhanh phong cách Thế Giới Di Động */}
-        <div
-          onClick={() => onNavigate('products')}
-          className="flex-1 max-w-xl hidden md:flex items-center bg-white rounded-xl px-3.5 py-2 cursor-pointer border-2 border-transparent hover:border-[#ffd400] transition-colors"
-        >
-          <span className="material-symbols-outlined text-gray-400 text-xl mr-2">search</span>
-          <span className="text-xs text-gray-400 flex-1">
-            Bạn muốn tìm chậu cây kiểng lá gì? (Trầu bà, Lưỡi hổ, Kim tiền...)
-          </span>
-          <span className="text-[10px] font-bold bg-emerald-50 text-emerald-800 px-2 py-0.5 rounded-md">
-            90 Loài
-          </span>
-        </div>
-
-        {/* Cụm Action Buttons: Quét ảnh AI, Giỏ hàng, Đơn hàng, Tài khoản */}
-        <div className="flex items-center gap-2 sm:gap-3 shrink-0">
-          {/* NÚT QUÉT ẢNH AI NỔI BẬT KIỂU THẾ GIỚI DI ĐỘNG (Màu vàng rực rỡ #ffd400) */}
-          <button
-            type="button"
-            onClick={onOpenAiModal}
-            className="flex items-center gap-2 bg-[#ffd400] hover:bg-[#ffe14d] text-[#003822] px-3.5 sm:px-4 py-2 rounded-xl font-extrabold text-xs sm:text-sm shadow-md transition-all active:scale-95 cursor-pointer"
-            title="Quét ảnh lá cây để nhận diện & tìm chậu mua"
-          >
-            <span className="material-symbols-outlined text-xl font-bold">photo_camera</span>
-            <span className="hidden sm:inline">Quét Ảnh AI</span>
-          </button>
-
-          {/* Nút Giỏ Hàng có số lượng */}
+        {/* CỤM NÚT BÊN PHẢI: GIỎ HÀNG NỔI BẬT KIỂU SHOPEE */}
+        <div className="flex items-center gap-2 sm:gap-4 shrink-0">
           <button
             type="button"
             onClick={onOpenCart}
-            className="relative flex items-center gap-1.5 bg-white/10 hover:bg-white/20 text-white px-3 py-2 rounded-xl text-xs font-bold transition-all border border-white/15"
+            className="relative p-2.5 sm:p-3 text-white hover:text-[#ffd400] transition-colors rounded-xl hover:bg-white/10 flex items-center justify-center cursor-pointer"
             title="Xem giỏ hàng"
           >
-            <span className="material-symbols-outlined text-xl">shopping_cart</span>
-            <span className="hidden lg:inline">Giỏ hàng</span>
+            <span className="material-symbols-outlined text-2xl sm:text-3xl">shopping_cart</span>
             {totalCount > 0 && (
-              <span className="bg-red-500 text-white text-[10px] font-black px-1.5 py-0.5 rounded-full min-w-[18px] text-center">
+              <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[11px] font-black px-1.5 py-0.2 rounded-full min-w-[20px] text-center shadow-md border-2 border-[#004830]">
                 {totalCount}
               </span>
             )}
           </button>
 
-          {/* Tài Khoản / Đăng Nhập */}
-          {isAuthenticated ? (
-            <div className="relative" ref={userMenuRef}>
-              <button
-                onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
-                className="flex items-center gap-2 bg-white/10 hover:bg-white/20 text-white p-1.5 sm:px-3 sm:py-1.5 rounded-xl text-xs font-semibold border border-white/15 transition-all"
+          {/* Mobile login avatar if small screen */}
+          <div className="block sm:hidden">
+            {isAuthenticated ? (
+              <div
+                onClick={onOpenProfile}
+                className="w-8 h-8 rounded-lg bg-[#ffd400] text-[#004830] font-black text-xs flex items-center justify-center cursor-pointer"
               >
-                <div className="w-7 h-7 rounded-lg bg-[#ffd400] text-[#004830] font-black text-xs flex items-center justify-center">
-                  {getInitials(user?.fullName || user?.username)}
-                </div>
-                <span className="hidden xl:inline max-w-[100px] truncate font-bold">
-                  {user?.fullName || user?.username}
-                </span>
-                <span className="material-symbols-outlined text-sm hidden sm:inline">
-                  {isUserMenuOpen ? 'expand_less' : 'expand_more'}
-                </span>
+                {getInitials(user?.fullName || user?.username)}
+              </div>
+            ) : (
+              <button
+                onClick={onOpenAuth}
+                className="p-1.5 rounded-lg bg-white/10 text-white"
+              >
+                <span className="material-symbols-outlined text-xl">person</span>
               </button>
-
-              {isUserMenuOpen && (
-                <div className="absolute right-0 mt-2 w-60 bg-white text-gray-800 rounded-2xl shadow-2xl border border-gray-100 py-2 z-50 text-xs animate-fadeIn">
-                  <div className="px-4 py-2.5 border-b border-gray-100 bg-emerald-50/50">
-                    <p className="text-[11px] text-gray-500">Tài khoản</p>
-                    <p className="font-bold text-gray-900 truncate">{user?.fullName || user?.username}</p>
-                    <p className="text-[11px] text-emerald-800 truncate">{user?.email || 'Khách hàng'}</p>
-                  </div>
-                  <div className="p-1">
-                    <button
-                      onClick={() => {
-                        setIsUserMenuOpen(false);
-                        onOpenProfile();
-                      }}
-                      className="w-full flex items-center gap-2 px-3 py-2 font-semibold hover:bg-gray-50 rounded-xl"
-                    >
-                      <span className="material-symbols-outlined text-base text-emerald-700">person</span>
-                      <span>Thông tin tài khoản</span>
-                    </button>
-                    <button
-                      onClick={() => {
-                        setIsUserMenuOpen(false);
-                        onOpenOrders();
-                      }}
-                      className="w-full flex items-center gap-2 px-3 py-2 font-semibold hover:bg-gray-50 rounded-xl"
-                    >
-                      <span className="material-symbols-outlined text-base text-emerald-700">receipt_long</span>
-                      <span>Đơn mua của tôi</span>
-                    </button>
-                    <button
-                      onClick={() => {
-                        setIsUserMenuOpen(false);
-                        onOpenHistory();
-                      }}
-                      className="w-full flex items-center gap-2 px-3 py-2 font-semibold hover:bg-gray-50 rounded-xl"
-                    >
-                      <span className="material-symbols-outlined text-base text-emerald-700">history</span>
-                      <span>Lịch sử tìm kiếm cây</span>
-                    </button>
-                    {user?.role === 'ADMIN' && (
-                      <button
-                        onClick={() => {
-                          setIsUserMenuOpen(false);
-                          onNavigate('admin');
-                        }}
-                        className="w-full flex items-center gap-2 px-3 py-2 font-bold text-amber-700 hover:bg-amber-50 rounded-xl"
-                      >
-                        <span className="material-symbols-outlined text-base">admin_panel_settings</span>
-                        <span>Quản trị Admin Hub</span>
-                      </button>
-                    )}
-                  </div>
-                  <div className="border-t border-gray-100 p-1">
-                    <button
-                      onClick={() => {
-                        setIsUserMenuOpen(false);
-                        logout();
-                      }}
-                      className="w-full flex items-center gap-2 px-3 py-2 font-bold text-red-600 hover:bg-red-50 rounded-xl"
-                    >
-                      <span className="material-symbols-outlined text-base">logout</span>
-                      <span>Đăng xuất</span>
-                    </button>
-                  </div>
-                </div>
-              )}
-            </div>
-          ) : (
-            <button
-              type="button"
-              onClick={onOpenAuth}
-              className="flex items-center gap-1.5 bg-white/10 hover:bg-white/20 text-white px-3 py-2 rounded-xl text-xs font-bold border border-white/15 transition-all"
-            >
-              <span className="material-symbols-outlined text-base">person</span>
-              <span>Đăng nhập</span>
-            </button>
-          )}
+            )}
+          </div>
         </div>
       </div>
 
-      {/* 2. Secondary Navigation Bar (Danh mục danh thiếp chuẩn thế giới di động) */}
+      {/* ========================================================================= */}
+      {/* 3. TẦNG ĐIỀU HƯỚNG & DANH MỤC CÂY Ở GÓC TRÊN BÊN TRÁI (DUY NHẤT 1 NÚT) */}
+      {/* ========================================================================= */}
       <div className="w-full bg-[#003822] border-t border-emerald-900/60 overflow-x-auto no-scrollbar">
-        <div className="max-w-[1440px] mx-auto px-3 sm:px-6 lg:px-8 flex items-center gap-1 sm:gap-2 h-11 text-xs font-bold whitespace-nowrap">
-          {/* NÚT DANH MỤC CÂY Ở GÓC TRÊN BÊN TRÁI */}
-          <div className="relative" ref={subCatMenuRef}>
+        <div className="max-w-[1440px] mx-auto px-3 sm:px-6 lg:px-8 flex items-center gap-1 sm:gap-2 h-10 sm:h-11 text-xs font-bold whitespace-nowrap">
+          {/* NÚT DANH MỤC CÂY Ở GÓC TRÊN BÊN TRÁI DUY NHẤT */}
+          <div className="relative" ref={catMenuRef}>
             <button
               type="button"
               onClick={() => setIsCatMenuOpen(!isCatMenuOpen)}
@@ -281,13 +397,13 @@ export default function Navbar({
             </button>
 
             {isCatMenuOpen && (
-              <div className="absolute left-0 top-full mt-1.5 w-80 bg-white rounded-2xl shadow-2xl border border-gray-100 p-2 z-50 text-gray-800">
+              <div className="absolute left-0 top-full mt-2 w-80 bg-white rounded-2xl shadow-2xl border border-gray-100 p-2 z-50 text-gray-800 animate-in fade-in duration-150">
                 <div className="px-3 py-2 border-b border-gray-100 flex items-center justify-between">
                   <span className="text-[11px] font-bold text-gray-900 uppercase tracking-wide">
                     Hệ thống phân loại kiểng lá
                   </span>
                   <span className="text-[10px] text-emerald-800 font-bold bg-emerald-50 px-2 py-0.5 rounded-full">
-                    6 Nhóm
+                    6 Nhóm Nhu Cầu
                   </span>
                 </div>
                 <div className="p-1 space-y-1">
@@ -323,7 +439,7 @@ export default function Navbar({
 
           <button
             onClick={() => onNavigate('home')}
-            className={`px-3.5 py-1.5 rounded-lg flex items-center gap-1.5 transition-all ${
+            className={`px-3.5 py-1.5 rounded-lg flex items-center gap-1.5 transition-all cursor-pointer ${
               currentPage === 'home'
                 ? 'bg-emerald-800/80 text-white shadow-xs'
                 : 'text-gray-200 hover:bg-white/10 hover:text-white'
@@ -335,7 +451,7 @@ export default function Navbar({
 
           <button
             onClick={() => onNavigate('products')}
-            className={`px-3.5 py-1.5 rounded-lg flex items-center gap-1.5 transition-all ${
+            className={`px-3.5 py-1.5 rounded-lg flex items-center gap-1.5 transition-all cursor-pointer ${
               currentPage === 'products' || currentPage === 'detail'
                 ? 'bg-[#ffd400] text-[#003822] shadow-sm'
                 : 'text-gray-200 hover:bg-white/10 hover:text-white'
@@ -347,7 +463,7 @@ export default function Navbar({
 
           <button
             onClick={() => onNavigate('wiki')}
-            className={`px-3.5 py-1.5 rounded-lg flex items-center gap-1.5 transition-all ${
+            className={`px-3.5 py-1.5 rounded-lg flex items-center gap-1.5 transition-all cursor-pointer ${
               currentPage === 'wiki'
                 ? 'bg-[#ffd400] text-[#003822] shadow-sm'
                 : 'text-gray-200 hover:bg-white/10 hover:text-white'
@@ -359,7 +475,7 @@ export default function Navbar({
 
           <button
             onClick={onOpenHistory}
-            className="px-3.5 py-1.5 rounded-lg text-gray-200 hover:bg-white/10 hover:text-white flex items-center gap-1.5 transition-all"
+            className="px-3.5 py-1.5 rounded-lg text-gray-200 hover:bg-white/10 hover:text-white flex items-center gap-1.5 transition-all cursor-pointer"
           >
             <span className="material-symbols-outlined text-base">history</span>
             <span>Lịch sử quét ảnh</span>
@@ -368,7 +484,7 @@ export default function Navbar({
           {user?.role === 'ADMIN' && (
             <button
               onClick={() => onNavigate('admin')}
-              className={`px-3.5 py-1.5 rounded-lg flex items-center gap-1.5 transition-all ${
+              className={`px-3.5 py-1.5 rounded-lg flex items-center gap-1.5 transition-all cursor-pointer ${
                 currentPage === 'admin'
                   ? 'bg-amber-400 text-black shadow-sm'
                   : 'text-amber-300 hover:bg-white/10'
