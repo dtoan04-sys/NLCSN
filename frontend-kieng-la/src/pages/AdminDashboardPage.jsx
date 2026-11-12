@@ -217,6 +217,16 @@ export default function AdminDashboardPage({ onBackToStore, onSelectProduct }) {
     return orders.filter((o) => (o.TrangThaiDonHang || o.trangthaidonhang) === orderFilter);
   }, [orders, orderFilter]);
 
+  // Danh sách các loài cây sinh học chuẩn (loại trừ lớp Lớp Khác #91 khỏi danh sách chọn chậu cây bán)
+  const botanicalSpecies = useMemo(() => {
+    return speciesList.filter((s) => {
+      const id = Number(s.MALOAICAY || s.maloaicay);
+      const tg = (s.TENTHUONGGOI || s.tenthuonggoi || '').toLowerCase();
+      const kh = (s.TENKHOAHOC || s.tenkhoahoc || '').toLowerCase();
+      return id !== 91 && !tg.includes('lớp khác') && !kh.includes('unknown');
+    });
+  }, [speciesList]);
+
   // User management handlers
   const handleCreateUser = async (e) => {
     e.preventDefault();
@@ -1354,12 +1364,14 @@ export default function AdminDashboardPage({ onBackToStore, onSelectProduct }) {
 
             <form onSubmit={handleCreateProduct} className="space-y-3.5 text-xs">
               <div>
-                <label className="font-bold text-gray-700 block mb-1">Chọn loài thực vật (1 - 90 loài):</label>
+                <label className="font-bold text-gray-700 block mb-1">
+                  Chọn loài thực vật (1 – {botanicalSpecies.length || 90} loài sinh học chuẩn):
+                </label>
                 <select
                   value={newProduct.MaLoaiCay}
                   onChange={(e) => {
                     const mId = Number(e.target.value);
-                    const found = speciesList.find((s) => (s.MALOAICAY || s.maloaicay) === mId);
+                    const found = botanicalSpecies.find((s) => (s.MALOAICAY || s.maloaicay) === mId);
                     setNewProduct({
                       ...newProduct,
                       MaLoaiCay: mId,
@@ -1368,7 +1380,7 @@ export default function AdminDashboardPage({ onBackToStore, onSelectProduct }) {
                   }}
                   className="w-full p-2.5 rounded-xl border border-gray-200 font-semibold text-gray-900 focus:outline-emerald-600"
                 >
-                  {speciesList.map((sp) => {
+                  {botanicalSpecies.map((sp) => {
                     const mId = sp.MALOAICAY || sp.maloaicay;
                     const tg = sp.TENTHUONGGOI || sp.tenthuonggoi;
                     return (
