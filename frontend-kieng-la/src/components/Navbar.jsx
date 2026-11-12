@@ -380,10 +380,10 @@ export default function Navbar({
       {/* ========================================================================= */}
       {/* 3. TẦNG ĐIỀU HƯỚNG & DANH MỤC CÂY Ở GÓC TRÊN BÊN TRÁI (DUY NHẤT 1 NÚT) */}
       {/* ========================================================================= */}
-      <div className="w-full bg-[#003822] border-t border-emerald-900/60 overflow-x-auto no-scrollbar">
-        <div className="max-w-[1440px] mx-auto px-3 sm:px-6 lg:px-8 flex items-center gap-1 sm:gap-2 h-10 sm:h-11 text-xs font-bold whitespace-nowrap">
-          {/* NÚT DANH MỤC CÂY Ở GÓC TRÊN BÊN TRÁI DUY NHẤT */}
-          <div className="relative" ref={catMenuRef}>
+      <div className="w-full bg-[#003822] border-t border-emerald-900/60 relative z-30">
+        <div className="max-w-[1440px] mx-auto px-3 sm:px-6 lg:px-8 flex items-center justify-between gap-2 h-10 sm:h-11 text-xs font-bold">
+          {/* NÚT DANH MỤC CÂY Ở GÓC TRÊN BÊN TRÁI (KHÔNG BỊ CLIP BỞI OVERFLOW) */}
+          <div className="relative shrink-0" ref={catMenuRef}>
             <button
               type="button"
               onClick={() => setIsCatMenuOpen(!isCatMenuOpen)}
@@ -437,63 +437,66 @@ export default function Navbar({
             )}
           </div>
 
-          <button
-            onClick={() => onNavigate('home')}
-            className={`px-3.5 py-1.5 rounded-lg flex items-center gap-1.5 transition-all cursor-pointer ${
-              currentPage === 'home'
-                ? 'bg-emerald-800/80 text-white shadow-xs'
-                : 'text-gray-200 hover:bg-white/10 hover:text-white'
-            }`}
-          >
-            <span className="material-symbols-outlined text-base">home</span>
-            <span>Trang chủ</span>
-          </button>
-
-          <button
-            onClick={() => onNavigate('products')}
-            className={`px-3.5 py-1.5 rounded-lg flex items-center gap-1.5 transition-all cursor-pointer ${
-              currentPage === 'products' || currentPage === 'detail'
-                ? 'bg-[#ffd400] text-[#003822] shadow-sm'
-                : 'text-gray-200 hover:bg-white/10 hover:text-white'
-            }`}
-          >
-            <span className="material-symbols-outlined text-base">storefront</span>
-            <span>Chậu cây sẵn hàng</span>
-          </button>
-
-          <button
-            onClick={() => onNavigate('wiki')}
-            className={`px-3.5 py-1.5 rounded-lg flex items-center gap-1.5 transition-all cursor-pointer ${
-              currentPage === 'wiki'
-                ? 'bg-[#ffd400] text-[#003822] shadow-sm'
-                : 'text-gray-200 hover:bg-white/10 hover:text-white'
-            }`}
-          >
-            <span className="material-symbols-outlined text-base">menu_book</span>
-            <span>Bách khoa 90 loài</span>
-          </button>
-
-          <button
-            onClick={onOpenHistory}
-            className="px-3.5 py-1.5 rounded-lg text-gray-200 hover:bg-white/10 hover:text-white flex items-center gap-1.5 transition-all cursor-pointer"
-          >
-            <span className="material-symbols-outlined text-base">history</span>
-            <span>Lịch sử quét ảnh</span>
-          </button>
-
-          {user?.role === 'ADMIN' && (
+          {/* DẢI CÁC LIÊN KẾT ĐIỀU HƯỚNG TRANG (CHO PHÉP CUỘN NGANG TRÊN MÀN HÌNH NHỎ) */}
+          <div className="flex-1 flex items-center gap-1 sm:gap-2 overflow-x-auto no-scrollbar whitespace-nowrap pl-1 sm:pl-3">
             <button
-              onClick={() => onNavigate('admin')}
+              onClick={() => onNavigate('home')}
               className={`px-3.5 py-1.5 rounded-lg flex items-center gap-1.5 transition-all cursor-pointer ${
-                currentPage === 'admin'
-                  ? 'bg-amber-400 text-black shadow-sm'
-                  : 'text-amber-300 hover:bg-white/10'
+                currentPage === 'home'
+                  ? 'bg-emerald-800/80 text-white shadow-xs'
+                  : 'text-gray-200 hover:bg-white/10 hover:text-white'
               }`}
             >
-              <span className="material-symbols-outlined text-base">dashboard</span>
-              <span>Quản trị viên (Hub)</span>
+              <span className="material-symbols-outlined text-base">home</span>
+              <span>Trang chủ</span>
             </button>
-          )}
+
+            <button
+              onClick={() => onNavigate('products')}
+              className={`px-3.5 py-1.5 rounded-lg flex items-center gap-1.5 transition-all cursor-pointer ${
+                currentPage === 'products' || currentPage === 'detail'
+                  ? 'bg-[#ffd400] text-[#003822] shadow-sm'
+                  : 'text-gray-200 hover:bg-white/10 hover:text-white'
+              }`}
+            >
+              <span className="material-symbols-outlined text-base">storefront</span>
+              <span>Chậu cây sẵn hàng</span>
+            </button>
+
+            <button
+              onClick={() => onNavigate('wiki')}
+              className={`px-3.5 py-1.5 rounded-lg flex items-center gap-1.5 transition-all cursor-pointer ${
+                currentPage === 'wiki'
+                  ? 'bg-[#ffd400] text-[#003822] shadow-sm'
+                  : 'text-gray-200 hover:bg-white/10 hover:text-white'
+              }`}
+            >
+              <span className="material-symbols-outlined text-base">menu_book</span>
+              <span>Bách khoa 90 loài</span>
+            </button>
+
+            <button
+              onClick={onOpenHistory}
+              className="px-3.5 py-1.5 rounded-lg text-gray-200 hover:bg-white/10 hover:text-white flex items-center gap-1.5 transition-all cursor-pointer"
+            >
+              <span className="material-symbols-outlined text-base">history</span>
+              <span>Lịch sử quét ảnh</span>
+            </button>
+
+            {user?.role === 'ADMIN' && (
+              <button
+                onClick={() => onNavigate('admin')}
+                className={`px-3.5 py-1.5 rounded-lg flex items-center gap-1.5 transition-all cursor-pointer ${
+                  currentPage === 'admin'
+                    ? 'bg-amber-400 text-black shadow-sm'
+                    : 'text-amber-300 hover:bg-white/10'
+                }`}
+              >
+                <span className="material-symbols-outlined text-base">dashboard</span>
+                <span>Quản trị viên (Hub)</span>
+              </button>
+            )}
+          </div>
         </div>
       </div>
     </header>
