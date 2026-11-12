@@ -2,10 +2,12 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
 import { getInitials } from './ProfileModal';
+import { CATEGORIES } from '../data/mockData';
 
 export default function Navbar({
   currentPage,
   onNavigate,
+  onSelectCategory,
   onOpenAiModal,
   onOpenCart,
   onOpenAuth,
@@ -16,12 +18,23 @@ export default function Navbar({
   const { totalCount } = useCart();
   const { user, logout, isAuthenticated } = useAuth();
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+  const [isCatMenuOpen, setIsCatMenuOpen] = useState(false);
   const userMenuRef = useRef(null);
+  const catMenuRef = useRef(null);
+  const subCatMenuRef = useRef(null);
 
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (userMenuRef.current && !userMenuRef.current.contains(event.target)) {
         setIsUserMenuOpen(false);
+      }
+      if (
+        catMenuRef.current &&
+        !catMenuRef.current.contains(event.target) &&
+        subCatMenuRef.current &&
+        !subCatMenuRef.current.contains(event.target)
+      ) {
+        setIsCatMenuOpen(false);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
@@ -49,6 +62,65 @@ export default function Navbar({
               Siêu thị Kiểng Lá &amp; AI
             </span>
           </div>
+        </div>
+
+        {/* Nút Danh Mục Cây ở góc trên bên trái (cạnh Logo) */}
+        <div className="relative hidden lg:block" ref={catMenuRef}>
+          <button
+            type="button"
+            onClick={() => setIsCatMenuOpen(!isCatMenuOpen)}
+            className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition-all border cursor-pointer ${
+              isCatMenuOpen
+                ? 'bg-[#ffd400] text-[#003822] border-[#ffd400] shadow-sm'
+                : 'bg-white/10 hover:bg-white/20 text-white border-white/20'
+            }`}
+          >
+            <span className="material-symbols-outlined text-lg">menu</span>
+            <span>Danh mục cây</span>
+            <span className={`material-symbols-outlined text-base transition-transform duration-200 ${isCatMenuOpen ? 'rotate-180' : ''}`}>
+              expand_more
+            </span>
+          </button>
+
+          {isCatMenuOpen && (
+            <div className="absolute left-0 top-full mt-2 w-80 bg-white rounded-2xl shadow-2xl border border-gray-100 p-2 z-50 text-gray-800 animate-in fade-in duration-150">
+              <div className="px-3 py-2 border-b border-gray-100 flex items-center justify-between">
+                <span className="text-[11px] font-bold text-gray-900 uppercase tracking-wide">
+                  Danh mục theo nhu cầu
+                </span>
+                <span className="text-[10px] text-emerald-800 font-bold bg-emerald-50 px-2 py-0.5 rounded-full">
+                  6 Danh mục
+                </span>
+              </div>
+              <div className="p-1 space-y-1">
+                {CATEGORIES.map((cat) => (
+                  <button
+                    key={cat.id}
+                    type="button"
+                    onClick={() => {
+                      setIsCatMenuOpen(false);
+                      if (onSelectCategory) onSelectCategory(cat.id);
+                      onNavigate('products');
+                    }}
+                    className="w-full flex items-start gap-3 p-2.5 rounded-xl hover:bg-emerald-50 text-left transition-colors group cursor-pointer"
+                  >
+                    <div className="w-8 h-8 rounded-lg bg-emerald-100 text-emerald-800 group-hover:bg-[#004830] group-hover:text-emerald-300 flex items-center justify-center shrink-0 transition-colors">
+                      <span className="material-symbols-outlined text-lg">{cat.icon}</span>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-xs font-bold text-gray-900 group-hover:text-emerald-800 line-clamp-1">
+                        {cat.name}
+                      </div>
+                      <div className="text-[10px] text-gray-400 line-clamp-1 mt-0.5">{cat.desc}</div>
+                    </div>
+                    <span className="material-symbols-outlined text-sm text-gray-300 group-hover:text-emerald-700 my-auto">
+                      chevron_right
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Thanh tìm kiếm nhanh phong cách Thế Giới Di Động */}
@@ -194,11 +266,66 @@ export default function Navbar({
       {/* 2. Secondary Navigation Bar (Danh mục danh thiếp chuẩn thế giới di động) */}
       <div className="w-full bg-[#003822] border-t border-emerald-900/60 overflow-x-auto no-scrollbar">
         <div className="max-w-[1440px] mx-auto px-3 sm:px-6 lg:px-8 flex items-center gap-1 sm:gap-2 h-11 text-xs font-bold whitespace-nowrap">
+          {/* NÚT DANH MỤC CÂY Ở GÓC TRÊN BÊN TRÁI */}
+          <div className="relative" ref={subCatMenuRef}>
+            <button
+              type="button"
+              onClick={() => setIsCatMenuOpen(!isCatMenuOpen)}
+              className="px-3.5 py-1.5 rounded-lg flex items-center gap-1.5 bg-[#ffd400] text-[#003822] shadow-sm font-extrabold hover:bg-[#ffe14d] transition-all cursor-pointer"
+            >
+              <span className="material-symbols-outlined text-base font-bold">menu</span>
+              <span>Danh Mục Cây</span>
+              <span className={`material-symbols-outlined text-sm transition-transform duration-200 ${isCatMenuOpen ? 'rotate-180' : ''}`}>
+                expand_more
+              </span>
+            </button>
+
+            {isCatMenuOpen && (
+              <div className="absolute left-0 top-full mt-1.5 w-80 bg-white rounded-2xl shadow-2xl border border-gray-100 p-2 z-50 text-gray-800">
+                <div className="px-3 py-2 border-b border-gray-100 flex items-center justify-between">
+                  <span className="text-[11px] font-bold text-gray-900 uppercase tracking-wide">
+                    Hệ thống phân loại kiểng lá
+                  </span>
+                  <span className="text-[10px] text-emerald-800 font-bold bg-emerald-50 px-2 py-0.5 rounded-full">
+                    6 Nhóm
+                  </span>
+                </div>
+                <div className="p-1 space-y-1">
+                  {CATEGORIES.map((cat) => (
+                    <button
+                      key={cat.id}
+                      type="button"
+                      onClick={() => {
+                        setIsCatMenuOpen(false);
+                        if (onSelectCategory) onSelectCategory(cat.id);
+                        onNavigate('products');
+                      }}
+                      className="w-full flex items-start gap-3 p-2.5 rounded-xl hover:bg-emerald-50 text-left transition-colors group cursor-pointer"
+                    >
+                      <div className="w-8 h-8 rounded-lg bg-emerald-100 text-emerald-800 group-hover:bg-[#004830] group-hover:text-emerald-300 flex items-center justify-center shrink-0 transition-colors">
+                        <span className="material-symbols-outlined text-lg">{cat.icon}</span>
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="text-xs font-bold text-gray-900 group-hover:text-emerald-800 line-clamp-1">
+                          {cat.name}
+                        </div>
+                        <div className="text-[10px] text-gray-400 line-clamp-1 mt-0.5">{cat.desc}</div>
+                      </div>
+                      <span className="material-symbols-outlined text-sm text-gray-300 group-hover:text-emerald-700 my-auto">
+                        chevron_right
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+
           <button
             onClick={() => onNavigate('home')}
             className={`px-3.5 py-1.5 rounded-lg flex items-center gap-1.5 transition-all ${
               currentPage === 'home'
-                ? 'bg-[#ffd400] text-[#003822] shadow-sm'
+                ? 'bg-emerald-800/80 text-white shadow-xs'
                 : 'text-gray-200 hover:bg-white/10 hover:text-white'
             }`}
           >

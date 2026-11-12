@@ -106,7 +106,7 @@ export default function HomePage({ onOpenAiModal, onSelectProduct, onNavigate, o
             </div>
           </div>
 
-          <div ref={carouselRef} className="flex gap-4 overflow-x-auto pb-4 scroll-smooth">
+          <div ref={carouselRef} className="flex gap-4 overflow-x-auto pb-4 scroll-smooth [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
             {CATEGORIES.filter((c) => c.id !== 'all').map((cat) => (
               <div
                 key={cat.id}

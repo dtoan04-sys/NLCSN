@@ -290,6 +290,7 @@ function MainApp({ isAuthOpen, setIsAuthOpen }) {
       <Navbar
         currentPage={currentPage}
         onNavigate={handleNavigate}
+        onSelectCategory={handleSelectCategory}
         onOpenAiModal={() => setIsAiModalOpen(true)}
         onOpenCart={() => setIsCartOpen(true)}
         onOpenAuth={() => setIsAuthOpen(true)}
