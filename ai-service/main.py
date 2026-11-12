@@ -37,6 +37,15 @@ PLANTS_DIR = r"E:\CNTT\NLCNHTTT\frontend-kieng-la\public\plants"
 if os.path.exists(PLANTS_DIR):
     app.mount("/plants", StaticFiles(directory=PLANTS_DIR), name="plants")
 
+@app.post("/api/upload")
+async def upload_image_file(file: UploadFile = File(...)):
+    ext = os.path.splitext(file.filename)[1] or ".jpg"
+    filename = f"prod_{int(datetime.now().timestamp() * 1000)}{ext}"
+    filepath = os.path.join(UPLOAD_DIR, filename)
+    with open(filepath, "wb") as buffer:
+        shutil.copyfileobj(file.file, buffer)
+    return {"url": f"/uploads/{filename}", "filename": filename}
+
 # =====================================================================
 # 1. KẾT NỐI SQL SERVER (DESKTOP-KTO6D9A\SQLEXPRESS)
 # =====================================================================

@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { getPlantImage, handleImgError } from '../utils/plantAssets';
 import { useCart } from '../context/CartContext';
 import { apiFetch, getApiBaseUrl } from '../config';
+import ImageUpload from '../components/ImageUpload';
 
 export default function AdminDashboardPage({ onBackToStore, onSelectProduct }) {
   const [activeTab, setActiveTab] = useState('overview'); // overview, products, orders, users, ai_logs, species
@@ -143,7 +144,8 @@ export default function AdminDashboardPage({ onBackToStore, onSelectProduct }) {
           GiaBan: Number(editingProduct.GiaBan || editingProduct.giaban),
           SoLuongTonKho: Number(editingProduct.SoLuongTonKho || editingProduct.soluongtonkho),
           KichThuocCay: editingProduct.KichThuocCay || editingProduct.kichthuoccay,
-          TinhTrangCay: editingProduct.TinhTrangCay || editingProduct.tinhtrangcay
+          TinhTrangCay: editingProduct.TinhTrangCay || editingProduct.tinhtrangcay,
+          UrlAnh: editingProduct.UrlAnh || editingProduct.urlanh
         })
       });
       if (res.ok) {
@@ -1245,6 +1247,19 @@ export default function AdminDashboardPage({ onBackToStore, onSelectProduct }) {
             </div>
 
             <form onSubmit={handleSaveProduct} className="space-y-3.5 text-xs">
+              <ImageUpload
+                label="Hình ảnh chậu cây thực tế:"
+                currentImage={editingProduct.UrlAnh || editingProduct.urlanh}
+                defaultSpeciesImage={`/plants/${editingProduct.MaLoaiCay || editingProduct.maloaicay || 1}.jpg`}
+                onImageChange={(uploadedUrl) => {
+                  setEditingProduct({ ...editingProduct, UrlAnh: uploadedUrl, urlanh: uploadedUrl });
+                }}
+                onResetToDefault={() => {
+                  const mId = editingProduct.MaLoaiCay || editingProduct.maloaicay || 1;
+                  setEditingProduct({ ...editingProduct, UrlAnh: `/plants/${mId}.jpg`, urlanh: `/plants/${mId}.jpg` });
+                }}
+              />
+
               <div>
                 <label className="font-bold text-gray-700 block mb-1">Tên chậu cây hiển thị:</label>
                 <input
@@ -1364,6 +1379,19 @@ export default function AdminDashboardPage({ onBackToStore, onSelectProduct }) {
                   })}
                 </select>
               </div>
+
+              {/* Tải ảnh chậu cây lên hệ thống (Kế thừa từ HTQLSX) */}
+              <ImageUpload
+                label="Hình ảnh chậu cây thực tế:"
+                currentImage={newProduct.UrlAnh}
+                defaultSpeciesImage={`/plants/${newProduct.MaLoaiCay}.jpg`}
+                onImageChange={(uploadedUrl) => {
+                  setNewProduct({ ...newProduct, UrlAnh: uploadedUrl });
+                }}
+                onResetToDefault={() => {
+                  setNewProduct({ ...newProduct, UrlAnh: `/plants/${newProduct.MaLoaiCay}.jpg` });
+                }}
+              />
 
               <div>
                 <label className="font-bold text-gray-700 block mb-1">Tên chậu cây thương mại:</label>
