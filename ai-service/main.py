@@ -1947,9 +1947,11 @@ def create_loai_cay(req: CreateSpeciesRequest):
         req.PhongThuy or "Hút tài lộc, may mắn"
     ))
 
-    # Cập nhật bộ nhớ SPECIES_MAP
-    if next_id not in SPECIES_MAP:
-        SPECIES_MAP[next_id] = {
+    # Cập nhật bộ nhớ class_mapping
+    if "class_mapping" in globals() and isinstance(class_mapping, dict):
+        class_mapping[next_id - 1] = {
+            "class_index": next_id - 1,
+            "MaLoaiCay": next_id,
             "scientific_name": req.TenKhoaHoc,
             "vietnamese_name": req.TenThuongGoi
         }
@@ -1962,10 +1964,6 @@ def create_loai_cay(req: CreateSpeciesRequest):
         "TenThuongGoi": req.TenThuongGoi,
         "TenKhoaHoc": req.TenKhoaHoc
     }
-
-    conn.commit()
-    conn.close()
-    return {"message": "Thêm chậu cây mới thành công", "MaSanPham": ma_sp}
 
 @app.delete("/api/admin/san-pham/{ma_san_pham}")
 def delete_san_pham(ma_san_pham: int):
