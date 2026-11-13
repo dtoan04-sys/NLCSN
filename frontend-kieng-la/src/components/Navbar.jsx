@@ -10,7 +10,7 @@ const TRENDING_KEYWORDS = [
   'Kim tiền tài lộc',
   'Lưỡi hổ lọc khí',
   'Sen đá ngọc bích',
-  'Cây thủy sinh để bàn',
+  'Cây thủy sinh',
   'Lan ý hoa trắng',
   'Cây hợp mệnh Thủy'
 ];
@@ -74,11 +74,11 @@ export default function Navbar({
   };
 
   return (
-    <header className="fixed top-0 left-0 w-full z-40 bg-white/95 backdrop-blur-xl text-slate-800 shadow-[0_8px_30px_rgb(14,165,233,0.08)] border-b border-sky-100 transition-all font-sans">
+    <header className="fixed top-0 left-0 w-full z-40 bg-white/95 backdrop-blur-xl text-slate-800 shadow-[0_4px_20px_rgba(14,165,233,0.08)] border-b border-sky-100 transition-all font-sans">
       {/* ========================================================================= */}
-      {/* 1. TẦNG MICRO TOP BAR (Mệnh Thủy: Nước ban mai trong lành, xanh ngọc biển nhạt) */}
+      {/* 1. TẦNG MICRO TOP BAR (Chỉ hiện trên tablet & desktop: hidden md:block) */}
       {/* ========================================================================= */}
-      <div className="w-full bg-gradient-to-r from-sky-50 via-cyan-50/60 to-blue-50 text-sky-900 text-[11px] border-b border-sky-100/80 hidden sm:block">
+      <div className="w-full bg-gradient-to-r from-sky-50 via-cyan-50/60 to-blue-50 text-sky-900 text-[11px] border-b border-sky-100/80 hidden md:block">
         <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 h-8 flex items-center justify-between">
           {/* Cụm trái: Kênh Người Bán / Admin, Tra cứu, Phong thủy Thủy sinh */}
           <div className="flex items-center gap-3">
@@ -266,31 +266,56 @@ export default function Navbar({
       </div>
 
       {/* ========================================================================= */}
-      {/* 2. TẦNG MAIN HEADER (Trắng sứ & Sapphire Ocean Blue - Kim sinh Thủy cực vượng) */}
+      {/* 2. TẦNG MAIN HEADER (Co dãn mượt mà: Responsive Flexbox/Grid) */}
       {/* ========================================================================= */}
-      <div className="max-w-[1440px] mx-auto px-3 sm:px-6 lg:px-8 pt-3 pb-3 flex items-center justify-between gap-3 sm:gap-6">
+      <div className="max-w-[1440px] mx-auto px-3 sm:px-6 lg:px-8 py-2 sm:py-3 flex flex-wrap md:flex-nowrap items-center justify-between gap-2 sm:gap-4 md:gap-6">
         {/* LOGO THƯƠNG HIỆU */}
         <div
           onClick={() => onNavigate('home')}
-          className="flex items-center gap-2 sm:gap-3 cursor-pointer select-none group shrink-0"
+          className="flex items-center gap-2 sm:gap-2.5 cursor-pointer select-none group shrink-0"
         >
-          <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-2xl bg-gradient-to-tr from-blue-700 via-sky-600 to-cyan-400 text-white flex items-center justify-center font-extrabold shadow-md shadow-sky-500/25 group-hover:scale-105 group-hover:shadow-sky-500/40 transition-all">
-            <span className="material-symbols-outlined text-2xl sm:text-3xl font-bold">water_drop</span>
+          <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-2xl bg-gradient-to-tr from-blue-700 via-sky-600 to-cyan-400 text-white flex items-center justify-center font-extrabold shadow-md shadow-sky-500/25 group-hover:scale-105 transition-all">
+            <span className="material-symbols-outlined text-xl sm:text-2xl font-bold">water_drop</span>
           </div>
           <div>
-            <div className="text-xl sm:text-2xl font-black tracking-tight text-slate-900 leading-none">
+            <div className="text-lg sm:text-2xl font-black tracking-tight text-slate-900 leading-none">
               FloraBotanic<span className="text-transparent bg-clip-text bg-gradient-to-r from-sky-600 to-blue-700">.AI</span>
             </div>
-            <span className="text-[10px] text-sky-700 font-bold tracking-wider uppercase block mt-1 hidden xs:block">
+            <span className="text-[9px] sm:text-[10px] text-sky-700 font-bold tracking-wider uppercase block mt-0.5 hidden xs:block">
               Kiểng Lá &amp; AI Thực Vật Học
             </span>
           </div>
         </div>
 
-        {/* CỤM TÌM KIẾM CÁCH ĐIỆU PHONG CÁCH MỆNH THỦY (XANH BIỂN & TRẮNG ÁNH KIM) */}
-        <div className="flex-1 max-w-2xl lg:max-w-3xl flex flex-col justify-center">
-          <div className="bg-white rounded-2xl p-1 sm:p-1.5 shadow-sm border-2 border-sky-400/70 focus-within:border-blue-600 focus-within:ring-4 focus-within:ring-sky-400/20 flex items-center gap-1 sm:gap-2 transition-all">
-            <span className="material-symbols-outlined text-sky-500 text-xl pl-2 hidden sm:inline">
+        {/* NÚT THAO TÁC NHANH TRÊN MOBILE (Giỏ hàng & Camera) */}
+        <div className="flex md:hidden items-center gap-1.5 shrink-0">
+          <button
+            type="button"
+            onClick={onOpenAiModal}
+            className="p-2 text-sky-700 bg-sky-50 border border-sky-200 rounded-xl hover:bg-sky-100 transition-all"
+            title="Quét ảnh AI"
+          >
+            <span className="material-symbols-outlined text-xl">photo_camera</span>
+          </button>
+          <button
+            type="button"
+            onClick={onOpenCart}
+            className="relative p-2 text-sky-700 bg-sky-50 border border-sky-200 rounded-xl hover:bg-sky-100 transition-all"
+            title="Giỏ hàng"
+          >
+            <span className="material-symbols-outlined text-xl">shopping_cart</span>
+            {totalCount > 0 && (
+              <span className="absolute -top-1 -right-1 bg-gradient-to-r from-sky-600 to-blue-700 text-white text-[10px] font-black px-1.5 py-0.2 rounded-full min-w-[18px] text-center shadow-xs border border-white">
+                {totalCount}
+              </span>
+            )}
+          </button>
+        </div>
+
+        {/* CỤM TÌM KIẾM CO DÃN 100% TRÊN MOBILE / FLEX-1 TRÊN DESKTOP */}
+        <div className="w-full md:flex-1 md:max-w-2xl lg:max-w-3xl flex flex-col justify-center order-3 md:order-2">
+          <div className="bg-white rounded-xl sm:rounded-2xl p-1 sm:p-1.5 shadow-xs border-2 border-sky-400/70 focus-within:border-blue-600 focus-within:ring-2 sm:focus-within:ring-4 focus-within:ring-sky-400/20 flex items-center gap-1 sm:gap-2 transition-all">
+            <span className="material-symbols-outlined text-sky-500 text-lg sm:text-xl pl-1 sm:pl-2">
               search
             </span>
             <input
@@ -298,34 +323,34 @@ export default function Navbar({
               value={searchValue}
               onChange={(e) => setSearchValue(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder="Tìm chậu kiểng lá, tra cứu mã #1-90, Monstera, Thủy sinh, Phong thủy..."
-              className="flex-1 px-2.5 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm text-slate-800 placeholder-slate-400 bg-transparent focus:outline-none"
+              placeholder="Tìm tên cây, Monstera, Thủy sinh..."
+              className="flex-1 px-1.5 sm:px-3 py-1 sm:py-1.5 text-xs sm:text-sm text-slate-800 placeholder-slate-400 bg-transparent focus:outline-none min-w-0"
             />
 
-            {/* NÚT QUÉT ẢNH AI TÍCH HỢP TRONG THANH SEARCH */}
+            {/* NÚT QUÉT ẢNH AI (Desktop / Tablet) */}
             <button
               type="button"
               onClick={onOpenAiModal}
-              className="flex items-center gap-1 sm:gap-1.5 px-3 py-1.5 sm:py-2 rounded-xl bg-sky-50 hover:bg-sky-100 text-sky-900 text-xs font-bold transition-all border border-sky-200 cursor-pointer shrink-0 shadow-2xs"
-              title="Quét ảnh lá cây bằng AI để nhận diện và tìm chậu mua"
+              className="hidden sm:flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-xl bg-sky-50 hover:bg-sky-100 text-sky-900 text-xs font-bold transition-all border border-sky-200 cursor-pointer shrink-0 shadow-2xs"
+              title="Quét ảnh lá cây bằng AI"
             >
-              <span className="material-symbols-outlined text-lg sm:text-xl text-sky-600">photo_camera</span>
-              <span className="hidden sm:inline">Quét Ảnh AI</span>
+              <span className="material-symbols-outlined text-lg text-sky-600">photo_camera</span>
+              <span>Quét AI</span>
             </button>
 
-            {/* NÚT TÌM KIẾM CHÍNH (Gradient Sapphire to Ocean Blue) */}
+            {/* NÚT TÌM KIẾM CHÍNH */}
             <button
               type="button"
               onClick={() => handleExecuteSearch()}
-              className="bg-gradient-to-r from-sky-600 to-blue-700 hover:from-sky-700 hover:to-blue-800 text-white px-4 sm:px-6 py-2 rounded-xl font-bold text-xs flex items-center justify-center cursor-pointer transition-all shadow-sm shrink-0"
+              className="bg-gradient-to-r from-sky-600 to-blue-700 hover:from-sky-700 hover:to-blue-800 text-white px-3 sm:px-5 py-1.5 sm:py-2 rounded-lg sm:rounded-xl font-bold text-xs flex items-center justify-center cursor-pointer transition-all shadow-sm shrink-0"
               title="Tìm kiếm"
             >
-              <span className="material-symbols-outlined text-lg font-bold">search</span>
+              <span className="material-symbols-outlined text-base sm:text-lg font-bold">search</span>
             </button>
           </div>
 
-          {/* DÒNG TỪ KHÓA TÌM KIẾM HOT DƯỚI THANH SEARCH */}
-          <div className="hidden md:flex items-center gap-2 sm:gap-2.5 mt-2 text-[11px] text-sky-800/80 overflow-x-auto no-scrollbar whitespace-nowrap pl-1">
+          {/* DÒNG TỪ KHÓA TÌM KIẾM HOT (Chỉ hiện trên desktop) */}
+          <div className="hidden lg:flex items-center gap-2 mt-2 text-[11px] text-sky-800/80 overflow-x-auto no-scrollbar whitespace-nowrap pl-1">
             <span className="text-sky-700 font-bold flex items-center gap-1">
               <span className="material-symbols-outlined text-xs text-sky-500">water</span>
               <span>Gợi ý:</span>
@@ -346,8 +371,8 @@ export default function Navbar({
           </div>
         </div>
 
-        {/* CỤM NÚT BÊN PHẢI: GIỎ HÀNG VÀ TÀI KHOẢN MOBILE */}
-        <div className="flex items-center gap-2 sm:gap-4 shrink-0">
+        {/* CỤM NÚT BÊN PHẢI (DESKTOP) */}
+        <div className="hidden md:flex items-center gap-3 shrink-0 order-3">
           <button
             type="button"
             onClick={onOpenCart}
@@ -361,58 +386,40 @@ export default function Navbar({
               </span>
             )}
           </button>
-
-          {/* Mobile login avatar */}
-          <div className="block sm:hidden">
-            {isAuthenticated ? (
-              <div
-                onClick={onOpenProfile}
-                className="w-9 h-9 rounded-xl bg-gradient-to-tr from-sky-600 to-blue-700 text-white font-black text-xs flex items-center justify-center cursor-pointer shadow-sm"
-              >
-                {getInitials(user?.fullName || user?.username)}
-              </div>
-            ) : (
-              <button
-                onClick={onOpenAuth}
-                className="p-2 rounded-xl bg-sky-50 text-sky-800 border border-sky-200"
-              >
-                <span className="material-symbols-outlined text-xl">person</span>
-              </button>
-            )}
-          </div>
         </div>
       </div>
 
       {/* ========================================================================= */}
-      {/* 3. TẦNG ĐIỀU HƯỚNG & DANH MỤC CÂY (Phối Xanh Biển Sâu & Trắng Tinh) */}
+      {/* 3. TẦNG ĐIỀU HƯỚNG & DANH MỤC CÂY */}
       {/* ========================================================================= */}
       <div className="w-full bg-white/90 border-t border-sky-100 relative z-30">
-        <div className="max-w-[1440px] mx-auto px-3 sm:px-6 lg:px-8 flex items-center justify-between gap-2 h-11 text-xs font-bold">
-          {/* NÚT DANH MỤC CÂY Ở GÓC TRÊN BÊN TRÁI (Ocean Gradient) */}
+        <div className="max-w-[1440px] mx-auto px-2 sm:px-6 lg:px-8 flex items-center justify-between gap-1 sm:gap-2 h-10 sm:h-11 text-xs font-bold">
+          {/* NÚT DANH MỤC CÂY */}
           <div className="relative shrink-0" ref={catMenuRef}>
             <button
               type="button"
               onClick={() => setIsCatMenuOpen(!isCatMenuOpen)}
-              className="px-4 py-2 rounded-xl flex items-center gap-2 bg-gradient-to-r from-sky-600 via-blue-700 to-indigo-800 text-white shadow-sm hover:from-sky-700 hover:to-indigo-900 transition-all cursor-pointer font-bold"
+              className="px-2.5 sm:px-4 py-1.5 sm:py-2 rounded-xl flex items-center gap-1 sm:gap-2 bg-gradient-to-r from-sky-600 via-blue-700 to-indigo-800 text-white shadow-sm hover:from-sky-700 hover:to-indigo-900 transition-all cursor-pointer font-bold text-xs"
             >
               <span className="material-symbols-outlined text-base font-bold">menu</span>
-              <span>Danh Mục Cây</span>
+              <span className="hidden xs:inline">Danh Mục Cây</span>
+              <span className="xs:hidden">Mục</span>
               <span className={`material-symbols-outlined text-sm transition-transform duration-200 ${isCatMenuOpen ? 'rotate-180' : ''}`}>
                 expand_more
               </span>
             </button>
 
             {isCatMenuOpen && (
-              <div className="absolute left-0 top-full mt-2 w-80 bg-white rounded-2xl shadow-2xl border border-sky-100 p-2 z-50 text-slate-800 animate-in fade-in duration-150">
+              <div className="absolute left-0 top-full mt-2 w-72 sm:w-80 bg-white rounded-2xl shadow-2xl border border-sky-100 p-2 z-50 text-slate-800 animate-in fade-in duration-150">
                 <div className="px-3 py-2 border-b border-sky-100 flex items-center justify-between">
                   <span className="text-[11px] font-bold text-slate-900 uppercase tracking-wide">
-                    Hệ thống phân loại kiểng lá
+                    Phân loại kiểng lá
                   </span>
                   <span className="text-[10px] text-sky-700 font-bold bg-sky-50 px-2 py-0.5 rounded-full border border-sky-200">
-                    6 Nhóm Nhu Cầu
+                    6 Nhóm
                   </span>
                 </div>
-                <div className="p-1 space-y-1">
+                <div className="p-1 space-y-1 max-h-80 overflow-y-auto">
                   {CATEGORIES.map((cat) => (
                     <button
                       key={cat.id}
@@ -443,63 +450,63 @@ export default function Navbar({
             )}
           </div>
 
-          {/* DẢI CÁC LIÊN KẾT ĐIỀU HƯỚNG TRANG */}
+          {/* DẢI CÁC LIÊN KẾT ĐIỀU HƯỚNG TRANG (Cuộn ngang êm ái trên màn hình nhỏ) */}
           <div className="flex-1 flex items-center gap-1 sm:gap-2 overflow-x-auto no-scrollbar whitespace-nowrap pl-1 sm:pl-3">
             <button
               onClick={() => onNavigate('home')}
-              className={`px-3.5 py-1.5 rounded-xl flex items-center gap-1.5 transition-all cursor-pointer ${
+              className={`px-2.5 sm:px-3.5 py-1 sm:py-1.5 rounded-xl flex items-center gap-1 sm:gap-1.5 transition-all cursor-pointer ${
                 currentPage === 'home'
                   ? 'bg-sky-100 text-blue-900 font-extrabold shadow-2xs border border-sky-200'
                   : 'text-slate-600 hover:text-blue-900 hover:bg-sky-50 font-semibold'
               }`}
             >
-              <span className="material-symbols-outlined text-base text-sky-600">home</span>
+              <span className="material-symbols-outlined text-sm sm:text-base text-sky-600">home</span>
               <span>Trang chủ</span>
             </button>
 
             <button
               onClick={() => onNavigate('products')}
-              className={`px-3.5 py-1.5 rounded-xl flex items-center gap-1.5 transition-all cursor-pointer ${
+              className={`px-2.5 sm:px-3.5 py-1 sm:py-1.5 rounded-xl flex items-center gap-1 sm:gap-1.5 transition-all cursor-pointer ${
                 currentPage === 'products' || currentPage === 'detail'
                   ? 'bg-sky-100 text-blue-900 font-extrabold shadow-2xs border border-sky-200'
                   : 'text-slate-600 hover:text-blue-900 hover:bg-sky-50 font-semibold'
               }`}
             >
-              <span className="material-symbols-outlined text-base text-sky-600">storefront</span>
+              <span className="material-symbols-outlined text-sm sm:text-base text-sky-600">storefront</span>
               <span>Chậu cây sẵn hàng</span>
             </button>
 
             <button
               onClick={() => onNavigate('wiki')}
-              className={`px-3.5 py-1.5 rounded-xl flex items-center gap-1.5 transition-all cursor-pointer ${
+              className={`px-2.5 sm:px-3.5 py-1 sm:py-1.5 rounded-xl flex items-center gap-1 sm:gap-1.5 transition-all cursor-pointer ${
                 currentPage === 'wiki'
                   ? 'bg-sky-100 text-blue-900 font-extrabold shadow-2xs border border-sky-200'
                   : 'text-slate-600 hover:text-blue-900 hover:bg-sky-50 font-semibold'
               }`}
             >
-              <span className="material-symbols-outlined text-base text-sky-600">menu_book</span>
+              <span className="material-symbols-outlined text-sm sm:text-base text-sky-600">menu_book</span>
               <span>Bách khoa 90 loài</span>
             </button>
 
             <button
               onClick={onOpenHistory}
-              className="px-3.5 py-1.5 rounded-xl text-slate-600 hover:text-blue-900 hover:bg-sky-50 flex items-center gap-1.5 transition-all cursor-pointer font-semibold"
+              className="px-2.5 sm:px-3.5 py-1 sm:py-1.5 rounded-xl text-slate-600 hover:text-blue-900 hover:bg-sky-50 flex items-center gap-1 sm:gap-1.5 transition-all cursor-pointer font-semibold"
             >
-              <span className="material-symbols-outlined text-base text-sky-600">history</span>
-              <span>Lịch sử quét ảnh</span>
+              <span className="material-symbols-outlined text-sm sm:text-base text-sky-600">history</span>
+              <span>Lịch sử</span>
             </button>
 
             {user?.role === 'ADMIN' && (
               <button
                 onClick={() => onNavigate('admin')}
-                className={`px-3.5 py-1.5 rounded-xl flex items-center gap-1.5 transition-all cursor-pointer ${
+                className={`px-2.5 sm:px-3.5 py-1 sm:py-1.5 rounded-xl flex items-center gap-1 sm:gap-1.5 transition-all cursor-pointer ${
                   currentPage === 'admin'
                     ? 'bg-gradient-to-r from-blue-700 to-indigo-800 text-white shadow-sm'
                     : 'text-sky-800 hover:bg-sky-50 border border-dashed border-sky-300'
                 }`}
               >
-                <span className="material-symbols-outlined text-base">dashboard</span>
-                <span>Quản trị viên (Hub)</span>
+                <span className="material-symbols-outlined text-sm sm:text-base">dashboard</span>
+                <span>Admin Hub</span>
               </button>
             )}
           </div>

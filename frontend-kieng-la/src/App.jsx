@@ -320,8 +320,8 @@ function MainApp({ isAuthOpen, setIsAuthOpen }) {
         </div>
       )}
 
-      {/* 2. Main Page Content (Khoảng cách dưới Header Shopee 3 tầng) */}
-      <main className="pt-32 sm:pt-36 md:pt-40 flex-1">
+      {/* 2. Main Page Content (Khoảng cách dưới Header Shopee co dãn tự động trên mobile và desktop) */}
+      <main className="pt-24 sm:pt-28 md:pt-36 flex-1 pb-16 md:pb-0">
         {currentPage === 'home' && (
           <HomePage
             onOpenAiModal={() => setIsAiModalOpen(true)}
