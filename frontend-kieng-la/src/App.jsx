@@ -47,7 +47,7 @@ class AppErrorBoundary extends React.Component {
               this.setState({ hasError: false, errorMsg: '' });
               window.location.reload();
             }}
-            className="px-6 py-3 rounded-2xl bg-gradient-to-r from-emerald-700 to-teal-800 text-white text-xs font-bold shadow-md"
+            className="px-6 py-3 rounded-2xl bg-gradient-to-r from-sky-600 via-blue-700 to-indigo-800 text-white text-xs font-bold shadow-md"
           >
             Quay lại màn hình chính
           </button>
@@ -421,8 +421,8 @@ function MainApp({ isAuthOpen, setIsAuthOpen }) {
 
       {/* Toast Notification */}
       {toastMsg && (
-        <div className="fixed bottom-20 md:bottom-6 right-6 bg-emerald-950 text-white px-5 py-3 rounded-2xl text-xs font-bold shadow-2xl flex items-center gap-2.5 z-50 animate-bounce border border-emerald-800/60">
-          <span className="material-symbols-outlined text-emerald-400 text-base">info</span>
+        <div className="fixed bottom-20 md:bottom-6 right-6 bg-slate-900 text-white px-5 py-3 rounded-2xl text-xs font-bold shadow-2xl flex items-center gap-2.5 z-50 animate-bounce border border-sky-400/40">
+          <span className="material-symbols-outlined text-sky-400 text-base">water_drop</span>
           <span>{toastMsg}</span>
         </div>
       )}
@@ -435,13 +435,13 @@ function MainApp({ isAuthOpen, setIsAuthOpen }) {
       )}
 
       {/* 6. Mobile Bottom Navigation Bar Chuẩn App Bán Hàng Kiểng Lá */}
-      <nav className="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-lg border-t border-emerald-100 z-40 flex items-center justify-around h-16 px-1 md:hidden shadow-[0_-4px_20px_rgba(0,0,0,0.06)]">
+      <nav className="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-lg border-t border-sky-100 z-40 flex items-center justify-around h-16 px-1 md:hidden shadow-[0_-4px_20px_rgba(14,165,233,0.08)]">
         {/* 1. Trang chủ */}
         <button
           type="button"
           onClick={() => handleNavigate('home')}
           className={`flex flex-col items-center justify-center flex-1 py-1 transition-colors ${
-            currentPage === 'home' && !isOrdersOpen ? 'text-emerald-700 font-bold' : 'text-gray-500'
+            currentPage === 'home' && !isOrdersOpen ? 'text-blue-700 font-bold' : 'text-slate-500'
           }`}
         >
           <span className="material-symbols-outlined text-xl">home</span>
@@ -453,7 +453,7 @@ function MainApp({ isAuthOpen, setIsAuthOpen }) {
           type="button"
           onClick={() => handleNavigate('products')}
           className={`relative flex flex-col items-center justify-center flex-1 py-1 transition-colors ${
-            currentPage === 'products' || currentPage === 'detail' ? 'text-emerald-700 font-bold' : 'text-gray-500'
+            currentPage === 'products' || currentPage === 'detail' ? 'text-blue-700 font-bold' : 'text-slate-500'
           }`}
         >
           <span className="material-symbols-outlined text-xl">storefront</span>
@@ -468,7 +468,7 @@ function MainApp({ isAuthOpen, setIsAuthOpen }) {
               if (window.AndroidNative?.vibrate) window.AndroidNative.vibrate(30);
               setIsAiModalOpen(true);
             }}
-            className="w-14 h-14 rounded-full bg-gradient-to-tr from-emerald-700 to-teal-500 text-white flex flex-col items-center justify-center shadow-lg shadow-emerald-800/30 active:scale-90 transition-transform border-4 border-white"
+            className="w-14 h-14 rounded-full bg-gradient-to-tr from-sky-600 via-blue-700 to-indigo-800 text-white flex flex-col items-center justify-center shadow-lg shadow-sky-600/30 active:scale-90 transition-transform border-4 border-white"
             title="Chụp ảnh cây tìm mua chậu tại vườn"
           >
             <span className="material-symbols-outlined text-2xl">photo_camera</span>
@@ -487,7 +487,7 @@ function MainApp({ isAuthOpen, setIsAuthOpen }) {
             }
           }}
           className={`flex flex-col items-center justify-center flex-1 py-1 transition-colors ${
-            isOrdersOpen ? 'text-emerald-700 font-bold' : 'text-gray-500'
+            isOrdersOpen ? 'text-blue-700 font-bold' : 'text-slate-500'
           }`}
         >
           <span className="material-symbols-outlined text-xl">receipt_long</span>
@@ -499,7 +499,7 @@ function MainApp({ isAuthOpen, setIsAuthOpen }) {
           type="button"
           onClick={() => handleNavigate('wiki')}
           className={`flex flex-col items-center justify-center flex-1 py-1 transition-colors ${
-            currentPage === 'wiki' ? 'text-emerald-700 font-bold' : 'text-gray-500'
+            currentPage === 'wiki' ? 'text-blue-700 font-bold' : 'text-slate-500'
           }`}
         >
           <span className="material-symbols-outlined text-xl">menu_book</span>
