@@ -3,7 +3,7 @@ import sys
 import json
 import shutil
 from datetime import datetime
-from typing import Optional, List
+from typing import Optional, List, Dict, Any
 import numpy as np
 import pyodbc
 from PIL import Image, ImageOps
@@ -313,7 +313,7 @@ def get_san_pham(ma_danh_muc: Optional[int] = None, search: Optional[str] = None
         SELECT sp.MASANPHAM, sp.TENSANPHAM, sp.SOLUONGTONKHO, sp.KICHTHUOCCAY, sp.TINHTRANGCAY, sp.NGAYNHAP,
                lc.MALOAICAY, lc.TENKHOAHOC, lc.TENTHUONGGOI, lc.GIATHAMKHAO, lc.HUONGDANCHAMSOC,
                lc.DACDIEMNHANDANG, lc.XUATXU, dm.MADANHMUC, dm.TENDANHMUC,
-               (SELECT TOP 1 URLANH FROM HINH_ANH_SAN_PHAM ha WHERE ha.MASANPHAM = sp.MASANPHAM ORDER BY LAANHCHINH DESC) AS URLANH,
+               (SELECT TOP 1 URLANH FROM HINH_ANH_SAN_PHAM ha WHERE ha.MASANPHAM = sp.MASANPHAM ORDER BY LAANHCHINH DESC, MAANH ASC) AS URLANH,
                ISNULL((SELECT TOP 1 GIABAN FROM LICH_SU_GIA_SAN_PHAM lsg WHERE lsg.MASANPHAM = sp.MASANPHAM ORDER BY MALICHSUGIA DESC), lc.GIATHAMKHAO) AS GIABAN
         FROM SAN_PHAM sp
         JOIN LOAI_CAY lc ON sp.MALOAICAY = lc.MALOAICAY
@@ -328,7 +328,29 @@ def get_san_pham(ma_danh_muc: Optional[int] = None, search: Optional[str] = None
         sql += " AND (sp.TENSANPHAM LIKE ? OR lc.TENTHUONGGOI LIKE ? OR lc.TENKHOAHOC LIKE ?)"
         kw = f"%{search}%"
         params.extend([kw, kw, kw])
-    return query_db(sql, tuple(params))
+    prods = query_db(sql, tuple(params))
+
+    # Lấy toàn bộ album ảnh thực tế cho từng sản phẩm
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+        cur.execute("SELECT MAANH, MASANPHAM, URLANH, LAANHCHINH FROM HINH_ANH_SAN_PHAM ORDER BY LAANHCHINH DESC, MAANH ASC")
+        img_dict = defaultdict(list)
+        for r in cur.fetchall():
+            img_dict[r[1]].append({
+                "MaAnh": r[0],
+                "MaSanPham": r[1],
+                "UrlAnh": r[2],
+                "LaAnhChinh": bool(r[3])
+            })
+        conn.close()
+        for p in prods:
+            sp_id = p.get("MASANPHAM") or p.get("masanpham")
+            p["DanhSachAnh"] = img_dict.get(sp_id, [])
+    except Exception as e:
+        print("Lỗi nạp danh sách ảnh phụ sản phẩm:", e)
+
+    return prods
 
 @app.post("/nhan-dien")
 @app.post("/api/nhan-dien-anh")
@@ -940,6 +962,7 @@ class UpdateProductRequest(BaseModel):
     TinhTrangCay: Optional[str] = None
     UrlAnh: Optional[str] = None
     NgayNhap: Optional[str] = None
+    DanhSachAnh: Optional[List[Dict[str, Any]]] = None
 
 class CreateProductRequest(BaseModel):
     MaLoaiCay: int
@@ -950,6 +973,22 @@ class CreateProductRequest(BaseModel):
     TinhTrangCay: Optional[str] = "Cây khỏe mạnh, rễ ổn định"
     UrlAnh: Optional[str] = None
     NgayNhap: Optional[str] = None
+    DanhSachAnh: Optional[List[Dict[str, Any]]] = None
+
+class CreateSpeciesRequest(BaseModel):
+    TenThuongGoi: str
+    TenKhoaHoc: str
+    MaDanhMuc: Optional[int] = 1
+    GiaThamKhao: Optional[float] = 180000
+    HuongDanChamSoc: Optional[str] = "Tưới nước 2-3 lần/tuần, ánh sáng tán xạ"
+    DacDiemNhanDang: Optional[str] = "Lá đẹp khỏe mạnh, phát triển tốt"
+    XuatXu: Optional[str] = "Nhiệt đới"
+    AnhSang: Optional[str] = "Tán xạ 60-70%"
+    DoAm: Optional[str] = "60-80%"
+    NhietDo: Optional[str] = "20-30°C"
+    DocTinh: Optional[str] = "An toàn hoặc để xa tầm tay trẻ"
+    PhongThuy: Optional[str] = "Hút tài lộc, thanh lọc không gian"
+    UrlAnh: Optional[str] = None
 
 class UpdateOrderStatusRequest(BaseModel):
     TrangThaiDonHang: str
@@ -1788,8 +1827,33 @@ def update_san_pham(ma_san_pham: int, req: UpdateProductRequest):
             INSERT INTO LICH_SU_GIA_SAN_PHAM (MALICHSUGIA, MASANPHAM, GIABAN, NGAYBATDAU)
             VALUES (?, ?, ?, GETDATE())
         """, (ma_gia, ma_san_pham, req.GiaBan))
-    if req.UrlAnh is not None:
-        cursor.execute("UPDATE HINH_ANH_SAN_PHAM SET URLANH = ? WHERE MASANPHAM = ?", (req.UrlAnh, ma_san_pham))
+
+    # Cập nhật danh sách album nhiều ảnh & ảnh chính
+    if req.DanhSachAnh is not None and len(req.DanhSachAnh) > 0:
+        cursor.execute("DELETE FROM HINH_ANH_SAN_PHAM WHERE MASANPHAM = ?", (ma_san_pham,))
+        has_main = any(bool(img.get("LaAnhChinh") or img.get("isMain")) for img in req.DanhSachAnh)
+        if not has_main and req.DanhSachAnh:
+            req.DanhSachAnh[0]["LaAnhChinh"] = True
+
+        for item in req.DanhSachAnh:
+            u = item.get("UrlAnh") or item.get("url")
+            if not u:
+                continue
+            is_main = bool(item.get("LaAnhChinh") or item.get("isMain"))
+            cursor.execute("SELECT ISNULL(MAX(MAANH), 0) + 1 FROM HINH_ANH_SAN_PHAM")
+            ma_anh = cursor.fetchone()[0]
+            cursor.execute("""
+                INSERT INTO HINH_ANH_SAN_PHAM (MAANH, MASANPHAM, URLANH, LAANHCHINH)
+                VALUES (?, ?, ?, ?)
+            """, (ma_anh, ma_san_pham, u, 1 if is_main else 0))
+    elif req.UrlAnh is not None:
+        cursor.execute("SELECT 1 FROM HINH_ANH_SAN_PHAM WHERE MASANPHAM = ? AND LAANHCHINH = 1", (ma_san_pham,))
+        if cursor.fetchone():
+            cursor.execute("UPDATE HINH_ANH_SAN_PHAM SET URLANH = ? WHERE MASANPHAM = ? AND LAANHCHINH = 1", (req.UrlAnh, ma_san_pham))
+        else:
+            cursor.execute("SELECT ISNULL(MAX(MAANH), 0) + 1 FROM HINH_ANH_SAN_PHAM")
+            ma_anh = cursor.fetchone()[0]
+            cursor.execute("INSERT INTO HINH_ANH_SAN_PHAM (MAANH, MASANPHAM, URLANH, LAANHCHINH) VALUES (?, ?, ?, 1)", (ma_anh, ma_san_pham, req.UrlAnh))
 
     conn.commit()
     conn.close()
@@ -1816,14 +1880,88 @@ def create_san_pham(req: CreateProductRequest):
         VALUES (?, ?, ?, GETDATE())
     """, (ma_gia, ma_sp, req.GiaBan))
 
-    # Cập nhật hình ảnh
-    img_url = req.UrlAnh or f"/plants/{req.MaLoaiCay}.jpg"
-    cursor.execute("SELECT ISNULL(MAX(MAHINHANH), 0) + 1 FROM HINH_ANH_SAN_PHAM")
-    ma_anh = cursor.fetchone()[0]
+    # Cập nhật nhiều hình ảnh & chọn ảnh chính
+    danh_sach_anh = req.DanhSachAnh or []
+    if not danh_sach_anh:
+        primary_url = req.UrlAnh or f"/plants/{req.MaLoaiCay}.jpg"
+        danh_sach_anh = [{"UrlAnh": primary_url, "LaAnhChinh": True}]
+
+    has_main = any(bool(img.get("LaAnhChinh") or img.get("isMain")) for img in danh_sach_anh)
+    if not has_main and danh_sach_anh:
+        danh_sach_anh[0]["LaAnhChinh"] = True
+
+    for item in danh_sach_anh:
+        u = item.get("UrlAnh") or item.get("url") or req.UrlAnh or f"/plants/{req.MaLoaiCay}.jpg"
+        if not u:
+            continue
+        is_main = bool(item.get("LaAnhChinh") or item.get("isMain"))
+        cursor.execute("SELECT ISNULL(MAX(MAANH), 0) + 1 FROM HINH_ANH_SAN_PHAM")
+        ma_anh = cursor.fetchone()[0]
+        cursor.execute("""
+            INSERT INTO HINH_ANH_SAN_PHAM (MAANH, MASANPHAM, URLANH, LAANHCHINH)
+            VALUES (?, ?, ?, ?)
+        """, (ma_anh, ma_sp, u, 1 if is_main else 0))
+
+    conn.commit()
+    conn.close()
+    return {"message": "Thêm chậu cây mới thành công", "MaSanPham": ma_sp}
+
+@app.post("/api/admin/loai-cay")
+def create_loai_cay(req: CreateSpeciesRequest):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    # Tìm ID loài cây sinh học tiếp theo (không tính lớp khác #91)
     cursor.execute("""
-        INSERT INTO HINH_ANH_SAN_PHAM (MAHINHANH, MASANPHAM, URLANH, LAANHCHINH)
-        VALUES (?, ?, ?, 1)
-    """, (ma_anh, ma_sp, img_url))
+        SELECT ISNULL(MAX(MALOAICAY), 90) FROM LOAI_CAY 
+        WHERE MALOAICAY != 91 AND TENTHUONGGOI NOT LIKE N'%Lớp khác%'
+    """)
+    current_max = cursor.fetchone()[0]
+    next_id = current_max + 1
+
+    # Nếu Lớp khác có ID trùng hoặc nhỏ hơn next_id, tịnh tiến Lớp khác lên next_id + 1
+    cursor.execute("SELECT MALOAICAY FROM LOAI_CAY WHERE TENTHUONGGOI LIKE N'%Lớp khác%'")
+    row_khac = cursor.fetchone()
+    if row_khac:
+        old_khac_id = row_khac[0]
+        if old_khac_id <= next_id:
+            new_khac_id = next_id + 1
+            cursor.execute("UPDATE LOAI_CAY SET MALOAICAY = ? WHERE MALOAICAY = ?", (new_khac_id, old_khac_id))
+
+    cursor.execute("""
+        INSERT INTO LOAI_CAY (MALOAICAY, MADANHMUC, TENKHOAHOC, TENTHUONGGOI, GIATHAMKHAO, HUONGDANCHAMSOC, DACDIEMNHANDANG, XUATXU, ANHSANG, DOAM, NHIETDO, DOCTINH, PHONGTHUY)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    """, (
+        next_id,
+        req.MaDanhMuc or 1,
+        req.TenKhoaHoc,
+        req.TenThuongGoi,
+        req.GiaThamKhao or 180000,
+        req.HuongDanChamSoc or "Tưới nước 2-3 lần/tuần, ánh sáng tán xạ 60%",
+        req.DacDiemNhanDang or "Lá đẹp khỏe mạnh",
+        req.XuatXu or "Nhiệt đới",
+        req.AnhSang or "Tán xạ 60%",
+        req.DoAm or "70%",
+        req.NhietDo or "25°C",
+        req.DocTinh or "Không ăn được",
+        req.PhongThuy or "Hút tài lộc, may mắn"
+    ))
+
+    # Cập nhật bộ nhớ SPECIES_MAP
+    if next_id not in SPECIES_MAP:
+        SPECIES_MAP[next_id] = {
+            "scientific_name": req.TenKhoaHoc,
+            "vietnamese_name": req.TenThuongGoi
+        }
+
+    conn.commit()
+    conn.close()
+    return {
+        "message": f"Đã thêm loài cây #{next_id} ({req.TenThuongGoi}) thành công! Lớp Out-of-Distribution (Khác) tự động tịnh tiến lên #{next_id + 1}.",
+        "MaLoaiCay": next_id,
+        "TenThuongGoi": req.TenThuongGoi,
+        "TenKhoaHoc": req.TenKhoaHoc
+    }
 
     conn.commit()
     conn.close()

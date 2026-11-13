@@ -3,6 +3,7 @@ import { getPlantImage, handleImgError } from '../utils/plantAssets';
 import { useCart } from '../context/CartContext';
 import { apiFetch, getApiBaseUrl } from '../config';
 import ImageUpload from '../components/ImageUpload';
+import MultiImageUpload from '../components/MultiImageUpload';
 
 export default function AdminDashboardPage({ onBackToStore, onSelectProduct }) {
   const [activeTab, setActiveTab] = useState('overview'); // overview, products, orders, users, ai_logs, species
@@ -36,6 +37,7 @@ export default function AdminDashboardPage({ onBackToStore, onSelectProduct }) {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [editingUser, setEditingUser] = useState(null);
   const [isAddUserModalOpen, setIsAddUserModalOpen] = useState(false);
+  const [isAddSpeciesModalOpen, setIsAddSpeciesModalOpen] = useState(false);
 
   const [newUser, setNewUser] = useState({
     taiKhoan: '',
@@ -53,6 +55,22 @@ export default function AdminDashboardPage({ onBackToStore, onSelectProduct }) {
     SoLuongTonKho: 12,
     KichThuocCay: 'Chậu tiêu chuẩn Ø16cm',
     TinhTrangCay: 'Cây khỏe mạnh, rễ ổn định, lá xanh mướt',
+    UrlAnh: '',
+    DanhSachAnh: []
+  });
+  const [newSpecies, setNewSpecies] = useState({
+    TenThuongGoi: '',
+    TenKhoaHoc: '',
+    MaDanhMuc: 1,
+    GiaThamKhao: 200000,
+    XuatXu: 'Nhiệt đới Nam Mỹ / Đông Nam Á',
+    DacDiemNhanDang: 'Lá xanh mướt, phát triển tốt',
+    HuongDanChamSoc: 'Tưới nước 2-3 lần/tuần, ánh sáng tán xạ 60-70%',
+    AnhSang: 'Tán xạ 60%',
+    DoAm: '70%',
+    NhietDo: '25°C',
+    DocTinh: 'Không ăn được',
+    PhongThuy: 'Hút tài lộc, may mắn',
     UrlAnh: ''
   });
 
@@ -131,11 +149,12 @@ export default function AdminDashboardPage({ onBackToStore, onSelectProduct }) {
     }
   };
 
-  // Update product
+  // Update product (hỗ trợ nhiều ảnh + chọn ảnh chính)
   const handleSaveProduct = async (e) => {
     e.preventDefault();
     if (!editingProduct) return;
     try {
+      const mainImg = editingProduct.DanhSachAnh?.find(img => img.isMain || img.LaAnhChinh)?.url || editingProduct.UrlAnh || editingProduct.urlanh;
       const res = await apiFetch(`/api/admin/san-pham/${editingProduct.MaSanPham || editingProduct.masanpham}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
@@ -145,11 +164,12 @@ export default function AdminDashboardPage({ onBackToStore, onSelectProduct }) {
           SoLuongTonKho: Number(editingProduct.SoLuongTonKho || editingProduct.soluongtonkho),
           KichThuocCay: editingProduct.KichThuocCay || editingProduct.kichthuoccay,
           TinhTrangCay: editingProduct.TinhTrangCay || editingProduct.tinhtrangcay,
-          UrlAnh: editingProduct.UrlAnh || editingProduct.urlanh
+          UrlAnh: mainImg,
+          DanhSachAnh: editingProduct.DanhSachAnh || []
         })
       });
       if (res.ok) {
-        showToast('✅ Đã lưu cập nhật thông tin chậu cây!');
+        showToast('✅ Đã lưu cập nhật thông tin chậu cây và album ảnh!');
         setEditingProduct(null);
         fetchAllData();
       }
@@ -158,10 +178,11 @@ export default function AdminDashboardPage({ onBackToStore, onSelectProduct }) {
     }
   };
 
-  // Add new product
+  // Add new product (hỗ trợ nhiều ảnh + chọn ảnh chính)
   const handleCreateProduct = async (e) => {
     e.preventDefault();
     try {
+      const mainImg = newProduct.DanhSachAnh?.find(img => img.isMain)?.url || newProduct.UrlAnh || `/plants/${newProduct.MaLoaiCay}.jpg`;
       const res = await apiFetch('/api/admin/san-pham', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -172,16 +193,71 @@ export default function AdminDashboardPage({ onBackToStore, onSelectProduct }) {
           SoLuongTonKho: Number(newProduct.SoLuongTonKho),
           KichThuocCay: newProduct.KichThuocCay,
           TinhTrangCay: newProduct.TinhTrangCay,
-          UrlAnh: newProduct.UrlAnh || `/plants/${newProduct.MaLoaiCay}.jpg`
+          UrlAnh: mainImg,
+          DanhSachAnh: newProduct.DanhSachAnh && newProduct.DanhSachAnh.length > 0
+            ? newProduct.DanhSachAnh
+            : [{ UrlAnh: mainImg, LaAnhChinh: true }]
         })
       });
       if (res.ok) {
         showToast('🎉 Đã thêm chậu cây mới vào kho hàng thành công!');
         setIsAddModalOpen(false);
+        setNewProduct({
+          MaLoaiCay: 1,
+          TenSanPham: '',
+          GiaBan: 150000,
+          SoLuongTonKho: 12,
+          KichThuocCay: 'Chậu tiêu chuẩn Ø16cm',
+          TinhTrangCay: 'Cây khỏe mạnh, rễ ổn định, lá xanh mướt',
+          UrlAnh: '',
+          DanhSachAnh: []
+        });
         fetchAllData();
       }
     } catch (e) {
       showToast('❌ Lỗi khi thêm chậu cây');
+    }
+  };
+
+  // Add new botanical species (tự động tăng mã loài và cập nhật CSDL)
+  const handleCreateSpecies = async (e) => {
+    e.preventDefault();
+    if (!newSpecies.TenThuongGoi.trim() || !newSpecies.TenKhoaHoc.trim()) {
+      showToast('⚠️ Vui lòng nhập đầy đủ Tên thường gọi và Tên khoa học!');
+      return;
+    }
+    try {
+      const res = await apiFetch('/api/admin/loai-cay', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newSpecies)
+      });
+      if (res.ok) {
+        const data = await res.json();
+        showToast(`🎉 ${data.message || 'Đã thêm loài cây mới thành công!'}`);
+        setIsAddSpeciesModalOpen(false);
+        setNewSpecies({
+          TenThuongGoi: '',
+          TenKhoaHoc: '',
+          MaDanhMuc: 1,
+          GiaThamKhao: 200000,
+          XuatXu: 'Nhiệt đới Nam Mỹ / Đông Nam Á',
+          DacDiemNhanDang: 'Lá xanh mướt, phát triển tốt',
+          HuongDanChamSoc: 'Tưới nước 2-3 lần/tuần, ánh sáng tán xạ 60-70%',
+          AnhSang: 'Tán xạ 60%',
+          DoAm: '70%',
+          NhietDo: '25°C',
+          DocTinh: 'Không ăn được',
+          PhongThuy: 'Hút tài lộc, may mắn',
+          UrlAnh: ''
+        });
+        fetchAllData();
+      } else {
+        const err = await res.json().catch(() => ({}));
+        showToast(`❌ ${err.detail || 'Lỗi khi thêm loài cây mới'}`);
+      }
+    } catch (e) {
+      showToast('❌ Lỗi kết nối máy chủ');
     }
   };
 
@@ -1183,11 +1259,28 @@ export default function AdminDashboardPage({ onBackToStore, onSelectProduct }) {
           {/* ======================================================== */}
           {activeTab === 'species' && (
             <div className="bg-white rounded-3xl border border-gray-200/80 shadow-xs p-6 space-y-4">
-              <div className="flex items-center justify-between pb-3 border-b border-gray-100">
-                <h3 className="font-extrabold text-sm text-gray-900">Danh mục 90 loài cây trong cơ sở dữ liệu (LOAI_CAY)</h3>
-                <span className="text-xs font-bold text-emerald-700 bg-emerald-50 px-3 py-1 rounded-full">
-                  90 Loài Sinh Học Chuẩn
-                </span>
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pb-3 border-b border-gray-100">
+                <div>
+                  <h3 className="font-extrabold text-sm text-gray-900">
+                    Danh mục {botanicalSpecies.length || 90} loài cây thực vật học (LOAI_CAY)
+                  </h3>
+                  <p className="text-[11px] text-gray-400">
+                    Khi thêm loài mới, mục Quản lý chậu cây sẽ tự động tăng số lượng và cập nhật ngay lập tức
+                  </p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-bold text-emerald-700 bg-emerald-50 px-3 py-1.5 rounded-full border border-emerald-200/60">
+                    {botanicalSpecies.length || 90} Loài Sinh Học Chuẩn
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setIsAddSpeciesModalOpen(true)}
+                    className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-[#004830] hover:bg-[#005e3e] text-white text-xs font-bold transition-all shadow-xs cursor-pointer"
+                  >
+                    <span className="material-symbols-outlined text-base">add_circle</span>
+                    <span>Thêm Loài Cây Mới</span>
+                  </button>
+                </div>
               </div>
 
               <div className="overflow-x-auto rounded-2xl border border-gray-100">
@@ -1257,16 +1350,25 @@ export default function AdminDashboardPage({ onBackToStore, onSelectProduct }) {
             </div>
 
             <form onSubmit={handleSaveProduct} className="space-y-3.5 text-xs">
-              <ImageUpload
-                label="Hình ảnh chậu cây thực tế:"
-                currentImage={editingProduct.UrlAnh || editingProduct.urlanh}
-                defaultSpeciesImage={`/plants/${editingProduct.MaLoaiCay || editingProduct.maloaicay || 1}.jpg`}
-                onImageChange={(uploadedUrl) => {
-                  setEditingProduct({ ...editingProduct, UrlAnh: uploadedUrl, urlanh: uploadedUrl });
-                }}
-                onResetToDefault={() => {
-                  const mId = editingProduct.MaLoaiCay || editingProduct.maloaicay || 1;
-                  setEditingProduct({ ...editingProduct, UrlAnh: `/plants/${mId}.jpg`, urlanh: `/plants/${mId}.jpg` });
+              {/* Quản lý Album nhiều ảnh & Chọn ảnh chính */}
+              <MultiImageUpload
+                label="Album hình ảnh chậu cây thực tế (Hỗ trợ nhiều ảnh):"
+                images={
+                  editingProduct.DanhSachAnh && editingProduct.DanhSachAnh.length > 0
+                    ? editingProduct.DanhSachAnh.map((img, i) => ({
+                        url: img.url || img.UrlAnh || '',
+                        isMain: Boolean(img.isMain || img.LaAnhChinh || i === 0 && !editingProduct.DanhSachAnh.some(x => x.isMain || x.LaAnhChinh))
+                      }))
+                    : [{ url: editingProduct.UrlAnh || editingProduct.urlanh || `/plants/${editingProduct.MaLoaiCay || editingProduct.maloaicay || 1}.jpg`, isMain: true }]
+                }
+                onChange={(updated) => {
+                  const mainOne = updated.find((i) => i.isMain)?.url || updated[0]?.url || '';
+                  setEditingProduct({
+                    ...editingProduct,
+                    DanhSachAnh: updated,
+                    UrlAnh: mainOne,
+                    urlanh: mainOne
+                  });
                 }}
               />
 
@@ -1392,16 +1494,21 @@ export default function AdminDashboardPage({ onBackToStore, onSelectProduct }) {
                 </select>
               </div>
 
-              {/* Tải ảnh chậu cây lên hệ thống (Kế thừa từ HTQLSX) */}
-              <ImageUpload
-                label="Hình ảnh chậu cây thực tế:"
-                currentImage={newProduct.UrlAnh}
-                defaultSpeciesImage={`/plants/${newProduct.MaLoaiCay}.jpg`}
-                onImageChange={(uploadedUrl) => {
-                  setNewProduct({ ...newProduct, UrlAnh: uploadedUrl });
-                }}
-                onResetToDefault={() => {
-                  setNewProduct({ ...newProduct, UrlAnh: `/plants/${newProduct.MaLoaiCay}.jpg` });
+              {/* Quản lý Album nhiều ảnh & Chọn ảnh chính (Kế thừa từ HTQLSX) */}
+              <MultiImageUpload
+                label="Album hình ảnh chậu cây thực tế (Hỗ trợ nhiều ảnh):"
+                images={
+                  newProduct.DanhSachAnh && newProduct.DanhSachAnh.length > 0
+                    ? newProduct.DanhSachAnh
+                    : (newProduct.UrlAnh ? [{ url: newProduct.UrlAnh, isMain: true }] : [{ url: `/plants/${newProduct.MaLoaiCay}.jpg`, isMain: true }])
+                }
+                onChange={(updated) => {
+                  const mainOne = updated.find((i) => i.isMain)?.url || updated[0]?.url || '';
+                  setNewProduct({
+                    ...newProduct,
+                    DanhSachAnh: updated,
+                    UrlAnh: mainOne
+                  });
                 }}
               />
 
@@ -1473,6 +1580,137 @@ export default function AdminDashboardPage({ onBackToStore, onSelectProduct }) {
                   className="px-5 py-2 rounded-xl bg-[#012d1d] hover:bg-[#1b4332] text-white font-bold shadow-sm"
                 >
                   Xác nhận thêm
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ======================================================== */}
+      {/* MODAL: THÊM LOÀI THỰC VẬT MỚI VÀO CSDL (LOAI_CAY) */}
+      {/* ======================================================== */}
+      {isAddSpeciesModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
+          <div className="bg-white rounded-3xl max-w-xl w-full p-6 shadow-2xl space-y-4 animate-scale max-h-[92vh] overflow-y-auto">
+            <div className="flex items-center justify-between pb-3 border-b border-gray-100">
+              <div>
+                <h3 className="font-extrabold text-base text-gray-900 flex items-center gap-2">
+                  <span className="material-symbols-outlined text-emerald-700">potted_plant</span>
+                  <span>Thêm loài thực vật học mới vào CSDL (LOAI_CAY)</span>
+                </h3>
+                <p className="text-[11px] text-gray-500 mt-0.5">
+                  Loài mới sẽ tự động nhận mã #{botanicalSpecies.length + 1}. Quản lý kho chậu sẽ tự động cập nhật ngay.
+                </p>
+              </div>
+              <button
+                onClick={() => setIsAddSpeciesModalOpen(false)}
+                className="p-1 rounded-lg text-gray-400 hover:bg-gray-100 cursor-pointer"
+              >
+                <span className="material-symbols-outlined text-xl">close</span>
+              </button>
+            </div>
+
+            <form onSubmit={handleCreateSpecies} className="space-y-3.5 text-xs">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="font-bold text-gray-700 block mb-1">Tên thường gọi (*):</label>
+                  <input
+                    type="text"
+                    value={newSpecies.TenThuongGoi}
+                    onChange={(e) => setNewSpecies({ ...newSpecies, TenThuongGoi: e.target.value })}
+                    placeholder="Ví dụ: Trầu bà lá xẻ Nam Mỹ Albo..."
+                    className="w-full p-2.5 rounded-xl border border-gray-200 font-bold text-gray-900 focus:outline-emerald-600"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="font-bold text-gray-700 block mb-1">Tên khoa học (*):</label>
+                  <input
+                    type="text"
+                    value={newSpecies.TenKhoaHoc}
+                    onChange={(e) => setNewSpecies({ ...newSpecies, TenKhoaHoc: e.target.value })}
+                    placeholder="Ví dụ: Monstera deliciosa variegata"
+                    className="w-full p-2.5 rounded-xl border border-gray-200 font-semibold italic text-emerald-800 focus:outline-emerald-600"
+                    required
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="font-bold text-gray-700 block mb-1">Nhóm danh mục nhu cầu:</label>
+                  <select
+                    value={newSpecies.MaDanhMuc}
+                    onChange={(e) => setNewSpecies({ ...newSpecies, MaDanhMuc: Number(e.target.value) })}
+                    className="w-full p-2.5 rounded-xl border border-gray-200 font-semibold text-gray-900 focus:outline-emerald-600"
+                  >
+                    <option value={1}>1. Cây đột biến cẩm thạch (Variegated)</option>
+                    <option value={2}>2. Cây để bàn &amp; Nội thất văn phòng</option>
+                    <option value={3}>3. Cây lọc không khí &amp; Hấp thụ độc tố</option>
+                    <option value={4}>4. Cây phong thủy &amp; Hút tài lộc</option>
+                    <option value={5}>5. Cây dây leo bám tường</option>
+                    <option value={6}>6. Cây thủy sinh &amp; Bán thủy sinh</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="font-bold text-gray-700 block mb-1">Giá tham khảo (VNĐ):</label>
+                  <input
+                    type="number"
+                    value={newSpecies.GiaThamKhao}
+                    onChange={(e) => setNewSpecies({ ...newSpecies, GiaThamKhao: Number(e.target.value) })}
+                    className="w-full p-2.5 rounded-xl border border-gray-200 font-bold text-emerald-800 focus:outline-emerald-600"
+                    required
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="font-bold text-gray-700 block mb-1">Xuất xứ tự nhiên &amp; phân bố:</label>
+                <input
+                  type="text"
+                  value={newSpecies.XuatXu}
+                  onChange={(e) => setNewSpecies({ ...newSpecies, XuatXu: e.target.value })}
+                  placeholder="Ví dụ: Rừng mưa nhiệt đới Trung &amp; Nam Mỹ"
+                  className="w-full p-2.5 rounded-xl border border-gray-200 text-gray-800 focus:outline-emerald-600"
+                />
+              </div>
+
+              <div>
+                <label className="font-bold text-gray-700 block mb-1">Đặc điểm nhận dạng sinh học:</label>
+                <textarea
+                  value={newSpecies.DacDiemNhanDang}
+                  onChange={(e) => setNewSpecies({ ...newSpecies, DacDiemNhanDang: e.target.value })}
+                  rows={2}
+                  placeholder="Mô tả hình thái phiến lá, viền lá, thân rễ..."
+                  className="w-full p-2.5 rounded-xl border border-gray-200 text-gray-800 focus:outline-emerald-600"
+                />
+              </div>
+
+              <div>
+                <label className="font-bold text-gray-700 block mb-1">Hướng dẫn chăm sóc &amp; ánh sáng:</label>
+                <textarea
+                  value={newSpecies.HuongDanChamSoc}
+                  onChange={(e) => setNewSpecies({ ...newSpecies, HuongDanChamSoc: e.target.value })}
+                  rows={2}
+                  placeholder="Chế độ nước tưới, ánh sáng, độ ẩm..."
+                  className="w-full p-2.5 rounded-xl border border-gray-200 text-gray-800 focus:outline-emerald-600"
+                />
+              </div>
+
+              <div className="pt-3 flex items-center justify-end gap-2 border-t border-gray-100">
+                <button
+                  type="button"
+                  onClick={() => setIsAddSpeciesModalOpen(false)}
+                  className="px-4 py-2 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold cursor-pointer"
+                >
+                  Hủy bỏ
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2 rounded-xl bg-[#004830] hover:bg-[#005e3e] text-white font-bold shadow-md shadow-emerald-900/20 cursor-pointer"
+                >
+                  Xác nhận thêm loài cây
                 </button>
               </div>
             </form>

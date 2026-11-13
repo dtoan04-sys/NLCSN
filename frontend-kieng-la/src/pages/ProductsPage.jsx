@@ -74,8 +74,10 @@ export default function ProductsPage({
               rating: fallback.rating || 4.9,
               reviewCount: fallback.reviewCount || (12 + (idx % 25)),
               image: validImg,
-              gallery: [validImg],
-              desc: `Chậu cây ${tenSanPham} thuộc loài ${speciesTitle} (#${sId} trong CSDL 90 loài). Tình trạng thực tế: ${tinhTrang}.`
+              gallery: (sp.DanhSachAnh && sp.DanhSachAnh.length > 0)
+                ? sp.DanhSachAnh.map(img => img.UrlAnh || img.urlanh || img.url)
+                : [validImg],
+              desc: `Chậu cây ${tenSanPham} thuộc loài ${speciesTitle} (#${sId} trong CSDL). Tình trạng thực tế: ${tinhTrang}.`
             };
           });
           setProducts(mapped);
