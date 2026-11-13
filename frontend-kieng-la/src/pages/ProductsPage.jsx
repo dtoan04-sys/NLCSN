@@ -179,16 +179,16 @@ export default function ProductsPage({
       </div>
 
       {/* Thanh công cụ: Tìm kiếm & Lọc danh mục & Sắp xếp */}
-      <div className="flex flex-col lg:flex-row gap-4 items-stretch lg:items-center justify-between bg-white p-4 rounded-3xl border border-gray-100 shadow-xs">
+      <div className="flex flex-col lg:flex-row gap-4 items-stretch lg:items-center justify-between bg-white p-4 rounded-3xl border border-emerald-100/80 shadow-xs">
         {/* Tìm kiếm */}
         <div className="relative flex-1 max-w-md">
-          <span className="material-symbols-outlined absolute left-3.5 top-3 text-gray-400 text-lg">search</span>
+          <span className="material-symbols-outlined absolute left-3.5 top-3 text-emerald-600 text-lg">search</span>
           <input
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Tìm theo tên cây, Monstera, Albo, Lưỡi Hổ..."
-            className="w-full pl-10 pr-4 py-2.5 rounded-2xl border border-gray-200 focus:outline-emerald-600 text-xs font-medium text-gray-800"
+            className="w-full pl-10 pr-4 py-2.5 rounded-2xl border-2 border-emerald-500/60 focus:border-emerald-600 focus:outline-none text-xs font-medium text-gray-800 transition-all"
           />
         </div>
 
@@ -198,10 +198,10 @@ export default function ProductsPage({
             <button
               key={cat.id}
               onClick={() => setSelectedCategory(cat.id)}
-              className={`flex-none px-3.5 py-2 rounded-xl text-xs font-bold transition-all ${
+              className={`flex-none px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                 selectedCategory === cat.id
-                  ? 'bg-[#012d1d] text-white shadow-xs'
-                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                  ? 'bg-gradient-to-r from-emerald-700 to-teal-800 text-white shadow-xs'
+                  : 'bg-emerald-50/60 text-emerald-900 hover:bg-emerald-100/80 border border-emerald-100/80'
               }`}
             >
               {cat.name}
@@ -214,7 +214,7 @@ export default function ProductsPage({
           <select
             value={sortOption}
             onChange={(e) => setSortOption(e.target.value)}
-            className="px-3.5 py-2.5 rounded-2xl border border-gray-200 text-xs font-semibold text-gray-700 bg-white focus:outline-emerald-600"
+            className="px-3.5 py-2.5 rounded-2xl border border-emerald-200 text-xs font-semibold text-emerald-900 bg-white focus:outline-emerald-600"
           >
             <option value="default">Sắp xếp: Mặc định</option>
             <option value="price-asc">Giá: Thấp đến cao</option>
@@ -303,9 +303,9 @@ export default function ProductsPage({
 
 function ProductCard({ product: p, onSelectProduct, onAddToCart }) {
   return (
-    <div className="group flex flex-col bg-white rounded-3xl shadow-xs hover:shadow-xl transition-all overflow-hidden border border-gray-100">
+    <div className="group flex flex-col bg-white rounded-3xl shadow-sm hover:shadow-xl transition-all overflow-hidden border border-emerald-100/80 hover:border-emerald-300">
       <div
-        className="relative aspect-[4/5] bg-gray-100 overflow-hidden cursor-pointer"
+        className="relative aspect-[4/5] bg-emerald-50/50 overflow-hidden cursor-pointer"
         onClick={() => onSelectProduct(p)}
       >
         <img
@@ -314,11 +314,11 @@ function ProductCard({ product: p, onSelectProduct, onAddToCart }) {
           src={p.image}
           onError={(e) => handleImgError(e, getPlantImage(p.speciesId, p.speciesName))}
         />
-        <span className="absolute top-3 left-3 bg-[#92f7c3] text-[#002113] text-[11px] font-bold px-2.5 py-1 rounded-md shadow-xs">
+        <span className="absolute top-3 left-3 bg-emerald-100 text-emerald-900 border border-emerald-200/90 text-[11px] font-bold px-2.5 py-1 rounded-lg shadow-2xs">
           {p.tag}
         </span>
         {p.stock <= 3 && (
-          <span className="absolute bottom-3 left-3 bg-red-600 text-white text-[10px] font-bold px-2 py-0.5 rounded-md">
+          <span className="absolute bottom-3 left-3 bg-rose-600 text-white text-[10px] font-bold px-2 py-0.5 rounded-md">
             Chỉ còn {p.stock} chậu
           </span>
         )}
@@ -331,16 +331,16 @@ function ProductCard({ product: p, onSelectProduct, onAddToCart }) {
           </span>
           <h3
             onClick={() => onSelectProduct(p)}
-            className="font-bold text-gray-900 text-sm leading-snug mt-1 cursor-pointer group-hover:text-emerald-800 transition-colors line-clamp-2"
+            className="font-bold text-gray-900 text-sm leading-snug mt-1 cursor-pointer group-hover:text-emerald-900 transition-colors line-clamp-2"
           >
             {p.name}
           </h3>
           <p className="text-xs text-gray-400 mt-1 line-clamp-1">{p.size}</p>
         </div>
 
-        <div className="pt-3 flex items-center justify-between border-t border-gray-100 mt-4">
+        <div className="pt-3 flex items-center justify-between border-t border-emerald-50 mt-4">
           <div>
-            <span className="font-extrabold text-base text-[#012d1d]">
+            <span className="font-black text-base text-emerald-950">
               {p.price.toLocaleString('vi-VN')} ₫
             </span>
             {p.originalPrice && (
@@ -352,14 +352,14 @@ function ProductCard({ product: p, onSelectProduct, onAddToCart }) {
           <div className="flex gap-1.5">
             <button
               onClick={() => onAddToCart(p, 1)}
-              className="p-2.5 rounded-xl bg-gray-100 hover:bg-emerald-100 text-gray-700 hover:text-emerald-900 transition-colors"
+              className="p-2.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-800 transition-colors border border-emerald-200/60 cursor-pointer"
               title="Thêm vào giỏ hàng"
             >
               <span className="material-symbols-outlined text-base">add_shopping_cart</span>
             </button>
             <button
               onClick={() => onSelectProduct(p)}
-              className="text-xs font-bold px-3 py-2 rounded-xl bg-[#012d1d] hover:bg-[#1b4332] text-white transition-colors"
+              className="text-xs font-bold px-3 py-2 rounded-xl bg-emerald-800 hover:bg-emerald-900 text-white transition-colors cursor-pointer shadow-2xs"
             >
               Chi tiết
             </button>

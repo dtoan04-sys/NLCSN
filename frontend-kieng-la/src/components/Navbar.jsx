@@ -75,11 +75,11 @@ export default function Navbar({
   };
 
   return (
-    <header className="fixed top-0 left-0 w-full z-40 bg-[#004830] text-white shadow-md">
+    <header className="fixed top-0 left-0 w-full z-40 bg-white/95 backdrop-blur-md text-gray-800 shadow-[0_4px_25px_-5px_rgba(5,150,105,0.08)] border-b border-emerald-100 transition-all">
       {/* ========================================================================= */}
-      {/* 1. TẦNG MICRO TOP BAR (Chuẩn cấu trúc Shopee) */}
+      {/* 1. TẦNG MICRO TOP BAR (Cách điệu Xanh Mint & Trắng tinh khôi) */}
       {/* ========================================================================= */}
-      <div className="w-full bg-[#003822] text-emerald-100/90 text-[11px] border-b border-emerald-900/60 hidden sm:block">
+      <div className="w-full bg-emerald-50/75 text-emerald-800 text-[11px] border-b border-emerald-100/70 hidden sm:block">
         <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 h-8 flex items-center justify-between">
           {/* Cụm trái: Kênh Người Bán / Admin, Tra cứu, Kết nối MXH */}
           <div className="flex items-center gap-3">
@@ -87,41 +87,41 @@ export default function Navbar({
               <button
                 type="button"
                 onClick={() => onNavigate('admin')}
-                className="hover:text-white flex items-center gap-1 font-semibold text-amber-300 transition-colors"
+                className="hover:text-emerald-950 flex items-center gap-1 font-bold text-emerald-800 transition-colors cursor-pointer"
               >
-                <span className="material-symbols-outlined text-[14px]">storefront</span>
+                <span className="material-symbols-outlined text-[15px] text-emerald-700">storefront</span>
                 <span>Kênh Quản Trị / Bán Hàng</span>
               </button>
             ) : (
               <button
                 type="button"
                 onClick={onOpenAuth}
-                className="hover:text-white flex items-center gap-1 font-medium transition-colors"
+                className="hover:text-emerald-950 flex items-center gap-1 font-medium transition-colors cursor-pointer"
               >
-                <span className="material-symbols-outlined text-[14px]">storefront</span>
+                <span className="material-symbols-outlined text-[15px] text-emerald-700">storefront</span>
                 <span>Kênh Người Bán Flora</span>
               </button>
             )}
-            <span className="text-emerald-700/80">|</span>
+            <span className="text-emerald-300">|</span>
             <button
               type="button"
               onClick={() => onNavigate('wiki')}
-              className="hover:text-white flex items-center gap-1 transition-colors"
+              className="hover:text-emerald-950 flex items-center gap-1 transition-colors cursor-pointer font-medium text-emerald-800/90"
             >
               <span>Bách khoa 90 loài thực vật</span>
             </button>
-            <span className="text-emerald-700/80">|</span>
-            <div className="flex items-center gap-1.5 text-emerald-200/90">
-              <span>Kết nối:</span>
+            <span className="text-emerald-300">|</span>
+            <div className="flex items-center gap-1.5 text-emerald-700">
+              <span className="text-emerald-800/80">Kết nối:</span>
               <span
-                className="material-symbols-outlined text-[14px] hover:text-white cursor-pointer transition-colors"
+                className="material-symbols-outlined text-[14px] hover:text-emerald-950 cursor-pointer transition-colors"
                 title="Fanpage Facebook"
                 onClick={() => window.open('https://facebook.com', '_blank')}
               >
                 public
               </span>
               <span
-                className="material-symbols-outlined text-[14px] hover:text-white cursor-pointer transition-colors"
+                className="material-symbols-outlined text-[14px] hover:text-emerald-950 cursor-pointer transition-colors"
                 title="Chat Zalo hỗ trợ"
                 onClick={() => window.open('https://zalo.me', '_blank')}
               >
@@ -135,57 +135,57 @@ export default function Navbar({
             <button
               type="button"
               onClick={onOpenOrders}
-              className="flex items-center gap-1 hover:text-white transition-colors cursor-pointer"
+              className="flex items-center gap-1 hover:text-emerald-950 transition-colors cursor-pointer text-emerald-800 font-medium"
             >
-              <span className="material-symbols-outlined text-[14px]">notifications</span>
+              <span className="material-symbols-outlined text-[15px] text-emerald-700">notifications</span>
               <span>Thông Báo</span>
             </button>
             <button
               type="button"
               onClick={() => onNavigate('wiki')}
-              className="flex items-center gap-1 hover:text-white transition-colors cursor-pointer"
+              className="flex items-center gap-1 hover:text-emerald-950 transition-colors cursor-pointer text-emerald-800 font-medium"
             >
-              <span className="material-symbols-outlined text-[14px]">help_outline</span>
+              <span className="material-symbols-outlined text-[15px] text-emerald-700">help_outline</span>
               <span>Hỗ Trợ 24/7</span>
             </button>
-            <div className="flex items-center gap-1 text-emerald-200">
-              <span className="material-symbols-outlined text-[14px]">language</span>
+            <div className="flex items-center gap-1 text-emerald-700 font-medium">
+              <span className="material-symbols-outlined text-[15px]">language</span>
               <span>Tiếng Việt</span>
             </div>
 
-            <span className="text-emerald-700/80">|</span>
+            <span className="text-emerald-300">|</span>
 
             {isAuthenticated ? (
               <div className="relative" ref={userMenuRef}>
                 <button
                   type="button"
                   onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
-                  className="flex items-center gap-1.5 hover:text-[#ffd400] font-bold text-white transition-colors cursor-pointer"
+                  className="flex items-center gap-1.5 hover:text-emerald-950 font-bold text-emerald-950 transition-colors cursor-pointer"
                 >
-                  <div className="w-5 h-5 rounded-full bg-[#ffd400] text-[#004830] font-black text-[10px] flex items-center justify-center">
+                  <div className="w-5 h-5 rounded-full bg-emerald-700 text-white font-black text-[10px] flex items-center justify-center shadow-2xs">
                     {getInitials(user?.fullName || user?.username)}
                   </div>
                   <span className="truncate max-w-[110px]">{user?.fullName || user?.username}</span>
-                  <span className="material-symbols-outlined text-xs">
+                  <span className="material-symbols-outlined text-xs text-emerald-700">
                     {isUserMenuOpen ? 'expand_less' : 'expand_more'}
                   </span>
                 </button>
 
                 {isUserMenuOpen && (
-                  <div className="absolute right-0 mt-2 w-60 bg-white text-gray-800 rounded-2xl shadow-2xl border border-gray-100 py-2 z-50 text-xs animate-fadeIn">
-                    <div className="px-4 py-2.5 border-b border-gray-100 bg-emerald-50/50">
-                      <p className="text-[11px] text-gray-500">Tài khoản</p>
+                  <div className="absolute right-0 mt-2 w-60 bg-white text-gray-800 rounded-2xl shadow-2xl border border-emerald-100 py-2 z-50 text-xs animate-fadeIn">
+                    <div className="px-4 py-2.5 border-b border-emerald-100/70 bg-emerald-50/60">
+                      <p className="text-[11px] text-emerald-700 font-semibold">Tài khoản</p>
                       <p className="font-bold text-gray-900 truncate">{user?.fullName || user?.username}</p>
                       <p className="text-[11px] text-emerald-800 truncate">{user?.email || 'Khách hàng'}</p>
                     </div>
-                    <div className="p-1">
+                    <div className="p-1 space-y-0.5">
                       <button
                         type="button"
                         onClick={() => {
                           setIsUserMenuOpen(false);
                           onOpenProfile();
                         }}
-                        className="w-full flex items-center gap-2 px-3 py-2 font-semibold hover:bg-gray-50 rounded-xl"
+                        className="w-full flex items-center gap-2 px-3 py-2 font-semibold hover:bg-emerald-50 text-gray-700 hover:text-emerald-900 rounded-xl transition-colors"
                       >
                         <span className="material-symbols-outlined text-base text-emerald-700">person</span>
                         <span>Thông tin tài khoản</span>
@@ -196,7 +196,7 @@ export default function Navbar({
                           setIsUserMenuOpen(false);
                           onOpenOrders();
                         }}
-                        className="w-full flex items-center gap-2 px-3 py-2 font-semibold hover:bg-gray-50 rounded-xl"
+                        className="w-full flex items-center gap-2 px-3 py-2 font-semibold hover:bg-emerald-50 text-gray-700 hover:text-emerald-900 rounded-xl transition-colors"
                       >
                         <span className="material-symbols-outlined text-base text-emerald-700">receipt_long</span>
                         <span>Đơn mua của tôi</span>
@@ -207,7 +207,7 @@ export default function Navbar({
                           setIsUserMenuOpen(false);
                           onOpenHistory();
                         }}
-                        className="w-full flex items-center gap-2 px-3 py-2 font-semibold hover:bg-gray-50 rounded-xl"
+                        className="w-full flex items-center gap-2 px-3 py-2 font-semibold hover:bg-emerald-50 text-gray-700 hover:text-emerald-900 rounded-xl transition-colors"
                       >
                         <span className="material-symbols-outlined text-base text-emerald-700">history</span>
                         <span>Lịch sử tìm kiếm cây</span>
@@ -219,21 +219,21 @@ export default function Navbar({
                             setIsUserMenuOpen(false);
                             onNavigate('admin');
                           }}
-                          className="w-full flex items-center gap-2 px-3 py-2 font-bold text-amber-700 hover:bg-amber-50 rounded-xl"
+                          className="w-full flex items-center gap-2 px-3 py-2 font-bold text-emerald-800 hover:bg-emerald-50 rounded-xl transition-colors"
                         >
-                          <span className="material-symbols-outlined text-base">admin_panel_settings</span>
+                          <span className="material-symbols-outlined text-base text-emerald-700">admin_panel_settings</span>
                           <span>Quản trị Admin Hub</span>
                         </button>
                       )}
                     </div>
-                    <div className="border-t border-gray-100 p-1">
+                    <div className="border-t border-emerald-100 p-1">
                       <button
                         type="button"
                         onClick={() => {
                           setIsUserMenuOpen(false);
                           logout();
                         }}
-                        className="w-full flex items-center gap-2 px-3 py-2 font-bold text-red-600 hover:bg-red-50 rounded-xl"
+                        className="w-full flex items-center gap-2 px-3 py-2 font-bold text-red-600 hover:bg-red-50 rounded-xl transition-colors"
                       >
                         <span className="material-symbols-outlined text-base">logout</span>
                         <span>Đăng xuất</span>
@@ -243,19 +243,19 @@ export default function Navbar({
                 )}
               </div>
             ) : (
-              <div className="flex items-center gap-2 font-bold">
+              <div className="flex items-center gap-2 font-bold text-emerald-800">
                 <button
                   type="button"
                   onClick={onOpenAuth}
-                  className="hover:text-[#ffd400] transition-colors"
+                  className="hover:text-emerald-950 transition-colors cursor-pointer"
                 >
                   Đăng Ký
                 </button>
-                <span className="text-emerald-700">/</span>
+                <span className="text-emerald-300">/</span>
                 <button
                   type="button"
                   onClick={onOpenAuth}
-                  className="hover:text-[#ffd400] transition-colors"
+                  className="hover:text-emerald-950 transition-colors cursor-pointer"
                 >
                   Đăng Nhập
                 </button>
@@ -266,64 +266,71 @@ export default function Navbar({
       </div>
 
       {/* ========================================================================= */}
-      {/* 2. TẦNG MAIN HEADER (Logo bên trái, Thanh Search rộng ở giữa, Giỏ hàng bên phải) */}
+      {/* 2. TẦNG MAIN HEADER (Trắng thanh lịch, Logo Xanh, Ô Search cách điệu Xanh & Trắng) */}
       {/* ========================================================================= */}
-      <div className="max-w-[1440px] mx-auto px-3 sm:px-6 lg:px-8 pt-2.5 pb-2.5 flex items-center justify-between gap-3 sm:gap-6">
+      <div className="max-w-[1440px] mx-auto px-3 sm:px-6 lg:px-8 pt-3 pb-3 flex items-center justify-between gap-3 sm:gap-6">
         {/* LOGO THƯƠNG HIỆU */}
         <div
           onClick={() => onNavigate('home')}
           className="flex items-center gap-2 sm:gap-3 cursor-pointer select-none group shrink-0"
         >
-          <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-[#ffd400] text-[#004830] flex items-center justify-center font-extrabold shadow-sm group-hover:scale-105 transition-transform">
+          <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-2xl bg-gradient-to-tr from-emerald-700 via-emerald-600 to-teal-500 text-white flex items-center justify-center font-extrabold shadow-md shadow-emerald-700/20 group-hover:scale-105 group-hover:shadow-emerald-700/30 transition-all">
             <span className="material-symbols-outlined text-2xl sm:text-3xl font-bold">potted_plant</span>
           </div>
           <div>
-            <div className="text-xl sm:text-2xl font-black tracking-tight text-white leading-none">
-              FloraBotanic<span className="text-[#ffd400]">.AI</span>
+            <div className="text-xl sm:text-2xl font-black tracking-tight text-emerald-950 leading-none">
+              FloraBotanic<span className="text-emerald-600">.AI</span>
             </div>
-            <span className="text-[10px] text-emerald-200/90 font-semibold tracking-wider uppercase block mt-1 hidden xs:block">
-              Siêu thị Kiểng Lá &amp; AI
+            <span className="text-[10px] text-emerald-700/80 font-bold tracking-wider uppercase block mt-1 hidden xs:block">
+              Siêu thị Kiểng Lá &amp; AI Vision
             </span>
           </div>
         </div>
 
-        {/* CỤM TÌM KIẾM KHỔNG LỒ PHONG CÁCH SHOPEE (TRỌNG TÂM Ở GIỮA) */}
+        {/* CỤM TÌM KIẾM CÁCH ĐIỆU PHONG CÁCH XANH & TRẮNG */}
         <div className="flex-1 max-w-2xl lg:max-w-3xl flex flex-col justify-center">
-          {/* Ô input tìm kiếm màu trắng với nút Search & Camera AI tích hợp bên trong */}
-          <div className="bg-white rounded-lg p-1 sm:p-1.5 shadow-md flex items-center gap-1 sm:gap-2">
+          {/* Ô input tìm kiếm nền trắng với viền xanh emerald cách điệu và bóng mờ tinh tế */}
+          <div className="bg-white rounded-2xl p-1 sm:p-1.5 shadow-sm border-2 border-emerald-500/70 focus-within:border-emerald-600 focus-within:ring-4 focus-within:ring-emerald-500/15 flex items-center gap-1 sm:gap-2 transition-all">
+            <span className="material-symbols-outlined text-emerald-600 text-xl pl-2 hidden sm:inline">
+              search
+            </span>
             <input
               type="text"
               value={searchValue}
               onChange={(e) => setSearchValue(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder="FloraBotanic bao trọn 90 loài kiểng lá - Nhập tên cây, mã #1-90, Monstera..."
-              className="flex-1 px-3 py-1.5 sm:py-2 text-xs sm:text-sm text-gray-800 placeholder-gray-400 bg-transparent focus:outline-none"
+              placeholder="Tìm chậu kiểng lá, tra cứu mã #1-90, Monstera, Trầu bà..."
+              className="flex-1 px-2.5 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm text-gray-800 placeholder-emerald-900/40 bg-transparent focus:outline-none"
             />
 
-            {/* NÚT QUÉT ẢNH AI TÍCH HỢP TRONG THANH SEARCH (Giống tính năng chụp hình tìm kiếm của Shopee) */}
+            {/* NÚT QUÉT ẢNH AI TÍCH HỢP TRONG THANH SEARCH */}
             <button
               type="button"
               onClick={onOpenAiModal}
-              className="flex items-center gap-1 sm:gap-1.5 px-2.5 py-1.5 sm:py-2 rounded-md bg-emerald-50 hover:bg-emerald-100 text-emerald-900 text-xs font-bold transition-all border border-emerald-200/80 cursor-pointer shrink-0"
+              className="flex items-center gap-1 sm:gap-1.5 px-3 py-1.5 sm:py-2 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-900 text-xs font-bold transition-all border border-emerald-200 cursor-pointer shrink-0 shadow-2xs"
               title="Quét ảnh lá cây bằng AI để nhận diện và tìm chậu mua"
             >
-              <span className="material-symbols-outlined text-lg sm:text-xl text-[#004830]">photo_camera</span>
+              <span className="material-symbols-outlined text-lg sm:text-xl text-emerald-700">photo_camera</span>
               <span className="hidden sm:inline">Quét Ảnh AI</span>
             </button>
 
-            {/* NÚT TÌM KIẾM CHÍNH (Nút bấm hình chữ nhật nổi bật bên phải thanh search giống Shopee) */}
+            {/* NÚT TÌM KIẾM CHÍNH (Gradient Emerald & Teal) */}
             <button
               type="button"
               onClick={() => handleExecuteSearch()}
-              className="bg-[#004830] hover:bg-[#005e3e] text-white px-4 sm:px-6 py-2 rounded-md font-bold text-xs flex items-center justify-center cursor-pointer transition-colors shadow-xs shrink-0"
+              className="bg-gradient-to-r from-emerald-700 to-teal-800 hover:from-emerald-800 hover:to-teal-900 text-white px-4 sm:px-6 py-2 rounded-xl font-bold text-xs flex items-center justify-center cursor-pointer transition-all shadow-sm shrink-0"
               title="Tìm kiếm"
             >
               <span className="material-symbols-outlined text-lg font-bold">search</span>
             </button>
           </div>
 
-          {/* DÒNG TỪ KHÓA TÌM KIẾM HOT DƯỚI THANH SEARCH (Chuẩn Shopee) */}
-          <div className="hidden md:flex items-center gap-2.5 sm:gap-3.5 mt-1.5 text-[11px] text-emerald-100/90 overflow-x-auto no-scrollbar whitespace-nowrap pl-1">
+          {/* DÒNG TỪ KHÓA TÌM KIẾM HOT DƯỚI THANH SEARCH */}
+          <div className="hidden md:flex items-center gap-2 sm:gap-2.5 mt-2 text-[11px] text-emerald-800/80 overflow-x-auto no-scrollbar whitespace-nowrap pl-1">
+            <span className="text-emerald-700 font-bold flex items-center gap-1">
+              <span className="material-symbols-outlined text-xs">local_fire_department</span>
+              <span>Gợi ý:</span>
+            </span>
             {TRENDING_KEYWORDS.map((kw) => (
               <button
                 key={kw}
@@ -332,7 +339,7 @@ export default function Navbar({
                   setSearchValue(kw);
                   handleExecuteSearch(kw);
                 }}
-                className="hover:text-[#ffd400] hover:underline transition-colors cursor-pointer"
+                className="hover:text-emerald-950 hover:bg-emerald-100/70 bg-emerald-50/70 border border-emerald-200/60 px-2.5 py-0.5 rounded-full transition-all cursor-pointer text-emerald-800 font-medium"
               >
                 {kw}
               </button>
@@ -340,17 +347,17 @@ export default function Navbar({
           </div>
         </div>
 
-        {/* CỤM NÚT BÊN PHẢI: GIỎ HÀNG NỔI BẬT KIỂU SHOPEE */}
+        {/* CỤM NÚT BÊN PHẢI: GIỎ HÀNG VÀ TÀI KHOẢN MOBILE */}
         <div className="flex items-center gap-2 sm:gap-4 shrink-0">
           <button
             type="button"
             onClick={onOpenCart}
-            className="relative p-2.5 sm:p-3 text-white hover:text-[#ffd400] transition-colors rounded-xl hover:bg-white/10 flex items-center justify-center cursor-pointer"
+            className="relative p-2.5 sm:p-3 text-emerald-900 hover:text-emerald-950 transition-all rounded-2xl bg-emerald-50/80 hover:bg-emerald-100 border border-emerald-200/80 flex items-center justify-center cursor-pointer shadow-2xs"
             title="Xem giỏ hàng"
           >
-            <span className="material-symbols-outlined text-2xl sm:text-3xl">shopping_cart</span>
+            <span className="material-symbols-outlined text-2xl sm:text-3xl text-emerald-800">shopping_cart</span>
             {totalCount > 0 && (
-              <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[11px] font-black px-1.5 py-0.2 rounded-full min-w-[20px] text-center shadow-md border-2 border-[#004830]">
+              <span className="absolute -top-1 -right-1 bg-emerald-700 text-white text-[11px] font-black px-1.5 py-0.2 rounded-full min-w-[20px] text-center shadow-md border-2 border-white">
                 {totalCount}
               </span>
             )}
@@ -361,14 +368,14 @@ export default function Navbar({
             {isAuthenticated ? (
               <div
                 onClick={onOpenProfile}
-                className="w-8 h-8 rounded-lg bg-[#ffd400] text-[#004830] font-black text-xs flex items-center justify-center cursor-pointer"
+                className="w-9 h-9 rounded-xl bg-emerald-700 text-white font-black text-xs flex items-center justify-center cursor-pointer shadow-sm"
               >
                 {getInitials(user?.fullName || user?.username)}
               </div>
             ) : (
               <button
                 onClick={onOpenAuth}
-                className="p-1.5 rounded-lg bg-white/10 text-white"
+                className="p-2 rounded-xl bg-emerald-50 text-emerald-800 border border-emerald-200"
               >
                 <span className="material-symbols-outlined text-xl">person</span>
               </button>
@@ -378,16 +385,16 @@ export default function Navbar({
       </div>
 
       {/* ========================================================================= */}
-      {/* 3. TẦNG ĐIỀU HƯỚNG & DANH MỤC CÂY Ở GÓC TRÊN BÊN TRÁI (DUY NHẤT 1 NÚT) */}
+      {/* 3. TẦNG ĐIỀU HƯỚNG & DANH MỤC CÂY (Phối Xanh Emerald & Nền Trắng) */}
       {/* ========================================================================= */}
-      <div className="w-full bg-[#003822] border-t border-emerald-900/60 relative z-30">
-        <div className="max-w-[1440px] mx-auto px-3 sm:px-6 lg:px-8 flex items-center justify-between gap-2 h-10 sm:h-11 text-xs font-bold">
-          {/* NÚT DANH MỤC CÂY Ở GÓC TRÊN BÊN TRÁI (KHÔNG BỊ CLIP BỞI OVERFLOW) */}
+      <div className="w-full bg-white/90 border-t border-emerald-100 relative z-30">
+        <div className="max-w-[1440px] mx-auto px-3 sm:px-6 lg:px-8 flex items-center justify-between gap-2 h-11 text-xs font-bold">
+          {/* NÚT DANH MỤC CÂY Ở GÓC TRÊN BÊN TRÁI (Cách điệu Xanh phối Trắng cao cấp) */}
           <div className="relative shrink-0" ref={catMenuRef}>
             <button
               type="button"
               onClick={() => setIsCatMenuOpen(!isCatMenuOpen)}
-              className="px-3.5 py-1.5 rounded-lg flex items-center gap-1.5 bg-[#ffd400] text-[#003822] shadow-sm font-extrabold hover:bg-[#ffe14d] transition-all cursor-pointer"
+              className="px-4 py-2 rounded-xl flex items-center gap-2 bg-gradient-to-r from-emerald-700 to-teal-800 text-white shadow-sm hover:from-emerald-800 hover:to-teal-900 transition-all cursor-pointer font-bold"
             >
               <span className="material-symbols-outlined text-base font-bold">menu</span>
               <span>Danh Mục Cây</span>
@@ -397,12 +404,12 @@ export default function Navbar({
             </button>
 
             {isCatMenuOpen && (
-              <div className="absolute left-0 top-full mt-2 w-80 bg-white rounded-2xl shadow-2xl border border-gray-100 p-2 z-50 text-gray-800 animate-in fade-in duration-150">
-                <div className="px-3 py-2 border-b border-gray-100 flex items-center justify-between">
-                  <span className="text-[11px] font-bold text-gray-900 uppercase tracking-wide">
+              <div className="absolute left-0 top-full mt-2 w-80 bg-white rounded-2xl shadow-2xl border border-emerald-100 p-2 z-50 text-gray-800 animate-in fade-in duration-150">
+                <div className="px-3 py-2 border-b border-emerald-100/70 flex items-center justify-between">
+                  <span className="text-[11px] font-bold text-emerald-950 uppercase tracking-wide">
                     Hệ thống phân loại kiểng lá
                   </span>
-                  <span className="text-[10px] text-emerald-800 font-bold bg-emerald-50 px-2 py-0.5 rounded-full">
+                  <span className="text-[10px] text-emerald-800 font-bold bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
                     6 Nhóm Nhu Cầu
                   </span>
                 </div>
@@ -416,18 +423,18 @@ export default function Navbar({
                         if (onSelectCategory) onSelectCategory(cat.id);
                         onNavigate('products');
                       }}
-                      className="w-full flex items-start gap-3 p-2.5 rounded-xl hover:bg-emerald-50 text-left transition-colors group cursor-pointer"
+                      className="w-full flex items-start gap-3 p-2.5 rounded-xl hover:bg-emerald-50/80 text-left transition-colors group cursor-pointer"
                     >
-                      <div className="w-8 h-8 rounded-lg bg-emerald-100 text-emerald-800 group-hover:bg-[#004830] group-hover:text-emerald-300 flex items-center justify-center shrink-0 transition-colors">
+                      <div className="w-8 h-8 rounded-xl bg-emerald-100/80 text-emerald-800 group-hover:bg-emerald-700 group-hover:text-white flex items-center justify-center shrink-0 transition-colors">
                         <span className="material-symbols-outlined text-lg">{cat.icon}</span>
                       </div>
                       <div className="flex-1 min-w-0">
-                        <div className="text-xs font-bold text-gray-900 group-hover:text-emerald-800 line-clamp-1">
+                        <div className="text-xs font-bold text-gray-900 group-hover:text-emerald-900 line-clamp-1">
                           {cat.name}
                         </div>
-                        <div className="text-[10px] text-gray-400 line-clamp-1 mt-0.5">{cat.desc}</div>
+                        <div className="text-[10px] text-gray-500 line-clamp-1 mt-0.5">{cat.desc}</div>
                       </div>
-                      <span className="material-symbols-outlined text-sm text-gray-300 group-hover:text-emerald-700 my-auto">
+                      <span className="material-symbols-outlined text-sm text-emerald-300 group-hover:text-emerald-700 my-auto">
                         chevron_right
                       </span>
                     </button>
@@ -437,59 +444,59 @@ export default function Navbar({
             )}
           </div>
 
-          {/* DẢI CÁC LIÊN KẾT ĐIỀU HƯỚNG TRANG (CHO PHÉP CUỘN NGANG TRÊN MÀN HÌNH NHỎ) */}
+          {/* DẢI CÁC LIÊN KẾT ĐIỀU HƯỚNG TRANG (Xanh phối Trắng trang nhã) */}
           <div className="flex-1 flex items-center gap-1 sm:gap-2 overflow-x-auto no-scrollbar whitespace-nowrap pl-1 sm:pl-3">
             <button
               onClick={() => onNavigate('home')}
-              className={`px-3.5 py-1.5 rounded-lg flex items-center gap-1.5 transition-all cursor-pointer ${
+              className={`px-3.5 py-1.5 rounded-xl flex items-center gap-1.5 transition-all cursor-pointer ${
                 currentPage === 'home'
-                  ? 'bg-emerald-800/80 text-white shadow-xs'
-                  : 'text-gray-200 hover:bg-white/10 hover:text-white'
+                  ? 'bg-emerald-100/80 text-emerald-900 font-extrabold shadow-2xs border border-emerald-200'
+                  : 'text-gray-600 hover:text-emerald-900 hover:bg-emerald-50/70 font-semibold'
               }`}
             >
-              <span className="material-symbols-outlined text-base">home</span>
+              <span className="material-symbols-outlined text-base text-emerald-700">home</span>
               <span>Trang chủ</span>
             </button>
 
             <button
               onClick={() => onNavigate('products')}
-              className={`px-3.5 py-1.5 rounded-lg flex items-center gap-1.5 transition-all cursor-pointer ${
+              className={`px-3.5 py-1.5 rounded-xl flex items-center gap-1.5 transition-all cursor-pointer ${
                 currentPage === 'products' || currentPage === 'detail'
-                  ? 'bg-[#ffd400] text-[#003822] shadow-sm'
-                  : 'text-gray-200 hover:bg-white/10 hover:text-white'
+                  ? 'bg-emerald-100/80 text-emerald-900 font-extrabold shadow-2xs border border-emerald-200'
+                  : 'text-gray-600 hover:text-emerald-900 hover:bg-emerald-50/70 font-semibold'
               }`}
             >
-              <span className="material-symbols-outlined text-base">storefront</span>
+              <span className="material-symbols-outlined text-base text-emerald-700">storefront</span>
               <span>Chậu cây sẵn hàng</span>
             </button>
 
             <button
               onClick={() => onNavigate('wiki')}
-              className={`px-3.5 py-1.5 rounded-lg flex items-center gap-1.5 transition-all cursor-pointer ${
+              className={`px-3.5 py-1.5 rounded-xl flex items-center gap-1.5 transition-all cursor-pointer ${
                 currentPage === 'wiki'
-                  ? 'bg-[#ffd400] text-[#003822] shadow-sm'
-                  : 'text-gray-200 hover:bg-white/10 hover:text-white'
+                  ? 'bg-emerald-100/80 text-emerald-900 font-extrabold shadow-2xs border border-emerald-200'
+                  : 'text-gray-600 hover:text-emerald-900 hover:bg-emerald-50/70 font-semibold'
               }`}
             >
-              <span className="material-symbols-outlined text-base">menu_book</span>
+              <span className="material-symbols-outlined text-base text-emerald-700">menu_book</span>
               <span>Bách khoa 90 loài</span>
             </button>
 
             <button
               onClick={onOpenHistory}
-              className="px-3.5 py-1.5 rounded-lg text-gray-200 hover:bg-white/10 hover:text-white flex items-center gap-1.5 transition-all cursor-pointer"
+              className="px-3.5 py-1.5 rounded-xl text-gray-600 hover:text-emerald-900 hover:bg-emerald-50/70 flex items-center gap-1.5 transition-all cursor-pointer font-semibold"
             >
-              <span className="material-symbols-outlined text-base">history</span>
+              <span className="material-symbols-outlined text-base text-emerald-700">history</span>
               <span>Lịch sử quét ảnh</span>
             </button>
 
             {user?.role === 'ADMIN' && (
               <button
                 onClick={() => onNavigate('admin')}
-                className={`px-3.5 py-1.5 rounded-lg flex items-center gap-1.5 transition-all cursor-pointer ${
+                className={`px-3.5 py-1.5 rounded-xl flex items-center gap-1.5 transition-all cursor-pointer ${
                   currentPage === 'admin'
-                    ? 'bg-amber-400 text-black shadow-sm'
-                    : 'text-amber-300 hover:bg-white/10'
+                    ? 'bg-emerald-800 text-white shadow-sm'
+                    : 'text-emerald-800 hover:bg-emerald-50 border border-dashed border-emerald-300'
                 }`}
               >
                 <span className="material-symbols-outlined text-base">dashboard</span>
