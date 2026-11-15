@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { apiFetch } from '../config';
 
 const AuthContext = createContext();
 
@@ -15,12 +16,11 @@ export function AuthProvider({ children }) {
     }
   });
 
-  // Khởi tạo danh sách tài khoản mẫu theo CDM NGUOI_DUNG
   useEffect(() => {
     if (!localStorage.getItem(USERS_DB_KEY)) {
       const defaultUsers = [
         {
-          id: 1,
+          id: 11,
           username: 'admin',
           password: '123',
           fullName: 'Quản trị viên FloraBotanic',
@@ -31,7 +31,7 @@ export function AuthProvider({ children }) {
           createdAt: new Date().toISOString()
         },
         {
-          id: 2,
+          id: 12,
           username: 'khachhang',
           password: '123',
           fullName: 'Nguyễn Văn An',
@@ -46,10 +46,31 @@ export function AuthProvider({ children }) {
     }
   }, []);
 
-  const login = (username, password) => {
+  const login = async (username, password) => {
+    try {
+      const res = await apiFetch('/api/auth/dang-nhap', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ taiKhoan: username.trim(), matKhau: password })
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setUser(data);
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+        return { success: true };
+      } else {
+        const errData = await res.json().catch(() => ({}));
+        if (res.status === 401 || res.status === 403) {
+          return { success: false, error: errData.detail || 'Tên đăng nhập hoặc mật khẩu không chính xác!' };
+        }
+      }
+    } catch (_) {
+      // Fallback sang dữ liệu nội bộ khi chạy tĩnh không có kết nối Backend
+    }
+
     const rawUsers = localStorage.getItem(USERS_DB_KEY);
     const users = rawUsers ? JSON.parse(rawUsers) : [];
-    
+
     const found = users.find(
       (u) => u.username.toLowerCase() === username.trim().toLowerCase() && u.password === password
     );
@@ -64,7 +85,32 @@ export function AuthProvider({ children }) {
     return { success: false, error: 'Tên đăng nhập hoặc mật khẩu không chính xác!' };
   };
 
-  const register = (userData) => {
+  const register = async (userData) => {
+    try {
+      const res = await apiFetch('/api/auth/dang-ky', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          taiKhoan: userData.username.trim(),
+          matKhau: userData.password,
+          hoTen: userData.fullName || userData.username.trim(),
+          email: userData.email,
+          diaChi: userData.address || ''
+        })
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setUser(data);
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+        return { success: true };
+      } else if (res.status === 400) {
+        const errData = await res.json().catch(() => ({}));
+        return { success: false, error: errData.detail || 'Tên đăng nhập đã tồn tại!' };
+      }
+    } catch (_) {
+      // Fallback sang dữ liệu nội bộ khi chạy tĩnh
+    }
+
     const rawUsers = localStorage.getItem(USERS_DB_KEY);
     const users = rawUsers ? JSON.parse(rawUsers) : [];
 
@@ -102,17 +148,16 @@ export function AuthProvider({ children }) {
     try {
       const rawUsers = localStorage.getItem(USERS_DB_KEY);
       const users = rawUsers ? JSON.parse(rawUsers) : [];
-      const idx = users.findIndex((u) => u.id === user.id);
+      const idx = users.findIndex((u) => u.id === user.id || u.username === user.username);
       if (idx !== -1) {
         users[idx] = { ...users[idx], ...updatedData };
         localStorage.setItem(USERS_DB_KEY, JSON.stringify(users));
-        const safeUser = { ...users[idx] };
-        delete safeUser.password;
-        setUser(safeUser);
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(safeUser));
-        return { success: true };
       }
-      return { success: false, error: 'Không tìm thấy người dùng' };
+      const nextUser = { ...user, ...updatedData };
+      delete nextUser.password;
+      setUser(nextUser);
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(nextUser));
+      return { success: true };
     } catch (err) {
       return { success: false, error: err.message };
     }

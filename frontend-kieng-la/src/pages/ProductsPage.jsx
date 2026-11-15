@@ -151,16 +151,10 @@ export default function ProductsPage({
               <span className="text-xs font-bold text-[#059669] uppercase tracking-widest">
                 Thương mại &amp; Vườn Ươm
               </span>
-              {isLiveDb ? (
-                <span className="badge badge-sm h-auto py-0.5 px-2.5 gap-1.5 rounded-full bg-emerald-100 text-[#064e3b] border border-emerald-200 text-[11px] font-semibold">
-                  <span className="w-1.5 h-1.5 rounded-full bg-[#059669] animate-pulse"></span>
-                  SQL Server Connected
-                </span>
-              ) : (
-                <span className="badge badge-sm h-auto py-0.5 px-2.5 rounded-full bg-[#f3f2ec] text-[#132a1e]/60 border border-emerald-900/10 text-[11px] font-medium">
-                  Dữ liệu mẫu
-                </span>
-              )}
+              <span className="badge badge-sm h-auto py-0.5 px-2.5 gap-1.5 rounded-full bg-emerald-100 text-[#064e3b] border border-emerald-200 text-[11px] font-semibold">
+                <span className="w-1.5 h-1.5 rounded-full bg-[#059669] animate-pulse"></span>
+                Sẵn hàng tại vườn
+              </span>
             </div>
             <h1 className="text-2xl sm:text-4xl font-extrabold text-[#064e3b] tracking-tight">
               Danh Mục Chậu Cây Đang Sẵn Hàng

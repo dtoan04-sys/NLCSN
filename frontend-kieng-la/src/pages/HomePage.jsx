@@ -372,7 +372,7 @@ export default function HomePage({ onOpenAiModal, onSelectProduct, onNavigate, o
                 className="btn h-auto min-h-0 bg-emerald-400 hover:bg-emerald-300 text-[#022c22] border-0 px-7 py-3.5 rounded-2xl font-extrabold text-sm shadow-xl transition-all gap-2"
               >
                 <span className="material-symbols-outlined text-lg text-[#022c22]">photo_camera</span>
-                <span>Thử nghiệm quét ảnh ngay</span>
+                <span>Quét ảnh lá cây ngay</span>
               </button>
               <button
                 type="button"

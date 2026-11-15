@@ -10,49 +10,43 @@ export default function AuthModal({ isOpen, onClose }) {
   const [phone, setPhone] = useState('');
   const [address, setAddress] = useState('');
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
 
   const { login, register } = useAuth();
 
   if (!isOpen) return null;
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+    setLoading(true);
 
-    if (isRegister) {
-      if (!username || !password || !email) {
-        setError('Vui lòng điền đầy đủ tên đăng nhập, mật khẩu và email!');
-        return;
+    try {
+      if (isRegister) {
+        if (!username || !password || !email) {
+          setError('Vui lòng điền đầy đủ tên đăng nhập, mật khẩu và email!');
+          return;
+        }
+        const res = await register({ username, password, fullName, email, phone, address });
+        if (!res.success) {
+          setError(res.error);
+          return;
+        }
+        onClose();
+      } else {
+        if (!username || !password) {
+          setError('Vui lòng nhập tên đăng nhập và mật khẩu!');
+          return;
+        }
+        const res = await login(username, password);
+        if (!res.success) {
+          setError(res.error);
+          return;
+        }
+        onClose();
       }
-      const res = register({ username, password, fullName, email, phone, address });
-      if (!res.success) {
-        setError(res.error);
-        return;
-      }
-      onClose();
-    } else {
-      if (!username || !password) {
-        setError('Vui lòng nhập tên đăng nhập và mật khẩu!');
-        return;
-      }
-      const res = login(username, password);
-      if (!res.success) {
-        setError(res.error);
-        return;
-      }
-      onClose();
-    }
-  };
-
-  const handleQuickFill = (accType) => {
-    setError('');
-    setIsRegister(false);
-    if (accType === 'admin') {
-      setUsername('admin');
-      setPassword('123');
-    } else {
-      setUsername('khachhang');
-      setPassword('123');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -71,29 +65,6 @@ export default function AuthModal({ isOpen, onClose }) {
           </button>
         </div>
 
-        {/* Nút đăng nhập nhanh mẫu */}
-        {!isRegister && (
-          <div className="my-4 p-3 rounded-2xl bg-emerald-50/60 border border-emerald-100 text-xs">
-            <span className="font-bold text-emerald-950 block mb-1.5">Tài khoản mẫu thử nghiệm:</span>
-            <div className="flex gap-2">
-              <button
-                type="button"
-                onClick={() => handleQuickFill('user')}
-                className="flex-1 py-1.5 px-2 bg-white rounded-lg border border-emerald-200 text-emerald-800 font-bold hover:bg-emerald-100 transition-colors"
-              >
-                Khách hàng (USER)
-              </button>
-              <button
-                type="button"
-                onClick={() => handleQuickFill('admin')}
-                className="flex-1 py-1.5 px-2 bg-white rounded-lg border border-emerald-200 text-emerald-800 font-bold hover:bg-emerald-100 transition-colors"
-              >
-                Quản trị (ADMIN)
-              </button>
-            </div>
-          </div>
-        )}
-
         {error && (
           <div className="my-3 p-3 rounded-xl bg-red-50 text-red-600 text-xs font-semibold flex items-center gap-1.5">
             <span className="material-symbols-outlined text-base">error</span>
@@ -109,7 +80,7 @@ export default function AuthModal({ isOpen, onClose }) {
               required
               value={username}
               onChange={(e) => setUsername(e.target.value)}
-              placeholder="VD: tranvanan"
+              placeholder="Nhập tên tài khoản của bạn"
               className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 focus:outline-emerald-600 font-medium text-xs text-gray-800"
             />
           </div>
@@ -178,9 +149,10 @@ export default function AuthModal({ isOpen, onClose }) {
 
           <button
             type="submit"
-            className="w-full py-3 rounded-xl bg-[#012d1d] hover:bg-[#1b4332] text-white font-bold text-xs shadow-md transition-all mt-4"
+            disabled={loading}
+            className="w-full py-3 rounded-xl bg-[#012d1d] hover:bg-[#1b4332] disabled:opacity-60 text-white font-bold text-xs shadow-md transition-all mt-4 cursor-pointer"
           >
-            {isRegister ? 'Hoàn tất Đăng ký' : 'Đăng nhập ngay'}
+            {loading ? 'Đang xử lý...' : isRegister ? 'Hoàn tất Đăng ký' : 'Đăng nhập ngay'}
           </button>
         </form>
 
@@ -194,7 +166,7 @@ export default function AuthModal({ isOpen, onClose }) {
                   setIsRegister(false);
                   setError('');
                 }}
-                className="font-bold text-emerald-800 hover:underline"
+                className="font-bold text-emerald-800 hover:underline cursor-pointer"
               >
                 Đăng nhập
               </button>
@@ -208,7 +180,7 @@ export default function AuthModal({ isOpen, onClose }) {
                   setIsRegister(true);
                   setError('');
                 }}
-                className="font-bold text-emerald-800 hover:underline"
+                className="font-bold text-emerald-800 hover:underline cursor-pointer"
               >
                 Tạo tài khoản mới
               </button>
