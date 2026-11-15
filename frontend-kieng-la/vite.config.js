@@ -8,4 +8,24 @@ export default defineConfig({
     react(),
     tailwindcss(),
   ],
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (id.includes('node_modules')) {
+            return 'vendor';
+          }
+          if (id.includes('AdminDashboardPage')) {
+            return 'admin';
+          }
+          if (id.includes('AiVisionModal')) {
+            return 'ai-vision';
+          }
+          if (id.includes('speciesData') || id.includes('mockData')) {
+            return 'data';
+          }
+        },
+      },
+    },
+  },
 })
