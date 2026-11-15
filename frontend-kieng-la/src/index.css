@@ -1,1 +1,89 @@
 @import "tailwindcss";
+
+@plugin "daisyui" {
+  themes: botanical --default, light;
+}
+
+@plugin "daisyui/theme" {
+  name: "botanical";
+  default: true;
+  prefersdark: false;
+  color-scheme: "light";
+  --color-base-100: #fafaf7;
+  --color-base-200: #f3f2ec;
+  --color-base-300: #e7e5dc;
+  --color-base-content: #132a1e;
+  --color-primary: #064e3b;
+  --color-primary-content: #fafaf7;
+  --color-secondary: #059669;
+  --color-secondary-content: #ffffff;
+  --color-accent: #10b981;
+  --color-accent-content: #022c22;
+  --color-neutral: #1c2b23;
+  --color-neutral-content: #fafaf7;
+  --color-info: #0d9488;
+  --color-info-content: #ffffff;
+  --color-success: #15803d;
+  --color-success-content: #ffffff;
+  --color-warning: #d97706;
+  --color-warning-content: #ffffff;
+  --color-error: #dc2626;
+  --color-error-content: #ffffff;
+  --radius-selector: 0.75rem;
+  --radius-field: 0.75rem;
+  --radius-box: 1rem;
+  --border: 1px;
+}
+
+:root {
+  --bg-ivory: #fafaf7;
+  --bg-cream: #f3f2ec;
+  --forest-deep: #064e3b;
+  --emerald-accent: #059669;
+  --border-subtle: rgba(6, 78, 59, 0.12);
+}
+
+@layer base {
+  html {
+    background-color: var(--bg-ivory);
+    color: #132a1e;
+    font-family: "Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    scroll-behavior: smooth;
+  }
+
+  body {
+    background-color: var(--bg-ivory);
+    color: #132a1e;
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+  }
+}
+
+.font-serif-display {
+  font-family: "Playfair Display", Georgia, serif;
+}
+
+/* Hide scrollbars cleanly across Chrome/Safari/Firefox/Edge */
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fadeIn {
+  animation: fadeIn 0.16s ease-out forwards;
+}

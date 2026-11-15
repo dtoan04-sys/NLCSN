@@ -1,5 +1,11 @@
 import React, { useState, useRef } from 'react';
-import { apiFetch } from '../config';
+import { apiFetch, getApiBaseUrl } from '../config';
+
+function resolveUploadUrl(u) {
+  if (!u || typeof u !== 'string') return '/plants/1.jpg';
+  if (u.startsWith('/uploads/')) return `${getApiBaseUrl()}${u}`;
+  return u;
+}
 
 export default function MultiImageUpload({
   label = 'Album hình ảnh chậu cây thực tế:',
@@ -128,7 +134,7 @@ export default function MultiImageUpload({
             >
               <div className="aspect-square rounded-xl overflow-hidden bg-gray-100 relative">
                 <img
-                  src={img.url}
+                  src={resolveUploadUrl(img.url)}
                   alt={`Ảnh #${idx + 1}`}
                   className="w-full h-full object-cover"
                   onError={(e) => {

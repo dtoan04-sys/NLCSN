@@ -64,7 +64,7 @@ export default function AuthModal({ isOpen, onClose }) {
             <h3 className="text-xl font-extrabold text-gray-900">
               {isRegister ? 'Đăng ký tài khoản' : 'Đăng nhập hệ thống'}
             </h3>
-            <p className="text-xs text-gray-500 mt-0.5">Mô hình CDM: NGUOI_DUNG (RBAC)</p>
+            <p className="text-xs text-gray-500 mt-0.5">Tài khoản thành viên Vườn Kiểng Lá</p>
           </div>
           <button onClick={onClose} className="p-1.5 rounded-xl text-gray-400 hover:bg-gray-100">
             <span className="material-symbols-outlined text-2xl">close</span>

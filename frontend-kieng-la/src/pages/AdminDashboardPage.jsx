@@ -22,7 +22,18 @@ export default function AdminDashboardPage({ onBackToStore, onSelectProduct }) {
   const [users, setUsers] = useState([]);
   const [aiLogs, setAiLogs] = useState([]);
   const [speciesList, setSpeciesList] = useState([]);
+  const [vouchers, setVouchers] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [newVoucher, setNewVoucher] = useState({
+    TenMaGiamGia: '',
+    TenChuongTrinhGiamGia: '',
+    LoaiGiamGia: 'PhanTram',
+    GiaTriGiam: 15,
+    ToiDa: 50000,
+    ToiThieu: 150000,
+    SoLuongPhieu: 50,
+    MoTa: ''
+  });
 
   // Search & Filter states
   const [productSearch, setProductSearch] = useState('');
@@ -120,6 +131,13 @@ export default function AdminDashboardPage({ onBackToStore, onSelectProduct }) {
       if (resSpecies.ok) {
         const data = await resSpecies.json();
         setSpeciesList(data);
+      }
+
+      // 7. Mã giảm giá (CHUONG_TRINH_GIAM_GIA)
+      const resVouchers = await apiFetch('/api/admin/giam-gia');
+      if (resVouchers.ok) {
+        const data = await resVouchers.json();
+        setVouchers(data);
       }
     } catch (err) {
       console.log('Admin live sync notice:', err);
@@ -272,6 +290,61 @@ export default function AdminDashboardPage({ onBackToStore, onSelectProduct }) {
       }
     } catch (e) {
       showToast('❌ Không thể xóa sản phẩm');
+    }
+  };
+
+  // Create & Delete Voucher (CHUONG_TRINH_GIAM_GIA)
+  const handleCreateVoucher = async (e) => {
+    e.preventDefault();
+    if (!newVoucher.TenMaGiamGia.trim()) {
+      showToast('⚠️ Vui lòng nhập mã giảm giá!');
+      return;
+    }
+    try {
+      const res = await apiFetch('/api/admin/giam-gia', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ...newVoucher,
+          GiaTriGiam: Number(newVoucher.GiaTriGiam),
+          ToiDa: Number(newVoucher.ToiDa),
+          ToiThieu: Number(newVoucher.ToiThieu),
+          SoLuongPhieu: Number(newVoucher.SoLuongPhieu)
+        })
+      });
+      const data = await res.json().catch(() => ({}));
+      if (res.ok) {
+        showToast(`🎉 ${data.message || 'Đã tạo mã giảm giá thành công!'}`);
+        setNewVoucher({
+          TenMaGiamGia: '',
+          TenChuongTrinhGiamGia: '',
+          LoaiGiamGia: 'PhanTram',
+          GiaTriGiam: 15,
+          ToiDa: 50000,
+          ToiThieu: 150000,
+          SoLuongPhieu: 50,
+          MoTa: ''
+        });
+        fetchAllData();
+      } else {
+        showToast(`❌ ${data.detail || 'Không thể tạo mã giảm giá'}`);
+      }
+    } catch (err) {
+      showToast('❌ Lỗi kết nối khi tạo mã giảm giá');
+    }
+  };
+
+  const handleDeleteVoucher = async (id, code) => {
+    if (!window.confirm(`Bạn có chắc chắn muốn xóa mã giảm giá "${code}" (#${id}) không?`)) return;
+    try {
+      const res = await apiFetch(`/api/admin/giam-gia/${id}`, { method: 'DELETE' });
+      const data = await res.json().catch(() => ({}));
+      if (res.ok) {
+        showToast(`🗑️ ${data.message || `Đã xóa mã giảm giá ${code}!`}`);
+        fetchAllData();
+      }
+    } catch (err) {
+      showToast('❌ Không thể xóa mã giảm giá');
     }
   };
 
@@ -538,6 +611,21 @@ export default function AdminDashboardPage({ onBackToStore, onSelectProduct }) {
               <span className="material-symbols-outlined text-lg">menu_book</span>
               <span>Tri thức 90 loài cây</span>
             </button>
+
+            <button
+              onClick={() => setActiveTab('vouchers')}
+              className={`w-full flex items-center gap-3 px-3.5 py-3 rounded-2xl transition-all ${
+                activeTab === 'vouchers'
+                  ? 'bg-emerald-600 text-white font-bold shadow-md shadow-emerald-900/40'
+                  : 'text-emerald-100/70 hover:bg-emerald-900/40 hover:text-white'
+              }`}
+            >
+              <span className="material-symbols-outlined text-lg">confirmation_number</span>
+              <span>Mã giảm giá (Voucher)</span>
+              <span className="ml-auto bg-amber-400/20 text-amber-300 px-2 py-0.5 rounded-full text-[10px] font-bold">
+                {vouchers.length}
+              </span>
+            </button>
           </nav>
         </div>
 
@@ -580,11 +668,12 @@ export default function AdminDashboardPage({ onBackToStore, onSelectProduct }) {
             <div>
               <h1 className="text-lg font-black text-gray-900 tracking-tight">
                 {activeTab === 'overview' && 'Bảng Điều Khiển & Chỉ Số KPI'}
-                {activeTab === 'products' && 'Quản Lý Danh Mục Chậu Cây (SAN_PHAM)'}
-                {activeTab === 'orders' && 'Quản Lý Đơn Hàng & Vận Chuyển (DON_HANG)'}
-                {activeTab === 'users' && 'Quản Lý Tài Khoản, Phân Quyền & Nhân Sự (NGUOI_DUNG)'}
-                {activeTab === 'ai_logs' && 'Nhật Ký Giám Định AI (MobileNetV2 - TIM_ANH)'}
-                {activeTab === 'species' && 'Tri Thức 90 Loài Thực Vật Học (LOAI_CAY)'}
+                {activeTab === 'products' && 'Quản Lý Danh Mục Chậu Cây'}
+                {activeTab === 'orders' && 'Quản Lý Đơn Hàng & Vận Chuyển'}
+                {activeTab === 'users' && 'Quản Lý Tài Khoản, Phân Quyền & Nhân Sự'}
+                {activeTab === 'ai_logs' && 'Nhật Ký Giám Định AI (MobileNetV2)'}
+                {activeTab === 'species' && 'Tri Thức 90 Loài Thực Vật Học'}
+                {activeTab === 'vouchers' && 'Quản Lý Mã Giảm Giá & Khuyến Mãi'}
               </h1>
               <span className="text-xs text-gray-500 font-medium hidden sm:inline">
                 Hệ thống đồng bộ dữ liệu thời gian thực với SQL Server (CayKiengLa)
@@ -822,7 +911,7 @@ export default function AdminDashboardPage({ onBackToStore, onSelectProduct }) {
                     <tr>
                       <th className="py-3.5 px-4">Mã</th>
                       <th className="py-3.5 px-4">Chậu cây</th>
-                      <th className="py-3.5 px-4">Loài thực vật (LOAI_CAY)</th>
+                      <th className="py-3.5 px-4">Loài thực vật</th>
                       <th className="py-3.5 px-4">Giá bán</th>
                       <th className="py-3.5 px-4">Tồn kho</th>
                       <th className="py-3.5 px-4">Kích thước</th>
@@ -1328,6 +1417,147 @@ export default function AdminDashboardPage({ onBackToStore, onSelectProduct }) {
               </div>
             </div>
           )}
+
+          {/* ======================================================== */}
+          {/* TAB 6: QUẢN LÝ MÃ GIẢM GIÁ (CHUONG_TRINH_GIAM_GIA) */}
+          {/* ======================================================== */}
+          {activeTab === 'vouchers' && (
+            <div className="space-y-6">
+              {/* Form thêm mã giảm giá nhanh */}
+              <div className="bg-white rounded-3xl border border-gray-200/80 shadow-xs p-6">
+                <h3 className="font-extrabold text-sm text-gray-900 mb-3 flex items-center gap-2">
+                  <span className="material-symbols-outlined text-emerald-600 text-lg">add_circle</span>
+                  <span>Tạo Mã Giảm Giá Mới (Lưu trực tiếp SQL Server)</span>
+                </h3>
+                <form onSubmit={handleCreateVoucher} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-3 text-xs">
+                  <div>
+                    <label className="font-bold text-gray-600 block mb-1">Mã giảm giá *</label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="VD: KIENGLA2026"
+                      value={newVoucher.TenMaGiamGia}
+                      onChange={(e) => setNewVoucher({ ...newVoucher, TenMaGiamGia: e.target.value.toUpperCase() })}
+                      className="w-full p-2.5 rounded-xl border border-gray-200 uppercase font-mono font-bold text-emerald-900"
+                    />
+                  </div>
+                  <div>
+                    <label className="font-bold text-gray-600 block mb-1">Tên chương trình</label>
+                    <input
+                      type="text"
+                      placeholder="Ưu đãi mùa xuân..."
+                      value={newVoucher.TenChuongTrinhGiamGia}
+                      onChange={(e) => setNewVoucher({ ...newVoucher, TenChuongTrinhGiamGia: e.target.value })}
+                      className="w-full p-2.5 rounded-xl border border-gray-200"
+                    />
+                  </div>
+                  <div>
+                    <label className="font-bold text-gray-600 block mb-1">Loại giảm</label>
+                    <select
+                      value={newVoucher.LoaiGiamGia}
+                      onChange={(e) => setNewVoucher({ ...newVoucher, LoaiGiamGia: e.target.value })}
+                      className="w-full p-2.5 rounded-xl border border-gray-200"
+                    >
+                      <option value="PhanTram">Theo %</option>
+                      <option value="SoTien">Số tiền (₫)</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="font-bold text-gray-600 block mb-1">Giá trị giảm</label>
+                    <input
+                      type="number"
+                      required
+                      min="1"
+                      value={newVoucher.GiaTriGiam}
+                      onChange={(e) => setNewVoucher({ ...newVoucher, GiaTriGiam: e.target.value })}
+                      className="w-full p-2.5 rounded-xl border border-gray-200 font-bold"
+                    />
+                  </div>
+                  <div>
+                    <label className="font-bold text-gray-600 block mb-1">Đơn tối thiểu (₫)</label>
+                    <input
+                      type="number"
+                      min="0"
+                      value={newVoucher.ToiThieu}
+                      onChange={(e) => setNewVoucher({ ...newVoucher, ToiThieu: e.target.value })}
+                      className="w-full p-2.5 rounded-xl border border-gray-200"
+                    />
+                  </div>
+                  <div className="flex items-end">
+                    <button
+                      type="submit"
+                      className="w-full py-2.5 px-4 rounded-xl bg-[#004830] hover:bg-[#005e3e] text-white font-bold shadow-xs transition-all cursor-pointer"
+                    >
+                      + Thêm Mã GG
+                    </button>
+                  </div>
+                </form>
+              </div>
+
+              {/* Danh sách mã giảm giá */}
+              <div className="bg-white rounded-3xl border border-gray-200/80 shadow-xs p-6 space-y-4">
+                <div className="flex items-center justify-between">
+                  <h3 className="font-extrabold text-sm text-gray-900">
+                    Danh sách {vouchers.length} mã giảm giá trong CSDL (CHUONG_TRINH_GIAM_GIA)
+                  </h3>
+                </div>
+                <div className="overflow-x-auto rounded-2xl border border-gray-100">
+                  <table className="w-full text-left text-xs text-gray-600">
+                    <thead className="bg-gray-50/80 text-[11px] uppercase font-bold text-gray-700 border-b border-gray-200">
+                      <tr>
+                        <th className="py-3 px-4">ID</th>
+                        <th className="py-3 px-4">Mã Code</th>
+                        <th className="py-3 px-4">Tên chương trình</th>
+                        <th className="py-3 px-4">Mức giảm</th>
+                        <th className="py-3 px-4">Đơn tối thiểu</th>
+                        <th className="py-3 px-4">Đã dùng / Tổng</th>
+                        <th className="py-3 px-4 text-right">Thao tác</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-100 font-medium">
+                      {vouchers.map((v) => {
+                        const vid = v.MaChuongTrinhGiamGia || v.MACHUONGTRINHGIAMGIA;
+                        const code = v.TenMaGiamGia || v.TENMAGIAMGIA;
+                        const title = v.TenChuongTrinhGiamGia || v.TENCHUONGTRINHGIAMGIA;
+                        const loai = v.LoaiGiamGia || v.LOAIGIAMGIA;
+                        const val = Number(v.GiaTriGiam || v.GIATRIGIAM || 0);
+                        const minOrder = Number(v.ToiThieu || v.TOITHIEU || 0);
+                        const totalQty = Number(v.SoLuongPhieu || v.SOLUONGPHIEU || 0);
+                        const usedQty = Number(v.SoLuongDaDung || v.SOLUONGDADUNG || 0);
+                        return (
+                          <tr key={vid} className="hover:bg-emerald-50/30 transition-colors">
+                            <td className="py-3 px-4 font-mono font-bold text-gray-500">#{vid}</td>
+                            <td className="py-3 px-4">
+                              <span className="px-2.5 py-1 rounded-lg bg-emerald-100 text-emerald-900 font-mono font-extrabold">
+                                {code}
+                              </span>
+                            </td>
+                            <td className="py-3 px-4 font-bold text-gray-900">{title}</td>
+                            <td className="py-3 px-4 font-bold text-emerald-700">
+                              {loai === 'PhanTram' ? `${val}%` : `${val.toLocaleString('vi-VN')} ₫`}
+                            </td>
+                            <td className="py-3 px-4">{minOrder.toLocaleString('vi-VN')} ₫</td>
+                            <td className="py-3 px-4 font-mono">
+                              {usedQty} / {totalQty}
+                            </td>
+                            <td className="py-3 px-4 text-right">
+                              <button
+                                type="button"
+                                onClick={() => handleDeleteVoucher(vid, code)}
+                                className="px-2.5 py-1 rounded-lg bg-red-50 hover:bg-red-100 text-red-600 font-bold text-[11px] transition-colors"
+                              >
+                                Xóa
+                              </button>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          )}
         </main>
       </div>
 
@@ -1352,15 +1582,28 @@ export default function AdminDashboardPage({ onBackToStore, onSelectProduct }) {
             <form onSubmit={handleSaveProduct} className="space-y-3.5 text-xs">
               {/* Quản lý Album nhiều ảnh & Chọn ảnh chính */}
               <MultiImageUpload
-                label="Album hình ảnh chậu cây thực tế (Hỗ trợ nhiều ảnh):"
-                images={
-                  editingProduct.DanhSachAnh && editingProduct.DanhSachAnh.length > 0
-                    ? editingProduct.DanhSachAnh.map((img, i) => ({
-                        url: img.url || img.UrlAnh || '',
-                        isMain: Boolean(img.isMain || img.LaAnhChinh || i === 0 && !editingProduct.DanhSachAnh.some(x => x.isMain || x.LaAnhChinh))
-                      }))
-                    : [{ url: editingProduct.UrlAnh || editingProduct.urlanh || `/plants/${editingProduct.MaLoaiCay || editingProduct.maloaicay || 1}.jpg`, isMain: true }]
-                }
+                label="Album hình ảnh chậu cây thực tế (Hỗ trợ nhiều góc máy):"
+                images={(() => {
+                  const rawSid = Number(editingProduct.MaLoaiCay || editingProduct.maloaicay || 1);
+                  const sId = rawSid >= 1 && rawSid <= 90 ? rawSid : 1;
+                  if (editingProduct.DanhSachAnh && editingProduct.DanhSachAnh.length > 0) {
+                    return editingProduct.DanhSachAnh.map((img, i) => ({
+                      url: img.url || img.UrlAnh || '',
+                      isMain: Boolean(
+                        img.isMain ||
+                          img.LaAnhChinh ||
+                          (i === 0 && !editingProduct.DanhSachAnh.some((x) => x.isMain || x.LaAnhChinh))
+                      )
+                    }));
+                  }
+                  const mainU = editingProduct.UrlAnh || editingProduct.urlanh || `/plants/${sId}.jpg`;
+                  return [
+                    { url: mainU, isMain: true },
+                    { url: `/plants/angles/${sId}_closeup.jpg`, isMain: false },
+                    { url: `/plants/angles/${sId}_side.jpg`, isMain: false },
+                    { url: `/plants/angles/${sId}_detail.jpg`, isMain: false }
+                  ];
+                })()}
                 onChange={(updated) => {
                   const mainOne = updated.find((i) => i.isMain)?.url || updated[0]?.url || '';
                   setEditingProduct({
@@ -1597,7 +1840,7 @@ export default function AdminDashboardPage({ onBackToStore, onSelectProduct }) {
               <div>
                 <h3 className="font-extrabold text-base text-gray-900 flex items-center gap-2">
                   <span className="material-symbols-outlined text-emerald-700">potted_plant</span>
-                  <span>Thêm loài thực vật học mới vào CSDL (LOAI_CAY)</span>
+                  <span>Thêm loài thực vật học mới</span>
                 </h3>
                 <p className="text-[11px] text-gray-500 mt-0.5">
                   Loài mới sẽ tự động nhận mã #{botanicalSpecies.length + 1}. Quản lý kho chậu sẽ tự động cập nhật ngay.

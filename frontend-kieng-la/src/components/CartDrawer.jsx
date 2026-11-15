@@ -45,7 +45,7 @@ export default function CartDrawer({ isOpen, onClose, onCheckout, onOpenAuth }) 
               <div>
                 <h3 className="font-extrabold text-base text-gray-900">Chưa đăng nhập tài khoản</h3>
                 <p className="text-xs text-gray-500 mt-1 max-w-xs leading-relaxed">
-                  Theo thiết kế hệ thống (CDM: <strong className="text-gray-700">NGUOI_DUNG 1 — 1 GIO_HANG</strong>), giỏ hàng được quản lý theo từng tài khoản riêng biệt.
+                  Giỏ hàng được lưu trữ và đồng bộ theo từng tài khoản thành viên riêng biệt.
                 </p>
               </div>
               <button

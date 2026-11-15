@@ -76,7 +76,7 @@ export default function CheckoutModal({ isOpen, onClose, onOpenAuth }) {
             <div>
               <h3 className="text-xl font-extrabold text-gray-900">Yêu cầu đăng nhập để Đặt hàng</h3>
               <p className="text-xs text-gray-500 mt-1 max-w-md mx-auto leading-relaxed">
-                Theo thiết kế hệ thống (CDM: <strong className="text-gray-700">NGUOI_DUNG 1 — N DON_HANG</strong>), mỗi đơn đặt cây phải được định danh qua tài khoản khách hàng để quản lý bảo hành và tích điểm.
+                Mỗi đơn đặt cây cần được định danh qua tài khoản khách hàng để quản lý bảo hành và theo dõi vận chuyển.
               </p>
             </div>
             <div className="flex gap-2 max-w-xs mx-auto">

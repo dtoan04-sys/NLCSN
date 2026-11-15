@@ -97,8 +97,6 @@ export default function ProfileModal({ isOpen, onClose }) {
               <p className="text-xs text-gray-500 mt-1 flex items-center gap-1.5 font-medium">
                 <span className="material-symbols-outlined text-sm text-gray-400">badge</span>
                 <span>Tài khoản: <strong>{user.username}</strong></span>
-                <span className="text-gray-300">•</span>
-                <span className="text-emerald-700 font-semibold">CDM: NGUOI_DUNG</span>
               </p>
             </div>
           </div>

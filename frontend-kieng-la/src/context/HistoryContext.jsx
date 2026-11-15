@@ -48,32 +48,67 @@ export function HistoryProvider({ children }) {
 
   // Thêm lần nhận diện mới (Nhẹ < 25KB, không gây đầy bộ nhớ Android WebView)
   const addScanRecord = ({ imageUrl, thumbnailDataUrl, result, userId = null }) => {
-    const classId = result?.ma_loai_cay ?? result?.class_id ?? 53;
-    const speciesId = (Number(classId) >= 0 && Number(classId) < 90) ? Number(classId) + 1 : 54;
+    const rawMaLoai = result?.ma_loai_cay ?? result?.MaLoaiCay;
+    const rawClassId = result?.class_id;
+    let speciesId = 54;
+    if (rawMaLoai !== undefined && rawMaLoai !== null && Number(rawMaLoai) >= 1 && Number(rawMaLoai) <= 91) {
+      speciesId = Number(rawMaLoai);
+    } else if (rawClassId !== undefined && rawClassId !== null && Number(rawClassId) >= 0 && Number(rawClassId) < 91) {
+      speciesId = Number(rawClassId) + 1;
+    }
     const fallbackImg = `/plants/${speciesId}.jpg`;
+
+    const isPersistableImage = (url) =>
+      typeof url === 'string' &&
+      url.length > 0 &&
+      !url.startsWith('blob:') &&
+      (!url.startsWith('data:') || url.length < 45000);
 
     let safeImgUrl = fallbackImg;
     if (result?.duong_dan_anh) {
-      const base = getApiBaseUrl();
-      safeImgUrl = result.duong_dan_anh.startsWith('http')
-        ? result.duong_dan_anh
-        : `${base}${result.duong_dan_anh}`;
-    } else if (thumbnailDataUrl && thumbnailDataUrl.length < 45000) {
+      safeImgUrl = result.duong_dan_anh;
+    } else if (isPersistableImage(thumbnailDataUrl)) {
       safeImgUrl = thumbnailDataUrl;
-    } else if (imageUrl && (!imageUrl.startsWith('data:') || imageUrl.length < 45000)) {
+    } else if (isPersistableImage(imageUrl)) {
       safeImgUrl = imageUrl;
     }
 
+    const rawAcc = Number(result?.do_chinh_xac ?? 0);
+    const normalizedAcc = rawAcc > 1 ? rawAcc / 100 : rawAcc;
+
+    const isMulti = Boolean(result?.is_multi);
+    const compactMultiPlants = isMulti && Array.isArray(result?.danh_sach_cay)
+      ? result.danh_sach_cay.slice(0, 8).map((p, idx) => ({
+          stt: p.stt || idx + 1,
+          maloaicay: p.maloaicay || 1,
+          tenthuonggoi: p.tenthuonggoi || '',
+          tenkhoahoc: p.tenkhoahoc || '',
+          do_chinh_xac: p.do_chinh_xac ?? 0,
+          mau_sac: p.mau_sac || '#00FF66',
+          crop_image: p.crop_image || null
+        }))
+      : [];
+
+    const primarySpeciesName =
+      result?.primary_species_name ||
+      compactMultiPlants[0]?.tenthuonggoi ||
+      result?.loai_du_doan ||
+      'Cây kiểng lá';
+
     const newRecord = {
       id: Date.now(),
+      matimkiem: result?.matimkiem ?? result?.MaTimKiem ?? null,
       userId,
       speciesId,
       imageUrl: safeImgUrl,
       fallbackImg,
       predictedName: result?.loai_du_doan || 'Cây kiểng lá',
+      primarySpeciesName,
       originalLabel: result?.loai_goc || '',
-      accuracy: result?.do_chinh_xac || 0,
+      accuracy: normalizedAcc,
       topK: result?.top_k || [],
+      isMulti,
+      multiPlants: compactMultiPlants,
       platform: window.AndroidNative ? 'ANDROID' : 'WEB',
       timestamp: new Date().toISOString(),
       feedback: null

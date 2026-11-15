@@ -1,4 +1,4 @@
-import React, { useRef } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import { CATEGORIES, PRODUCTS, INITIAL_REVIEWS } from '../data/mockData';
 import { useCart } from '../context/CartContext';
 
@@ -7,35 +7,97 @@ export default function HomePage({ onOpenAiModal, onSelectProduct, onNavigate, o
   const { addToCart } = useCart();
 
   const featuredProducts = PRODUCTS.slice(0, 4);
+  const heroBanners = [
+    {
+      id: 'b1',
+      badge: 'Cá Thể Tinh Hoa #MB-9902',
+      tag: 'Đột Biến Cẩm Thạch',
+      title: PRODUCTS[0]?.name || 'Monstera Deliciosa Albo',
+      subtitle: 'Lá cẩm thạch trắng tuyết • Hợp mệnh Thủy - Kim',
+      image: PRODUCTS[0]?.image,
+      ctaLabel: 'Xem chậu',
+      onAction: () => onSelectProduct(PRODUCTS[0])
+    },
+    {
+      id: 'b2',
+      badge: 'AI Vision • 90 Loài Kiểng Lá',
+      tag: 'Chẩn Đoán & Tách Đa Cây',
+      title: 'Quét Camera Nhận Diện Ngay',
+      subtitle: 'Chụp 1 hoặc nhiều chậu cây cùng lúc, gợi ý chăm sóc chuẩn',
+      image: PRODUCTS[1]?.image || PRODUCTS[0]?.image,
+      ctaLabel: 'Quét AI ngay',
+      onAction: onOpenAiModal
+    },
+    {
+      id: 'b3',
+      badge: 'Bộ Sưu Tập Thanh Lọc Khí',
+      tag: 'Bán Chạy Nhất Tuần',
+      title: PRODUCTS[2]?.name || 'Lưỡi Hổ & Trầu Bà Phong Thủy',
+      subtitle: 'Dễ chăm trong nhà, văn phòng • Lọc bụi mịn & sinh khí',
+      image: PRODUCTS[2]?.image || PRODUCTS[0]?.image,
+      ctaLabel: 'Xem chậu',
+      onAction: () => onSelectProduct(PRODUCTS[2] || PRODUCTS[0])
+    },
+    {
+      id: 'b4',
+      badge: 'Ưu Đãi Vườn Kiểng Lá',
+      tag: 'Giao Nhanh Nội Ô',
+      title: PRODUCTS[3]?.name || 'Vườn Kiểng Lá Nhiệt Đới',
+      subtitle: 'Đóng gói chống sốc • Bảo hành cây khỏe 7 ngày',
+      image: PRODUCTS[3]?.image || PRODUCTS[0]?.image,
+      ctaLabel: 'Khám phá',
+      onAction: () => onNavigate('products')
+    }
+  ];
+
+  const [bannerIndex, setBannerIndex] = useState(0);
+  const [bannerPaused, setBannerPaused] = useState(false);
+
+  useEffect(() => {
+    if (bannerPaused) return;
+    const timer = setInterval(() => {
+      setBannerIndex((prev) => (prev + 1) % heroBanners.length);
+    }, 4000);
+    return () => clearInterval(timer);
+  }, [bannerPaused, heroBanners.length]);
+
+  const activeBanner = heroBanners[bannerIndex] || heroBanners[0];
 
   return (
-    <div className="flex flex-col w-full bg-white">
+    <div className="flex flex-col w-full bg-[#fafaf7] text-[#132a1e]">
       {/* ========================================================================= */}
-      {/* 1. HERO SECTION (Phong thủy Mệnh Thủy - Tuyền Trung Thủy: Sóng biển Sapphire & Trắng sứ) */}
+      {/* 1. HERO SECTION (Botanical Emerald & Warm Cream) */}
       {/* ========================================================================= */}
-      <section className="relative w-full bg-gradient-to-b from-sky-50/70 via-cyan-50/30 to-white py-14 md:py-24 border-b border-sky-100 overflow-hidden">
-        {/* Vệt ánh sáng nước lung linh */}
-        <div className="absolute top-0 right-0 w-96 h-96 bg-gradient-to-bl from-sky-200/40 via-cyan-100/30 to-transparent rounded-full blur-3xl pointer-events-none"></div>
-        <div className="absolute bottom-0 left-0 w-80 h-80 bg-gradient-to-tr from-blue-100/30 via-indigo-50/20 to-transparent rounded-full blur-2xl pointer-events-none"></div>
+      <section className="relative w-full bg-gradient-to-b from-[#eef5ef] via-[#fafaf7] to-[#fafaf7] py-14 md:py-22 border-b border-emerald-900/10 overflow-hidden">
+        {/* Ánh sáng tự nhiên dịu nhẹ */}
+        <div className="absolute -top-16 right-0 w-[28rem] h-[28rem] bg-gradient-to-bl from-emerald-200/35 via-teal-100/25 to-transparent rounded-full blur-3xl pointer-events-none"></div>
+        <div className="absolute bottom-0 -left-12 w-80 h-80 bg-gradient-to-tr from-[#064e3b]/10 via-emerald-100/20 to-transparent rounded-full blur-2xl pointer-events-none"></div>
 
         <div className="max-w-[1440px] mx-auto px-6 md:px-12 lg:px-20 relative z-10">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-center">
-            <div className="lg:col-span-7 flex flex-col items-start space-y-4">
-              <div className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-sky-100/80 text-sky-900 text-xs font-bold uppercase tracking-wider border border-sky-200 shadow-2xs">
-                <span className="material-symbols-outlined text-sm text-sky-600">water_drop</span>
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-12 items-center">
+            <div className="lg:col-span-7 flex flex-col items-start space-y-5">
+              <div className="badge badge-lg h-auto py-1.5 px-3.5 gap-1.5 rounded-full bg-emerald-900/8 text-[#064e3b] border border-emerald-800/15 text-xs font-bold uppercase tracking-wider shadow-2xs">
+                <span className="material-symbols-outlined text-sm text-[#059669]">eco</span>
                 <span>Thủy Sinh Khí • Cây Phong Thủy &amp; AI Thực Vật</span>
               </div>
-              <h1 className="text-3xl md:text-5xl lg:text-6xl text-slate-900 font-extrabold tracking-tight leading-tight">
-                Tuyệt Tác Kiểng Lá <span className="text-transparent bg-clip-text bg-gradient-to-r from-sky-600 via-blue-700 to-indigo-800">Thanh Lọc Sinh Khí</span> &amp; AI Giám Định
+
+              <h1 className="text-3xl md:text-5xl lg:text-[3.4rem] text-[#132a1e] font-extrabold tracking-tight leading-[1.14]">
+                Tuyệt Tác Kiểng Lá{' '}
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#064e3b] via-[#059669] to-teal-700">
+                  Thanh Lọc Sinh Khí
+                </span>{' '}
+                &amp; AI Giám Định
               </h1>
-              <p className="text-sm md:text-base text-slate-600 max-w-2xl leading-relaxed">
+
+              <p className="text-sm md:text-base text-[#132a1e]/75 max-w-2xl leading-relaxed">
                 Tập hợp các loài cây kiểng lá nhiệt đới, cây thủy sinh vượng tài lộc, thanh lọc không gian sống. Hệ thống kết hợp mô hình AI 90 loài chẩn đoán nhanh, gợi ý cây hợp mệnh chuẩn phong thủy ngũ hành.
               </p>
-              <div className="flex flex-wrap items-center gap-3 pt-3">
+
+              <div className="flex flex-wrap items-center gap-3 pt-2">
                 <button
                   type="button"
                   onClick={() => onNavigate('products')}
-                  className="inline-flex items-center gap-2 bg-gradient-to-r from-sky-600 via-blue-700 to-indigo-800 hover:from-sky-700 hover:to-indigo-900 text-white px-7 py-3.5 rounded-2xl font-bold text-sm shadow-md shadow-sky-600/25 hover:shadow-lg transition-all cursor-pointer"
+                  className="btn btn-primary h-auto min-h-0 px-7 py-3.5 rounded-2xl text-sm font-bold shadow-md shadow-emerald-950/15 hover:shadow-lg transition-all gap-2"
                 >
                   <span>Khám phá bộ sưu tập cây</span>
                   <span className="material-symbols-outlined text-base">arrow_forward</span>
@@ -43,39 +105,94 @@ export default function HomePage({ onOpenAiModal, onSelectProduct, onNavigate, o
                 <button
                   type="button"
                   onClick={onOpenAiModal}
-                  className="inline-flex items-center gap-2 bg-white hover:bg-sky-50 text-blue-900 px-6 py-3.5 rounded-2xl font-bold text-sm transition-all shadow-sm border border-sky-200 cursor-pointer"
+                  className="btn h-auto min-h-0 px-6 py-3.5 rounded-2xl bg-white hover:bg-emerald-50 text-[#064e3b] border border-emerald-900/15 hover:border-emerald-800/30 font-bold text-sm shadow-xs transition-all gap-2"
                 >
-                  <span className="material-symbols-outlined text-lg text-sky-600">photo_camera</span>
+                  <span className="material-symbols-outlined text-lg text-[#059669]">photo_camera</span>
                   <span>Quét cây bằng AI Vision</span>
                 </button>
               </div>
             </div>
 
             <div className="lg:col-span-5 relative">
-              <div className="relative bg-white rounded-3xl shadow-xl overflow-hidden p-3 max-w-md mx-auto border border-sky-100">
-                <div className="relative aspect-[4/5] rounded-2xl overflow-hidden bg-sky-50/50">
-                  <img
-                    alt="Monstera Albo Specimen"
-                    className="w-full h-full object-cover"
-                    src={PRODUCTS[0].image}
-                  />
-                  <span className="absolute top-3 left-3 bg-slate-900/80 backdrop-blur-md text-white px-3 py-1 rounded-full text-xs font-semibold border border-white/20">
-                    Cá Thể Tinh Hoa #MB-9902
-                  </span>
-                  <span className="absolute bottom-3 right-3 bg-gradient-to-r from-sky-600 to-blue-700 text-white px-2.5 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider shadow-sm">
-                    Đột Biến Cẩm Thạch
-                  </span>
+              <div
+                onMouseEnter={() => setBannerPaused(true)}
+                onMouseLeave={() => setBannerPaused(false)}
+                className="card bg-white rounded-3xl shadow-xl overflow-hidden p-3 max-w-md mx-auto border border-emerald-900/10 group"
+              >
+                {/* Khung chạy slide banner kiểu TMĐT (Bách Hóa Xanh / TGDD) */}
+                <div className="relative h-56 sm:h-64 rounded-2xl overflow-hidden bg-[#f3f2ec]">
+                  <div
+                    className="flex h-full w-full transition-transform duration-500 ease-out"
+                    style={{ transform: `translateX(-${bannerIndex * 100}%)` }}
+                  >
+                    {heroBanners.map((slide) => (
+                      <div
+                        key={slide.id}
+                        onClick={slide.onAction}
+                        className="relative w-full h-full shrink-0 cursor-pointer"
+                      >
+                        <img
+                          alt={slide.title}
+                          className="w-full h-full object-cover"
+                          src={slide.image}
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-black/10 to-transparent pointer-events-none"></div>
+                        <span className="badge absolute top-3 left-3 h-auto py-1 px-3 bg-[#064e3b]/85 backdrop-blur-md text-[#fafaf7] rounded-full text-xs font-semibold border border-white/15">
+                          {slide.badge}
+                        </span>
+                        <span className="badge absolute bottom-3 right-3 h-auto py-1 px-2.5 bg-[#059669] text-white border-0 rounded-lg text-[10px] font-bold uppercase tracking-wider shadow-sm">
+                          {slide.tag}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Nút Prev / Next */}
+                  <button
+                    type="button"
+                    aria-label="Banner trước"
+                    onClick={() => setBannerIndex((prev) => (prev - 1 + heroBanners.length) % heroBanners.length)}
+                    className="absolute left-2.5 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-white/85 hover:bg-white text-[#064e3b] shadow-md flex items-center justify-center opacity-85 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity"
+                  >
+                    <span className="material-symbols-outlined text-lg">chevron_left</span>
+                  </button>
+                  <button
+                    type="button"
+                    aria-label="Banner tiếp theo"
+                    onClick={() => setBannerIndex((prev) => (prev + 1) % heroBanners.length)}
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-white/85 hover:bg-white text-[#064e3b] shadow-md flex items-center justify-center opacity-85 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity"
+                  >
+                    <span className="material-symbols-outlined text-lg">chevron_right</span>
+                  </button>
+
+                  {/* Dots chỉ báo slide */}
+                  <div className="absolute bottom-3 left-3 flex items-center gap-1.5 bg-black/35 backdrop-blur-xs px-2 py-1 rounded-full">
+                    {heroBanners.map((slide, idx) => (
+                      <button
+                        key={slide.id}
+                        type="button"
+                        aria-label={`Chọn banner ${idx + 1}`}
+                        onClick={() => setBannerIndex(idx)}
+                        className={`h-1.5 rounded-full transition-all ${
+                          idx === bannerIndex ? 'w-5 bg-white' : 'w-1.5 bg-white/55 hover:bg-white/80'
+                        }`}
+                      />
+                    ))}
+                  </div>
                 </div>
-                <div className="p-4 flex items-center justify-between">
-                  <div>
-                    <h3 className="text-sm font-extrabold text-slate-900 uppercase">{PRODUCTS[0].name}</h3>
-                    <p className="text-xs text-sky-700 font-medium">Lá cẩm thạch trắng tuyết • Hợp mệnh Thủy - Kim</p>
+
+                {/* Thông tin slide hiện tại */}
+                <div className="p-4 flex items-center justify-between gap-3">
+                  <div className="min-w-0">
+                    <h3 className="text-sm font-extrabold text-[#132a1e] uppercase truncate">{activeBanner.title}</h3>
+                    <p className="text-xs text-[#059669] font-medium truncate">{activeBanner.subtitle}</p>
                   </div>
                   <button
-                    onClick={() => onSelectProduct(PRODUCTS[0])}
-                    className="text-xs bg-gradient-to-r from-sky-600 to-blue-700 text-white px-4 py-2 rounded-xl font-bold hover:from-sky-700 hover:to-blue-800 transition-colors shadow-2xs"
+                    type="button"
+                    onClick={activeBanner.onAction}
+                    className="btn btn-primary btn-sm h-9 px-4 rounded-xl text-xs font-bold shrink-0"
                   >
-                    Xem chậu
+                    {activeBanner.ctaLabel}
                   </button>
                 </div>
               </div>
@@ -85,36 +202,40 @@ export default function HomePage({ onOpenAiModal, onSelectProduct, onNavigate, o
       </section>
 
       {/* ========================================================================= */}
-      {/* 2. DANH MỤC CHI THỰC VẬT (Thẻ Trắng Viền Xanh Biển) */}
+      {/* 2. DANH MỤC CHI THỰC VẬT */}
       {/* ========================================================================= */}
-      <section className="w-full py-14 bg-white" id="danh-muc">
+      <section className="w-full py-14 bg-[#fafaf7]" id="danh-muc">
         <div className="max-w-[1440px] mx-auto px-6 md:px-12 lg:px-20">
-          <div className="flex items-end justify-between mb-8">
+          <div className="flex items-end justify-between mb-8 gap-4">
             <div>
-              <span className="text-xs font-bold text-sky-600 uppercase tracking-widest block mb-1">
+              <span className="text-xs font-bold text-[#059669] uppercase tracking-widest block mb-1">
                 Hệ Thực Vật Học Nhiệt Đới &amp; Phong Thủy
               </span>
-              <h2 className="text-2xl md:text-3xl font-extrabold text-slate-900">
+              <h2 className="text-2xl md:text-3xl font-extrabold text-[#132a1e]">
                 Danh Mục Cây Theo Nhu Cầu &amp; Không Gian
               </h2>
             </div>
-            <div className="flex gap-2">
+            <div className="flex gap-2 shrink-0">
               <button
+                type="button"
                 onClick={() => carouselRef.current?.scrollBy({ left: -320, behavior: 'smooth' })}
-                className="w-10 h-10 rounded-2xl bg-sky-50 hover:bg-sky-100 text-sky-800 border border-sky-100 flex items-center justify-center transition-colors cursor-pointer shadow-2xs"
+                className="btn btn-square btn-sm w-10 h-10 rounded-2xl bg-white hover:bg-emerald-50 text-[#064e3b] border border-emerald-900/15 shadow-2xs"
+                aria-label="Cuộn sang trái"
               >
                 <span className="material-symbols-outlined text-lg">chevron_left</span>
               </button>
               <button
+                type="button"
                 onClick={() => carouselRef.current?.scrollBy({ left: 320, behavior: 'smooth' })}
-                className="w-10 h-10 rounded-2xl bg-sky-50 hover:bg-sky-100 text-sky-800 border border-sky-100 flex items-center justify-center transition-colors cursor-pointer shadow-2xs"
+                className="btn btn-square btn-sm w-10 h-10 rounded-2xl bg-white hover:bg-emerald-50 text-[#064e3b] border border-emerald-900/15 shadow-2xs"
+                aria-label="Cuộn sang phải"
               >
                 <span className="material-symbols-outlined text-lg">chevron_right</span>
               </button>
             </div>
           </div>
 
-          <div ref={carouselRef} className="flex gap-4 overflow-x-auto pb-4 scroll-smooth [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          <div ref={carouselRef} className="flex gap-4 overflow-x-auto pb-4 scroll-smooth no-scrollbar">
             {CATEGORIES.filter((c) => c.id !== 'all').map((cat) => (
               <div
                 key={cat.id}
@@ -122,16 +243,16 @@ export default function HomePage({ onOpenAiModal, onSelectProduct, onNavigate, o
                   onSelectCategory(cat.id);
                   onNavigate('products');
                 }}
-                className="flex-none w-72 bg-white p-5 rounded-3xl border border-sky-100/90 hover:border-sky-400 shadow-sm hover:shadow-xl transition-all cursor-pointer group"
+                className="card flex-none w-72 bg-white p-5 rounded-3xl border border-emerald-900/10 hover:border-[#059669] shadow-sm hover:shadow-xl transition-all cursor-pointer group"
               >
-                <div className="w-12 h-12 rounded-2xl bg-sky-50 group-hover:bg-gradient-to-tr group-hover:from-sky-600 group-hover:to-blue-700 text-sky-700 group-hover:text-white flex items-center justify-center transition-colors mb-4 border border-sky-100">
+                <div className="w-12 h-12 rounded-2xl bg-emerald-50 group-hover:bg-gradient-to-tr group-hover:from-[#064e3b] group-hover:to-[#059669] text-[#064e3b] group-hover:text-white flex items-center justify-center transition-colors mb-4 border border-emerald-900/10">
                   <span className="material-symbols-outlined text-2xl">{cat.icon}</span>
                 </div>
-                <h4 className="font-extrabold text-slate-900 text-base group-hover:text-blue-700 transition-colors">
+                <h4 className="font-extrabold text-[#132a1e] text-base group-hover:text-[#064e3b] transition-colors">
                   {cat.name}
                 </h4>
-                <p className="text-xs text-slate-500 mt-1 line-clamp-2 leading-relaxed">{cat.desc}</p>
-                <div className="mt-4 flex items-center text-xs font-bold text-sky-600 group-hover:translate-x-1 transition-transform">
+                <p className="text-xs text-[#132a1e]/60 mt-1 line-clamp-2 leading-relaxed">{cat.desc}</p>
+                <div className="mt-4 flex items-center text-xs font-bold text-[#059669] group-hover:translate-x-1 transition-transform">
                   <span>Khám phá danh mục</span>
                   <span className="material-symbols-outlined text-sm">chevron_right</span>
                 </div>
@@ -144,20 +265,21 @@ export default function HomePage({ onOpenAiModal, onSelectProduct, onNavigate, o
       {/* ========================================================================= */}
       {/* 3. LƯỚI SẢN PHẨM NỔI BẬT */}
       {/* ========================================================================= */}
-      <section className="w-full py-14 bg-sky-50/40 border-t border-b border-sky-100">
+      <section className="w-full py-14 bg-[#f3f2ec]/70 border-t border-b border-emerald-900/10">
         <div className="max-w-[1440px] mx-auto px-6 md:px-12 lg:px-20">
-          <div className="flex items-end justify-between mb-8">
+          <div className="flex items-end justify-between mb-8 gap-4">
             <div>
-              <span className="text-xs font-bold text-sky-600 uppercase tracking-widest block mb-1">
+              <span className="text-xs font-bold text-[#059669] uppercase tracking-widest block mb-1">
                 Cập Nhật Trực Tiếp Tại Vườn Ươm
               </span>
-              <h2 className="text-2xl md:text-3xl font-extrabold text-slate-900">
+              <h2 className="text-2xl md:text-3xl font-extrabold text-[#132a1e]">
                 Mẫu Phẩm Kiểng Lá Mới Về Hôm Nay
               </h2>
             </div>
             <button
+              type="button"
               onClick={() => onNavigate('products')}
-              className="text-xs font-bold text-sky-700 hover:text-blue-900 hover:underline flex items-center gap-1 cursor-pointer"
+              className="btn btn-ghost btn-sm text-xs font-bold text-[#064e3b] hover:bg-emerald-900/8 rounded-xl gap-1 shrink-0"
             >
               <span>Xem tất cả ({PRODUCTS.length} chậu)</span>
               <span className="material-symbols-outlined text-sm">arrow_forward</span>
@@ -168,10 +290,10 @@ export default function HomePage({ onOpenAiModal, onSelectProduct, onNavigate, o
             {featuredProducts.map((p) => (
               <div
                 key={p.id}
-                className="group flex flex-col bg-white rounded-3xl shadow-sm hover:shadow-xl transition-all overflow-hidden border border-sky-100 hover:border-sky-300"
+                className="card group flex flex-col bg-white rounded-3xl shadow-sm hover:shadow-xl transition-all overflow-hidden border border-emerald-900/10 hover:border-[#059669]/50"
               >
                 <div
-                  className="relative aspect-[4/5] bg-sky-50/50 overflow-hidden cursor-pointer"
+                  className="relative h-48 sm:h-52 bg-[#f3f2ec] overflow-hidden cursor-pointer"
                   onClick={() => onSelectProduct(p)}
                 >
                   <img
@@ -179,40 +301,42 @@ export default function HomePage({ onOpenAiModal, onSelectProduct, onNavigate, o
                     className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                     src={p.image}
                   />
-                  <span className="absolute top-3 left-3 bg-sky-100 text-sky-900 border border-sky-200 text-[11px] font-bold px-2.5 py-1 rounded-lg shadow-2xs">
+                  <span className="badge absolute top-3 left-3 h-auto py-1 px-2.5 bg-white/90 backdrop-blur-sm text-[#064e3b] border border-emerald-900/15 text-[11px] font-bold rounded-lg shadow-2xs">
                     {p.tag}
                   </span>
                 </div>
 
-                <div className="p-4 flex flex-col flex-1 justify-between">
+                <div className="card-body p-4 flex flex-col flex-1 justify-between gap-0">
                   <div>
-                    <span className="text-[10px] font-bold text-sky-600 uppercase block">{p.speciesName}</span>
+                    <span className="text-[10px] font-bold text-[#059669] uppercase block">{p.speciesName}</span>
                     <h3
                       onClick={() => onSelectProduct(p)}
-                      className="font-bold text-slate-900 text-sm leading-snug mt-1 cursor-pointer group-hover:text-blue-700 transition-colors line-clamp-1"
+                      className="font-bold text-[#132a1e] text-sm leading-snug mt-1 cursor-pointer group-hover:text-[#064e3b] transition-colors line-clamp-1"
                     >
                       {p.name}
                     </h3>
-                    <p className="text-xs text-slate-400 mt-1 line-clamp-1">{p.size}</p>
+                    <p className="text-xs text-[#132a1e]/50 mt-1 line-clamp-1">{p.size}</p>
                   </div>
 
-                  <div className="pt-3 flex items-center justify-between border-t border-sky-50 mt-4">
+                  <div className="pt-3 flex items-center justify-between border-t border-emerald-900/8 mt-4">
                     <div>
-                      <span className="font-black text-base text-slate-900">
+                      <span className="font-black text-base text-[#064e3b]">
                         {p.price.toLocaleString('vi-VN')} ₫
                       </span>
                     </div>
                     <div className="flex gap-1.5">
                       <button
+                        type="button"
                         onClick={() => addToCart(p, 1)}
-                        className="p-2 rounded-xl bg-sky-50 hover:bg-sky-100 text-sky-700 transition-colors cursor-pointer border border-sky-200"
+                        className="btn btn-square btn-sm w-9 h-9 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-[#064e3b] border border-emerald-900/15"
                         title="Thêm vào giỏ hàng"
                       >
                         <span className="material-symbols-outlined text-base">add_shopping_cart</span>
                       </button>
                       <button
+                        type="button"
                         onClick={() => onSelectProduct(p)}
-                        className="text-xs font-bold px-3 py-2 rounded-xl bg-gradient-to-r from-sky-600 to-blue-700 hover:from-sky-700 hover:to-blue-800 text-white transition-colors cursor-pointer shadow-2xs"
+                        className="btn btn-primary btn-sm h-9 px-3.5 rounded-xl text-xs font-bold"
                       >
                         Chi tiết
                       </button>
@@ -226,32 +350,34 @@ export default function HomePage({ onOpenAiModal, onSelectProduct, onNavigate, o
       </section>
 
       {/* ========================================================================= */}
-      {/* 4. BANNER GIỚI THIỆU AI VISION (Ocean Deep Blue & Glassmorphism) */}
+      {/* 4. BANNER GIỚI THIỆU AI VISION (Deep Botanical Forest & Glassmorphism) */}
       {/* ========================================================================= */}
-      <section className="w-full py-16 bg-gradient-to-br from-slate-900 via-blue-950 to-indigo-950 text-white relative overflow-hidden">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(14,165,233,0.25),transparent_50%)] pointer-events-none"></div>
+      <section className="w-full py-16 bg-gradient-to-br from-[#022c22] via-[#064e3b] to-[#0b3f31] text-white relative overflow-hidden">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(16,185,129,0.22),transparent_55%)] pointer-events-none"></div>
         <div className="max-w-[1440px] mx-auto px-6 md:px-12 lg:px-20 grid grid-cols-1 lg:grid-cols-12 gap-10 items-center relative z-10">
           <div className="lg:col-span-6 space-y-4">
-            <span className="px-3.5 py-1.5 rounded-full bg-sky-500/20 text-sky-300 text-xs font-bold uppercase tracking-wider border border-sky-400/30">
+            <span className="badge h-auto px-3.5 py-1.5 rounded-full bg-emerald-400/15 text-emerald-200 text-xs font-bold uppercase tracking-wider border border-emerald-400/30">
               AI Deep Learning Core
             </span>
-            <h2 className="text-2xl sm:text-4xl font-extrabold tracking-tight">
+            <h2 className="text-2xl sm:text-4xl font-extrabold tracking-tight text-white">
               Nhận Diện Cây Bằng Hình Ảnh Ngay Trên Thiết Bị
             </h2>
-            <p className="text-xs sm:text-sm text-sky-100/80 leading-relaxed">
+            <p className="text-xs sm:text-sm text-emerald-100/80 leading-relaxed">
               Bạn thấy một cây kiểng lá đẹp nhưng chưa biết loài hay tính năng phong thủy? Chụp ảnh hoặc tải lên, mô hình AI 90 loài sẽ nhận dạng trong 0.5s và cung cấp toàn bộ hướng dẫn chăm sóc chuẩn khoa học.
             </p>
             <div className="flex flex-wrap gap-3 pt-3">
               <button
+                type="button"
                 onClick={onOpenAiModal}
-                className="inline-flex items-center gap-2 bg-gradient-to-r from-sky-400 to-blue-500 hover:from-sky-500 hover:to-blue-600 text-slate-950 px-7 py-3.5 rounded-2xl font-extrabold text-sm shadow-xl transition-all cursor-pointer"
+                className="btn h-auto min-h-0 bg-emerald-400 hover:bg-emerald-300 text-[#022c22] border-0 px-7 py-3.5 rounded-2xl font-extrabold text-sm shadow-xl transition-all gap-2"
               >
-                <span className="material-symbols-outlined text-lg text-slate-900">photo_camera</span>
+                <span className="material-symbols-outlined text-lg text-[#022c22]">photo_camera</span>
                 <span>Thử nghiệm quét ảnh ngay</span>
               </button>
               <button
+                type="button"
                 onClick={() => onNavigate('wiki')}
-                className="inline-flex items-center gap-2 bg-white/10 hover:bg-white/20 text-white px-6 py-3.5 rounded-2xl font-bold text-sm transition-all border border-white/20 cursor-pointer"
+                className="btn h-auto min-h-0 bg-white/10 hover:bg-white/20 text-white px-6 py-3.5 rounded-2xl font-bold text-sm transition-all border border-white/20 gap-2"
               >
                 <span className="material-symbols-outlined text-lg">menu_book</span>
                 <span>Tra cứu thư viện 90 loài</span>
@@ -260,23 +386,23 @@ export default function HomePage({ onOpenAiModal, onSelectProduct, onNavigate, o
           </div>
 
           <div className="lg:col-span-6 flex justify-center">
-            <div className="p-6 rounded-3xl bg-white/10 border border-white/20 backdrop-blur-md max-w-md w-full space-y-4 shadow-2xl">
-              <div className="flex items-center justify-between pb-3 border-b border-white/15 text-xs text-sky-200">
-                <span className="font-bold text-sky-300">Kiến trúc AI Vision</span>
+            <div className="card p-6 rounded-3xl bg-white/10 border border-white/15 backdrop-blur-md max-w-md w-full space-y-4 shadow-2xl">
+              <div className="flex items-center justify-between pb-3 border-b border-white/15 text-xs text-emerald-100/80">
+                <span className="font-bold text-emerald-300">Kiến trúc AI Vision</span>
                 <span>MobileNetV2 + Softmax 90</span>
               </div>
               <div className="space-y-3 text-xs">
                 <div className="p-3.5 rounded-2xl bg-white/10 flex items-center justify-between">
                   <span>Thời gian inference trung bình:</span>
-                  <span className="font-mono text-sky-300 font-bold">&lt; 0.5s / ảnh</span>
+                  <span className="font-mono text-emerald-300 font-bold">&lt; 0.5s / ảnh</span>
                 </div>
                 <div className="p-3.5 rounded-2xl bg-white/10 flex items-center justify-between">
                   <span>Định dạng đầu vào:</span>
-                  <span className="font-mono text-sky-300 font-bold">224 x 224 x 3 RGB</span>
+                  <span className="font-mono text-emerald-300 font-bold">224 x 224 x 3 RGB</span>
                 </div>
                 <div className="p-3.5 rounded-2xl bg-white/10 flex items-center justify-between">
                   <span>Chuẩn hóa CSDL:</span>
-                  <span className="font-mono text-sky-300 font-bold">Chuẩn 1NF Top-K Results</span>
+                  <span className="font-mono text-emerald-300 font-bold">Chuẩn 1NF Top-K Results</span>
                 </div>
               </div>
             </div>
@@ -287,20 +413,20 @@ export default function HomePage({ onOpenAiModal, onSelectProduct, onNavigate, o
       {/* ========================================================================= */}
       {/* 5. ĐÁNH GIÁ KHÁCH HÀNG */}
       {/* ========================================================================= */}
-      <section className="w-full py-14 bg-white">
+      <section className="w-full py-14 bg-[#fafaf7]">
         <div className="max-w-[1440px] mx-auto px-6 md:px-12 lg:px-20">
           <div className="text-center max-w-xl mx-auto mb-10">
-            <span className="text-xs font-bold text-sky-600 uppercase tracking-widest block mb-1">
-              Phản Hồi Thực Tế (CDM: DANH_GIA_SAN_PHAM)
+            <span className="text-xs font-bold text-[#059669] uppercase tracking-widest block mb-1">
+              Phản Hồi Thực Tế Từ Khách Hàng
             </span>
-            <h2 className="text-2xl font-extrabold text-slate-900">Khách Hàng Nói Gì Về Cây Của Vườn</h2>
+            <h2 className="text-2xl font-extrabold text-[#132a1e]">Khách Hàng Nói Gì Về Cây Của Vườn</h2>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto">
             {INITIAL_REVIEWS.map((rev) => (
               <div
                 key={rev.id}
-                className="p-6 rounded-3xl bg-sky-50/30 border border-sky-100 flex flex-col justify-between shadow-2xs hover:shadow-sm transition-all"
+                className="card p-6 rounded-3xl bg-white border border-emerald-900/10 flex flex-col justify-between shadow-2xs hover:shadow-md transition-all"
               >
                 <div>
                   <div className="flex items-center gap-1 text-amber-500 mb-2">
@@ -308,11 +434,11 @@ export default function HomePage({ onOpenAiModal, onSelectProduct, onNavigate, o
                       <span key={i} className="material-symbols-outlined text-base">star</span>
                     ))}
                   </div>
-                  <p className="text-xs text-slate-700 leading-relaxed italic">"{rev.comment}"</p>
+                  <p className="text-xs text-[#132a1e]/80 leading-relaxed italic">"{rev.comment}"</p>
                 </div>
-                <div className="mt-4 pt-4 border-t border-sky-100 flex items-center justify-between text-xs">
-                  <span className="font-bold text-slate-900">{rev.userName}</span>
-                  <span className="text-slate-400">{rev.date}</span>
+                <div className="mt-4 pt-4 border-t border-emerald-900/10 flex items-center justify-between text-xs">
+                  <span className="font-bold text-[#132a1e]">{rev.userName}</span>
+                  <span className="text-[#132a1e]/45">{rev.date}</span>
                 </div>
               </div>
             ))}

@@ -20,6 +20,7 @@ export default function AiVisionModal({ onClose, onSelectProduct, onFilterBySpec
   const [multiResult, setMultiResult] = useState(null);
   const [selectedMultiIndex, setSelectedMultiIndex] = useState(0);
   const [showAnnotatedBox, setShowAnnotatedBox] = useState(true);
+  const [multiPreviewMode, setMultiPreviewMode] = useState('full'); // 'full' | 'crop'
   const [rawFile, setRawFile] = useState(null);
   const [lastScanId, setLastScanId] = useState(null);
   const [feedbackGiven, setFeedbackGiven] = useState(null);
@@ -323,17 +324,26 @@ export default function AiVisionModal({ onClose, onSelectProduct, onFilterBySpec
       setMultiResult(data);
       setSelectedMultiIndex(0);
       setShowAnnotatedBox(true);
+      setMultiPreviewMode('full');
       if (window.AndroidNative?.vibrate) window.AndroidNative.vibrate(50);
 
       const firstPlant = data.danh_sach_cay?.[0];
+      const plantCount = data.tong_so_cay ?? data.danh_sach_cay?.length ?? 0;
       const record = addScanRecord({
         imageUrl: previewUrlParam || capturedUrl,
         thumbnailDataUrl: null,
         result: {
-          loai_du_doan: firstPlant ? `Đa cây: ${firstPlant.tenthuonggoi} (+${data.tong_so_cay - 1} loài khác)` : 'Nhận diện đa cây',
+          loai_du_doan: firstPlant
+            ? plantCount > 1
+              ? `Đa cây: ${firstPlant.tenthuonggoi} (+${plantCount - 1} loài khác)`
+              : `Đa cây: ${firstPlant.tenthuonggoi}`
+            : 'Nhận diện đa cây',
+          primary_species_name: firstPlant?.tenthuonggoi || '',
           loai_goc: firstPlant?.tenkhoahoc || 'Multi-Plant Detection',
           do_chinh_xac: (firstPlant?.do_chinh_xac || 80) / 100,
           ma_loai_cay: firstPlant?.maloaicay || 1,
+          duong_dan_anh: data.anh_ve_box_url || data.anh_goc_url || null,
+          matimkiem: data.matimkiem ?? null,
           is_multi: true,
           danh_sach_cay: data.danh_sach_cay
         },
@@ -485,8 +495,8 @@ export default function AiVisionModal({ onClose, onSelectProduct, onFilterBySpec
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black/80 backdrop-blur-md overflow-y-auto">
-      <div className="relative w-full max-w-4xl bg-white rounded-3xl shadow-2xl overflow-hidden my-auto flex flex-col max-h-[95vh]">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 lg:p-6 bg-black/80 backdrop-blur-md overflow-y-auto">
+      <div className="relative w-[96vw] max-w-7xl bg-white rounded-3xl shadow-2xl overflow-hidden my-auto flex flex-col max-h-[92vh]">
         {/* Header Modal */}
         <header className="flex-none px-4 sm:px-6 py-3 bg-white border-b border-gray-100 flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -593,11 +603,11 @@ export default function AiVisionModal({ onClose, onSelectProduct, onFilterBySpec
         )}
 
         {/* Nội dung Modal */}
-        <div className="flex-1 overflow-y-auto p-3 sm:p-6 space-y-4">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
+        <div className="flex-1 overflow-y-auto p-3 sm:p-5 lg:p-6 space-y-4">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 lg:gap-6 items-start">
             {/* Cột trái: Màn hình Live Camera hoặc Ảnh đã chụp */}
             <div className="lg:col-span-6 flex flex-col gap-3">
-              <div className="relative w-full aspect-square rounded-2xl overflow-hidden bg-black shadow-inner flex items-center justify-center border-2 border-emerald-500/40">
+              <div className="relative w-full h-[340px] sm:h-[440px] lg:h-[540px] rounded-2xl overflow-hidden bg-black shadow-inner flex items-center justify-center border-2 border-emerald-500/40">
                 {isLiveCamera ? (
                   <>
                     <video
@@ -625,7 +635,9 @@ export default function AiVisionModal({ onClose, onSelectProduct, onFilterBySpec
                       <div className="relative mx-auto w-[80%] h-[74%] border border-emerald-400/50 rounded-2xl flex flex-col justify-between p-2">
                         <div className="w-full text-center my-auto">
                           <span className="text-[11px] text-emerald-200/90 bg-black/60 px-3 py-1 rounded-full font-medium">
-                            Đưa 1 phiến lá vào giữa khung vuông
+                            {scanMode === 'multi'
+                              ? 'Đưa cụm 2-3 cây vào trong khung hình'
+                              : 'Đưa 1 phiến lá vào giữa khung vuông'}
                           </span>
                         </div>
                       </div>
@@ -680,37 +692,88 @@ export default function AiVisionModal({ onClose, onSelectProduct, onFilterBySpec
                     </div>
                   </>
                 ) : capturedUrl ? (
-                  <div className="relative w-full h-full">
-                    <img
-                      alt="Captured plant"
-                      className="w-full h-full object-contain bg-black"
-                      src={
-                        multiResult && showAnnotatedBox && multiResult.anh_ve_box_url
-                          ? `${getApiBaseUrl()}${multiResult.anh_ve_box_url}`
-                          : capturedUrl
-                      }
-                    />
-                    {multiResult && multiResult.anh_ve_box_url && (
-                      <button
-                        type="button"
-                        onClick={() => setShowAnnotatedBox((v) => !v)}
-                        className="absolute bottom-2 left-2 z-10 px-2.5 py-1 rounded-full bg-black/70 backdrop-blur text-white text-[10px] font-bold flex items-center gap-1 border border-white/20 hover:bg-black/90 shadow-sm"
-                      >
-                        <span className="material-symbols-outlined text-xs">
-                          {showAnnotatedBox ? 'visibility' : 'visibility_off'}
-                        </span>
-                        <span>{showAnnotatedBox ? 'Ẩn Bounding Box' : 'Hiện Bounding Box'}</span>
-                      </button>
-                    )}
-                    {isScanning && (
-                      <div className="absolute inset-0 bg-black/45 backdrop-blur-xs flex flex-col items-center justify-center p-4 z-20">
-                        <div className="w-12 h-12 border-4 border-emerald-400 border-t-transparent rounded-full animate-spin mb-3"></div>
-                        <span className="text-white text-xs font-bold tracking-wide uppercase bg-black/60 px-3 py-1 rounded-full">
-                          {scanMode === 'multi' ? 'Đang quét phân vùng đa cây...' : 'Đang phân tích hình thái lá...'}
-                        </span>
+                  (() => {
+                    const activeMultiPlant =
+                      multiResult?.danh_sach_cay?.[selectedMultiIndex] || multiResult?.danh_sach_cay?.[0] || null;
+                    const resolveApiUrl = (u) =>
+                      !u ? null : u.startsWith('http') || u.startsWith('data:') ? u : `${getApiBaseUrl()}${u}`;
+                    const activeCropUrl = resolveApiUrl(activeMultiPlant?.crop_image);
+                    const fullBoxUrl = resolveApiUrl(multiResult?.anh_ve_box_url);
+                    const isShowingCrop = Boolean(multiResult && multiPreviewMode === 'crop' && activeCropUrl);
+                    const previewSrc = isShowingCrop
+                      ? activeCropUrl
+                      : multiResult && showAnnotatedBox && fullBoxUrl
+                        ? fullBoxUrl
+                        : capturedUrl;
+
+                    return (
+                      <div className="relative w-full h-full">
+                        <img
+                          alt={isShowingCrop ? activeMultiPlant?.tenthuonggoi || 'Selected plant' : 'Captured plant'}
+                          className="w-full h-full object-contain bg-black"
+                          src={previewSrc}
+                        />
+                        {isShowingCrop && activeMultiPlant && (
+                          <div className="absolute top-2.5 left-2.5 z-10 flex items-center gap-2 px-3 py-1.5 rounded-full bg-black/75 backdrop-blur border border-white/20 text-white shadow-sm max-w-[90%]">
+                            <span
+                              className="w-5 h-5 rounded-md text-[10px] font-black text-gray-950 flex items-center justify-center shrink-0"
+                              style={{ backgroundColor: activeMultiPlant.mau_sac || '#00FF66' }}
+                            >
+                              {activeMultiPlant.stt || selectedMultiIndex + 1}
+                            </span>
+                            <span className="text-xs font-bold truncate">{activeMultiPlant.tenthuonggoi}</span>
+                            <span className="text-[11px] font-mono text-emerald-300 shrink-0">
+                              {activeMultiPlant.do_chinh_xac}%
+                            </span>
+                          </div>
+                        )}
+                        {multiResult && (fullBoxUrl || activeCropUrl) && (
+                          <div className="absolute bottom-2 left-2 z-10 flex flex-wrap items-center gap-1.5">
+                            {activeCropUrl && (
+                              <button
+                                type="button"
+                                onClick={() => setMultiPreviewMode((m) => (m === 'crop' ? 'full' : 'crop'))}
+                                className={`px-2.5 py-1 rounded-full backdrop-blur text-white text-[10px] font-bold flex items-center gap-1 border shadow-sm transition-colors ${
+                                  isShowingCrop
+                                    ? 'bg-emerald-600/90 border-emerald-400/50 hover:bg-emerald-600'
+                                    : 'bg-black/70 border-white/20 hover:bg-black/90'
+                                }`}
+                              >
+                                <span className="material-symbols-outlined text-xs">
+                                  {isShowingCrop ? 'fit_screen' : 'crop_free'}
+                                </span>
+                                <span>
+                                  {isShowingCrop
+                                    ? 'Xem toàn cảnh'
+                                    : `Phóng to cây #${activeMultiPlant?.stt || selectedMultiIndex + 1}`}
+                                </span>
+                              </button>
+                            )}
+                            {!isShowingCrop && fullBoxUrl && (
+                              <button
+                                type="button"
+                                onClick={() => setShowAnnotatedBox((v) => !v)}
+                                className="px-2.5 py-1 rounded-full bg-black/70 backdrop-blur text-white text-[10px] font-bold flex items-center gap-1 border border-white/20 hover:bg-black/90 shadow-sm"
+                              >
+                                <span className="material-symbols-outlined text-xs">
+                                  {showAnnotatedBox ? 'visibility' : 'visibility_off'}
+                                </span>
+                                <span>{showAnnotatedBox ? 'Ẩn Bounding Box' : 'Hiện Bounding Box'}</span>
+                              </button>
+                            )}
+                          </div>
+                        )}
+                        {isScanning && (
+                          <div className="absolute inset-0 bg-black/45 backdrop-blur-xs flex flex-col items-center justify-center p-4 z-20">
+                            <div className="w-12 h-12 border-4 border-emerald-400 border-t-transparent rounded-full animate-spin mb-3"></div>
+                            <span className="text-white text-xs font-bold tracking-wide uppercase bg-black/60 px-3 py-1 rounded-full">
+                              {scanMode === 'multi' ? 'Đang quét phân vùng đa cây...' : 'Đang phân tích hình thái lá...'}
+                            </span>
+                          </div>
+                        )}
                       </div>
-                    )}
-                  </div>
+                    );
+                  })()
                 ) : (
                   <div className="p-6 text-center text-white space-y-3">
                     <span className="material-symbols-outlined text-4xl text-emerald-400">photo_camera</span>
@@ -820,71 +883,128 @@ export default function AiVisionModal({ onClose, onSelectProduct, onFilterBySpec
                       <div className="flex items-center gap-2">
                         <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
                         <span className="text-xs font-black text-emerald-950 uppercase tracking-wide">
-                          Phát hiện {multiResult.tong_so_cay || multiResult.danh_sach_cay?.length} loài cây
+                          Phát hiện {multiResult.tong_so_cay ?? multiResult.danh_sach_cay?.length ?? 0} loài cây
                         </span>
                       </div>
                       <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-800 text-white font-bold">
-                        Multi-Crop NMS
+                        Multi-Plant AI
                       </span>
                     </div>
 
-                    {/* Danh sách tab chọn cây đã phát hiện */}
-                    <div className="flex gap-2 overflow-x-auto pb-1.5 pt-0.5">
-                      {multiResult.danh_sach_cay?.map((item, idx) => {
-                        const isSelected = selectedMultiIndex === idx;
-                        return (
-                          <button
-                            key={idx}
-                            type="button"
-                            onClick={() => setSelectedMultiIndex(idx)}
-                            className={`px-3 py-2 rounded-2xl flex items-center gap-2 border transition-all shrink-0 text-left ${
-                              isSelected
-                                ? 'bg-[#012d1d] text-white border-[#012d1d] shadow-md scale-102'
-                                : 'bg-white text-gray-700 border-gray-200 hover:bg-emerald-50'
-                            }`}
-                          >
-                            <span
-                              className="w-3.5 h-3.5 rounded-full shrink-0 border border-white/50"
-                              style={{ backgroundColor: item.mau_sac || '#00FF66' }}
-                            ></span>
-                            <div>
-                              <div className="text-xs font-bold leading-tight line-clamp-1">{item.tenthuonggoi}</div>
-                              <div className={`text-[10px] font-mono ${isSelected ? 'text-emerald-300' : 'text-gray-400'}`}>
-                                #{idx + 1} • {item.do_chinh_xac}%
-                              </div>
-                            </div>
-                          </button>
-                        );
-                      })}
-                    </div>
+                    {(!multiResult.danh_sach_cay || multiResult.danh_sach_cay.length === 0) ? (
+                      <div className="bg-white/90 rounded-2xl p-4 border border-amber-200 text-center space-y-1.5">
+                        <span className="material-symbols-outlined text-2xl text-amber-500">search_off</span>
+                        <p className="text-xs font-bold text-gray-800">Chưa tách được rõ loài cây nào trong ảnh</p>
+                        <p className="text-[11px] text-gray-500">
+                          Hãy thử chụp lại gần hơn, đủ ánh sáng hoặc tách nhẹ khoảng cách giữa các chậu cây.
+                        </p>
+                      </div>
+                    ) : (
+                      <>
+                        {/* Danh sách tab chọn cây đã phát hiện */}
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 max-h-48 lg:max-h-56 overflow-y-auto pr-1 pt-0.5">
+                          {multiResult.danh_sach_cay.map((item, idx) => {
+                            const isSelected = selectedMultiIndex === idx;
+                            const badgeColor = item.mau_sac || '#00FF66';
+                            const cropSrc = item.crop_image
+                              ? item.crop_image.startsWith('http') || item.crop_image.startsWith('data:')
+                                ? item.crop_image
+                                : `${getApiBaseUrl()}${item.crop_image}`
+                              : null;
+                            return (
+                              <button
+                                key={idx}
+                                type="button"
+                                onClick={() => {
+                                  setSelectedMultiIndex(idx);
+                                  if (item.crop_image) {
+                                    setMultiPreviewMode('crop');
+                                  }
+                                }}
+                                className={`w-full px-3 py-2 rounded-2xl flex items-center gap-2.5 border transition-all text-left ${
+                                  isSelected
+                                    ? 'bg-[#012d1d] text-white border-[#012d1d] shadow-md ring-2 ring-emerald-500/40'
+                                    : 'bg-white text-gray-700 border-gray-200 hover:bg-emerald-50 hover:border-emerald-300'
+                                }`}
+                              >
+                                {cropSrc ? (
+                                  <div className="relative w-10 h-10 rounded-xl overflow-hidden shrink-0 border border-white/40 bg-black/10">
+                                    <img
+                                      src={cropSrc}
+                                      alt={item.tenthuonggoi}
+                                      className="w-full h-full object-cover"
+                                    />
+                                    <span
+                                      className="absolute top-0.5 left-0.5 w-4 h-4 rounded-md text-[9px] font-black text-gray-950 flex items-center justify-center shadow-xs"
+                                      style={{ backgroundColor: badgeColor }}
+                                    >
+                                      {item.stt || idx + 1}
+                                    </span>
+                                  </div>
+                                ) : (
+                                  <span
+                                    className="w-6 h-6 rounded-lg shrink-0 border border-white/50 text-[10px] font-black text-gray-950 flex items-center justify-center"
+                                    style={{ backgroundColor: badgeColor }}
+                                  >
+                                    {item.stt || idx + 1}
+                                  </span>
+                                )}
+                                <div className="min-w-0 flex-1">
+                                  <div className="text-xs font-bold leading-tight line-clamp-1">
+                                    {item.tenthuonggoi}
+                                  </div>
+                                  <div className={`text-[10px] font-mono mt-0.5 ${isSelected ? 'text-emerald-300' : 'text-gray-400'}`}>
+                                    #{item.stt || idx + 1} • {item.do_chinh_xac}%
+                                  </div>
+                                </div>
+                              </button>
+                            );
+                          })}
+                        </div>
 
-                    {/* Chi tiết cây đang được chọn */}
-                    {(() => {
-                      const activePlant = multiResult.danh_sach_cay?.[selectedMultiIndex] || multiResult.danh_sach_cay?.[0];
-                      if (!activePlant) return null;
-                      const detail = activePlant.thong_tin_chi_tiet || {};
+                        {/* Chi tiết cây đang được chọn */}
+                        {(() => {
+                          const activePlant = multiResult.danh_sach_cay?.[selectedMultiIndex] || multiResult.danh_sach_cay?.[0];
+                          if (!activePlant) return null;
+                          const detail = activePlant.thong_tin_chi_tiet || {};
+                          const activeCropSrc = activePlant.crop_image
+                            ? activePlant.crop_image.startsWith('http') || activePlant.crop_image.startsWith('data:')
+                              ? activePlant.crop_image
+                              : `${getApiBaseUrl()}${activePlant.crop_image}`
+                            : null;
 
-                      return (
-                        <div className="bg-white/90 rounded-2xl p-3.5 border border-emerald-100 space-y-2.5 text-xs shadow-xs">
-                          <div className="flex items-start justify-between">
-                            <div>
-                              <div className="flex items-center gap-2">
-                                <span
-                                  className="w-2.5 h-2.5 rounded-full"
-                                  style={{ backgroundColor: activePlant.mau_sac || '#00FF66' }}
-                                ></span>
-                                <h4 className="text-lg font-black text-gray-900 leading-tight">
-                                  {activePlant.tenthuonggoi}
-                                </h4>
+                          return (
+                            <div className="bg-white/95 rounded-2xl p-4 sm:p-5 border border-emerald-100 space-y-3.5 text-xs shadow-xs">
+                              <div className="flex items-start justify-between gap-2.5">
+                                <div className="flex items-start gap-2.5 min-w-0">
+                                  {activeCropSrc && (
+                                    <img
+                                      src={activeCropSrc}
+                                      alt={activePlant.tenthuonggoi}
+                                      className="w-13 h-13 rounded-xl object-cover border border-emerald-200 shrink-0 shadow-2xs"
+                                    />
+                                  )}
+                                  <div className="min-w-0">
+                                    <div className="flex items-center gap-2">
+                                      <span
+                                        className="w-5 h-5 rounded-md text-[10px] font-black text-gray-950 flex items-center justify-center shrink-0"
+                                        style={{ backgroundColor: activePlant.mau_sac || '#00FF66' }}
+                                      >
+                                        {activePlant.stt || selectedMultiIndex + 1}
+                                      </span>
+                                      <h4 className="text-base sm:text-lg font-black text-gray-900 leading-tight truncate">
+                                        {activePlant.tenthuonggoi}
+                                      </h4>
+                                    </div>
+                                    <span className="text-[11px] italic text-emerald-800 font-semibold block mt-0.5 truncate">
+                                      {activePlant.tenkhoahoc}
+                                    </span>
+                                  </div>
+                                </div>
+                                <span className="px-2.5 py-1 rounded-xl bg-emerald-100 text-emerald-900 font-bold font-mono text-[11px] shrink-0">
+                                  {activePlant.do_chinh_xac}% Khớp
+                                </span>
                               </div>
-                              <span className="text-[11px] italic text-emerald-800 font-semibold block mt-0.5">
-                                {activePlant.tenkhoahoc}
-                              </span>
-                            </div>
-                            <span className="px-2.5 py-1 rounded-xl bg-emerald-100 text-emerald-900 font-bold font-mono text-[11px]">
-                              {activePlant.do_chinh_xac}% Khớp
-                            </span>
-                          </div>
 
                           {/* Thông số sinh học & chăm sóc */}
                           <div className="grid grid-cols-2 gap-2 text-[11px] pt-1">
@@ -930,6 +1050,8 @@ export default function AiVisionModal({ onClose, onSelectProduct, onFilterBySpec
                         </div>
                       );
                     })()}
+                      </>
+                    )}
                   </div>
 
                   {/* Nút chụp tiếp */}
@@ -1118,7 +1240,7 @@ export default function AiVisionModal({ onClose, onSelectProduct, onFilterBySpec
                 </>
               ) : (
                 /* TRƯỜNG HỢP 3: CHƯA QUÉT (TRẠNG THÁI CHỜ) */
-                <div className="h-56 sm:h-72 flex flex-col items-center justify-center border-2 border-dashed border-gray-200 rounded-2xl text-gray-400 p-5 text-center">
+                <div className="h-56 sm:h-72 lg:h-[540px] flex flex-col items-center justify-center border-2 border-dashed border-gray-200 rounded-2xl text-gray-400 p-5 text-center">
                   <div className="w-14 h-14 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center mb-2.5">
                     <span className="material-symbols-outlined text-3xl">
                       {scanMode === 'multi' ? 'grid_view' : 'camera_alt'}

@@ -62,21 +62,21 @@ export default function SpeciesWikiPage({ onSelectSpeciesToShop }) {
   }, [searchTerm, speciesData]);
 
   return (
-    <div className="max-w-[1440px] mx-auto px-4 sm:px-8 lg:px-12 py-10 space-y-8">
+    <div className="max-w-[1440px] mx-auto px-4 sm:px-8 lg:px-12 py-10 space-y-8 text-[#132a1e]">
       {/* 1. Header Banner Bách Khoa chuẩn Thực vật học Botanical */}
-      <div className="relative rounded-3xl bg-gradient-to-br from-[#012d1d] via-[#09422b] to-[#123826] p-6 sm:p-10 text-white overflow-hidden shadow-xl border border-emerald-800/40">
+      <div className="relative rounded-3xl bg-gradient-to-br from-[#022c22] via-[#064e3b] to-[#0b3f31] p-6 sm:p-10 text-white overflow-hidden shadow-xl border border-emerald-800/40">
         <div className="absolute right-0 top-0 bottom-0 w-1/3 opacity-10 pointer-events-none flex items-center justify-center">
           <span className="material-symbols-outlined text-[260px] text-white">menu_book</span>
         </div>
         
         <div className="relative z-10 max-w-3xl space-y-3">
           <div className="flex flex-wrap items-center gap-2">
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-400/20 text-emerald-300 text-xs font-bold uppercase tracking-wider border border-emerald-400/30">
+            <span className="badge h-auto py-1 px-3 rounded-full bg-emerald-400/20 text-emerald-200 text-xs font-bold uppercase tracking-wider border border-emerald-400/30 gap-1.5">
               <span className="material-symbols-outlined text-sm">psychology</span>
               Hệ Tri Thức Cây Trồng (Knowledge Base)
             </span>
             {isLiveFromDb && (
-              <span className="bg-emerald-500/20 text-emerald-200 border border-emerald-400/40 text-[11px] font-bold px-3 py-0.5 rounded-full flex items-center gap-1.5">
+              <span className="badge h-auto py-0.5 px-3 bg-emerald-500/20 text-emerald-200 border border-emerald-400/40 text-[11px] font-bold rounded-full gap-1.5">
                 <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
                 Đồng bộ CSDL SQL Server (CayKiengLa)
               </span>
@@ -108,9 +108,9 @@ export default function SpeciesWikiPage({ onSelectSpeciesToShop }) {
       </div>
 
       {/* 2. Thanh tìm kiếm và bộ lọc nhanh */}
-      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 bg-white p-4 rounded-2xl border border-gray-100 shadow-xs">
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 bg-white p-4 rounded-2xl border border-emerald-900/10 shadow-xs">
         <div className="relative flex-1 max-w-md">
-          <span className="material-symbols-outlined absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 text-xl">
+          <span className="material-symbols-outlined absolute left-3.5 top-1/2 -translate-y-1/2 text-[#059669] text-xl">
             search
           </span>
           <input
@@ -118,18 +118,19 @@ export default function SpeciesWikiPage({ onSelectSpeciesToShop }) {
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             placeholder="Tìm theo tên cây hoặc tên khoa học (Trầu bà, Lưỡi hổ, Kim tiền, Hồng môn...)"
-            className="w-full pl-11 pr-4 py-2.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-emerald-600/30 focus:border-emerald-600 text-xs sm:text-sm text-gray-800 placeholder:text-gray-400"
+            className="w-full pl-11 pr-4 py-2.5 rounded-xl border border-emerald-900/15 bg-[#fafaf7] focus:outline-none focus:ring-2 focus:ring-emerald-600/20 focus:border-[#059669] text-xs sm:text-sm text-[#132a1e] placeholder:text-[#132a1e]/40"
           />
         </div>
 
         <div className="flex items-center justify-between sm:justify-end gap-3 text-xs">
-          <span className="text-gray-500 font-medium">
-            Hiển thị: <strong className="text-emerald-900 font-bold text-sm">{filteredSpecies.length}</strong> / 90 loài cây
+          <span className="text-[#132a1e]/60 font-medium">
+            Hiển thị: <strong className="text-[#064e3b] font-bold text-sm">{filteredSpecies.length}</strong> / 90 loài cây
           </span>
           {searchTerm && (
             <button
+              type="button"
               onClick={() => setSearchTerm('')}
-              className="px-2.5 py-1 text-xs text-emerald-700 hover:text-emerald-900 font-semibold underline"
+              className="btn btn-ghost btn-xs text-xs text-[#059669] hover:text-[#064e3b] font-semibold underline"
             >
               Xem tất cả
             </button>
@@ -146,10 +147,10 @@ export default function SpeciesWikiPage({ onSelectSpeciesToShop }) {
           return (
             <div
               key={sp.class_id}
-              className="group bg-white rounded-3xl overflow-hidden border border-gray-100 hover:border-emerald-300 hover:shadow-xl transition-all duration-300 flex flex-col justify-between"
+              className="card group bg-white rounded-3xl overflow-hidden border border-emerald-900/10 hover:border-[#059669]/50 hover:shadow-xl transition-all duration-300 flex flex-col justify-between"
             >
-              {/* Phần ảnh lớn trực quan + Tag mã loài */}
-              <div className="relative aspect-[16/10] bg-gray-100 overflow-hidden">
+              {/* Phần ảnh trực quan + Tag mã loài */}
+              <div className="relative h-40 sm:h-44 bg-[#f3f2ec] overflow-hidden">
                 <img
                   src={imgSrc}
                   alt={sp.vietnamese_name}
@@ -163,85 +164,86 @@ export default function SpeciesWikiPage({ onSelectSpeciesToShop }) {
                 
                 {/* Badge mã loài chuẩn CSDL */}
                 <div className="absolute top-3 left-3 flex items-center gap-1.5">
-                  <span className="px-3 py-1 rounded-full bg-white/95 backdrop-blur text-emerald-900 font-mono font-bold text-xs shadow-md border border-emerald-100">
+                  <span className="badge h-auto px-3 py-1 rounded-full bg-white/95 backdrop-blur text-[#064e3b] font-mono font-bold text-xs shadow-md border border-emerald-900/10">
                     Loài #{sId}
                   </span>
                 </div>
 
                 <div className="absolute top-3 right-3">
-                  <span className="px-2.5 py-1 rounded-full bg-black/60 backdrop-blur text-white text-[10px] font-semibold">
+                  <span className="badge h-auto px-2.5 py-1 rounded-full bg-[#064e3b]/80 backdrop-blur text-[#fafaf7] text-[10px] font-semibold border border-white/15">
                     Flora 90
                   </span>
                 </div>
 
                 {/* Dải gradient mờ dưới chân ảnh để tôn thông tin */}
-                <div className="absolute inset-x-0 bottom-0 h-10 bg-gradient-to-t from-black/50 to-transparent"></div>
+                <div className="absolute inset-x-0 bottom-0 h-10 bg-gradient-to-t from-black/45 to-transparent"></div>
               </div>
 
               {/* Nội dung thông tin thực vật học */}
-              <div className="p-5 flex-1 flex flex-col justify-between space-y-4">
+              <div className="card-body p-5 flex-1 flex flex-col justify-between space-y-4 gap-0">
                 <div>
                   {/* Tên loài tiếng Việt & Danh pháp khoa học quốc tế */}
                   <div>
-                    <h3 className="font-extrabold text-lg text-gray-900 group-hover:text-emerald-800 transition-colors leading-snug">
+                    <h3 className="font-extrabold text-lg text-[#132a1e] group-hover:text-[#064e3b] transition-colors leading-snug">
                       {sp.vietnamese_name}
                     </h3>
-                    <p className="text-xs text-emerald-700 font-semibold italic mt-0.5 tracking-wide">
+                    <p className="text-xs text-[#059669] font-semibold italic mt-0.5 tracking-wide">
                       {sp.original_label}
                     </p>
                   </div>
 
                   {/* Đặc điểm nhận dạng */}
-                  <p className="text-xs text-gray-600 mt-2.5 line-clamp-2 leading-relaxed">
+                  <p className="text-xs text-[#132a1e]/70 mt-2.5 line-clamp-2 leading-relaxed">
                     {sp.dacDiem}
                   </p>
 
                   {/* 4 Chỉ số chăm sóc (Ánh sáng, Tưới nước, Độ ẩm, Xuất xứ) */}
                   <div className="grid grid-cols-2 gap-2 mt-4 text-[11px]">
-                    <div className="p-2.5 rounded-xl bg-[#f8faf7] border border-gray-100">
-                      <span className="text-gray-400 block font-bold text-[9px] uppercase tracking-wider mb-0.5 flex items-center gap-1">
-                        <span className="material-symbols-outlined text-xs text-amber-500">light_mode</span>
+                    <div className="p-2.5 rounded-xl bg-[#fafaf7] border border-emerald-900/8">
+                      <span className="text-[#132a1e]/45 font-bold text-[9px] uppercase tracking-wider mb-0.5 flex items-center gap-1">
+                        <span className="material-symbols-outlined text-xs text-amber-600">light_mode</span>
                         Ánh sáng
                       </span>
-                      <span className="font-bold text-gray-800 line-clamp-1">{sp.anhSang}</span>
+                      <span className="font-bold text-[#132a1e] line-clamp-1">{sp.anhSang}</span>
                     </div>
 
-                    <div className="p-2.5 rounded-xl bg-[#f8faf7] border border-gray-100">
-                      <span className="text-gray-400 block font-bold text-[9px] uppercase tracking-wider mb-0.5 flex items-center gap-1">
-                        <span className="material-symbols-outlined text-xs text-sky-500">water_drop</span>
+                    <div className="p-2.5 rounded-xl bg-[#fafaf7] border border-emerald-900/8">
+                      <span className="text-[#132a1e]/45 font-bold text-[9px] uppercase tracking-wider mb-0.5 flex items-center gap-1">
+                        <span className="material-symbols-outlined text-xs text-teal-600">water_drop</span>
                         Tưới nước
                       </span>
-                      <span className="font-bold text-gray-800 line-clamp-1">{sp.tuoiNuoc}</span>
+                      <span className="font-bold text-[#132a1e] line-clamp-1">{sp.tuoiNuoc}</span>
                     </div>
 
-                    <div className="p-2.5 rounded-xl bg-[#f8faf7] border border-gray-100">
-                      <span className="text-gray-400 block font-bold text-[9px] uppercase tracking-wider mb-0.5 flex items-center gap-1">
-                        <span className="material-symbols-outlined text-xs text-teal-500">humidity_mid</span>
+                    <div className="p-2.5 rounded-xl bg-[#fafaf7] border border-emerald-900/8">
+                      <span className="text-[#132a1e]/45 font-bold text-[9px] uppercase tracking-wider mb-0.5 flex items-center gap-1">
+                        <span className="material-symbols-outlined text-xs text-emerald-600">humidity_mid</span>
                         Độ ẩm
                       </span>
-                      <span className="font-bold text-gray-800 line-clamp-1">{sp.doAm}</span>
+                      <span className="font-bold text-[#132a1e] line-clamp-1">{sp.doAm}</span>
                     </div>
 
-                    <div className="p-2.5 rounded-xl bg-[#f8faf7] border border-gray-100">
-                      <span className="text-gray-400 block font-bold text-[9px] uppercase tracking-wider mb-0.5 flex items-center gap-1">
-                        <span className="material-symbols-outlined text-xs text-emerald-500">public</span>
+                    <div className="p-2.5 rounded-xl bg-[#fafaf7] border border-emerald-900/8">
+                      <span className="text-[#132a1e]/45 font-bold text-[9px] uppercase tracking-wider mb-0.5 flex items-center gap-1">
+                        <span className="material-symbols-outlined text-xs text-[#059669]">public</span>
                         Xuất xứ
                       </span>
-                      <span className="font-bold text-gray-800 line-clamp-1">{sp.xuatXu}</span>
+                      <span className="font-bold text-[#132a1e] line-clamp-1">{sp.xuatXu}</span>
                     </div>
                   </div>
                 </div>
 
                 {/* Chân thẻ: Giá tham khảo & Nút xem chậu bán */}
-                <div className="pt-3.5 border-t border-gray-100 flex items-center justify-between">
+                <div className="pt-3.5 border-t border-emerald-900/10 flex items-center justify-between">
                   <div>
-                    <span className="text-[10px] text-gray-400 uppercase tracking-wider font-semibold block">Giá tham khảo:</span>
-                    <span className="text-sm font-black text-emerald-950">{sp.giaThamKhao}</span>
+                    <span className="text-[10px] text-[#132a1e]/45 uppercase tracking-wider font-semibold block">Giá tham khảo:</span>
+                    <span className="text-sm font-black text-[#064e3b]">{sp.giaThamKhao}</span>
                   </div>
 
                   <button
+                    type="button"
                     onClick={() => onSelectSpeciesToShop(sp.vietnamese_name)}
-                    className="px-4 py-2 rounded-xl bg-[#012d1d] hover:bg-[#1b4332] active:scale-95 text-white text-xs font-bold flex items-center gap-1.5 shadow-sm transition-all"
+                    className="btn btn-primary btn-sm h-9 px-4 rounded-xl text-xs font-bold gap-1.5 shadow-sm"
                   >
                     <span>Xem chậu bán</span>
                     <span className="material-symbols-outlined text-sm">arrow_forward</span>

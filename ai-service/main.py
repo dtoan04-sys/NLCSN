@@ -2,12 +2,23 @@ import os
 import sys
 import json
 import shutil
+from collections import defaultdict
 from datetime import datetime
 from typing import Optional, List, Dict, Any
 import numpy as np
-import pyodbc
+try:
+    import pyodbc
+except ImportError:
+    pyodbc = None
 from PIL import Image, ImageOps
-import tensorflow as tf
+try:
+    import cv2
+except ImportError:
+    cv2 = None
+try:
+    import tensorflow as tf
+except ImportError:
+    tf = None
 from fastapi import FastAPI, UploadFile, File, Form, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
@@ -93,37 +104,47 @@ def normalize_row(cols, row):
         res[c] = val
     return res
 
+from sqlite_adapter import get_sqlite_connection
+
 def get_db_connection():
-    for driver in ["{SQL Server}", "{ODBC Driver 17 for SQL Server}", "{ODBC Driver 18 for SQL Server}"]:
-        try:
-            conn_str = (
-                f"DRIVER={driver};"
-                f"SERVER={SERVER_NAME};"
-                f"DATABASE={DATABASE_NAME};"
-                f"Trusted_Connection=yes;"
-                f"TrustServerCertificate=yes;"
-            )
-            return pyodbc.connect(conn_str)
-        except Exception:
-            continue
-    raise Exception("Không thể kết nối SQL Server. Vui lòng kiểm tra lại tên Server hoặc ODBC Driver.")
+    if os.getenv("USE_SQLITE", "0") == "1":
+        return get_sqlite_connection()
+    if pyodbc is not None:
+        for driver in ["{SQL Server}", "{ODBC Driver 17 for SQL Server}", "{ODBC Driver 18 for SQL Server}"]:
+            try:
+                conn_str = (
+                    f"DRIVER={driver};"
+                    f"SERVER={SERVER_NAME};"
+                    f"DATABASE={DATABASE_NAME};"
+                    f"Trusted_Connection=yes;"
+                    f"TrustServerCertificate=yes;"
+                )
+                return pyodbc.connect(conn_str, autocommit=True, timeout=2)
+            except Exception:
+                continue
+    sqlite_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), "caykiengla.db")
+    if os.path.exists(sqlite_file):
+        return get_sqlite_connection(sqlite_file)
+    raise Exception("Không thể kết nối SQL Server hoặc SQLite dự phòng.")
 
 def query_db(sql: str, params: tuple = (), fetch_one=False, commit=False):
     conn = get_db_connection()
-    cursor = conn.cursor()
-    cursor.execute(sql, params)
-    result = None
-    if cursor.description:
-        columns = [column[0] for column in cursor.description]
-        if fetch_one:
-            row = cursor.fetchone()
-            result = normalize_row(columns, row) if row else None
-        else:
-            result = [normalize_row(columns, row) for row in cursor.fetchall()]
-    if commit:
-        conn.commit()
-    conn.close()
-    return result
+    try:
+        cursor = conn.cursor()
+        cursor.execute(sql, params)
+        result = None
+        if cursor.description:
+            columns = [column[0] for column in cursor.description]
+            if fetch_one:
+                row = cursor.fetchone()
+                result = normalize_row(columns, row) if row else None
+            else:
+                result = [normalize_row(columns, row) for row in cursor.fetchall()]
+        if commit:
+            conn.commit()
+        return result
+    finally:
+        conn.close()
 
 # =====================================================================
 # 2. TẢI MODEL AI KERAS & FILE ÁNH XẠ 90 LỚP
@@ -139,6 +160,36 @@ if not os.path.exists(MAPPING_PATH) and os.path.exists("../KiengLa_90Cay_Data/An
 model = None
 ensemble_models = []
 class_mapping = {}
+yolo_detector = None
+yolo_load_attempted = False
+
+def get_yolo_detector():
+    """Tải lười (lazy-load) và cache mô hình YOLOv8n nếu có sẵn trên đĩa."""
+    global yolo_detector, yolo_load_attempted
+    if yolo_detector is not None:
+        return yolo_detector
+    if yolo_load_attempted:
+        return None
+    yolo_load_attempted = True
+
+    yolo_candidates = [
+        "yolov8n.pt",
+        "../yolov8n.pt",
+        r"e:\CNTT\NLCNHTTT\yolov8n.pt",
+    ]
+    yolo_path = next((p for p in yolo_candidates if os.path.exists(p)), None)
+    if not yolo_path:
+        print("[AI] Notice: yolov8n.pt not found, multi-plant will use OpenCV foliage segmentation + fallback.")
+        return None
+
+    try:
+        from ultralytics import YOLO
+        yolo_detector = YOLO(yolo_path)
+        print(f"[AI] Loaded YOLOv8n detector from {yolo_path}")
+    except Exception as e:
+        print(f"[AI] Warning loading YOLOv8n ({yolo_path}): {e}")
+        yolo_detector = None
+    return yolo_detector
 
 # Trọng số hiệu chỉnh Prior / Logit Adjustment (Menon et al., ICLR 2021) khắc phục hiện tượng
 # thiên vị (false-positive attractor) của class_weight='balanced' trên nền phức tạp ngoài vườn
@@ -146,57 +197,125 @@ PRIOR_CALIB = np.ones(90, dtype=np.float32)
 PRIOR_CALIB[6] = 0.42   # Peperomia obtusifolia (Trường sinh lá tròn)
 PRIOR_CALIB[18] = 0.55  # Pilea peperomioides (Cỏ đồng tiền Pilea)
 PRIOR_CALIB[29] = 0.72  # Dieffenbachia (Vạn niên thanh)
+PRIOR_CALIB[71] = 0.82  # Schefflera arboricola (Ngũ gia bì)
+
+def normalize_pil_rgb(img: Image.Image) -> Image.Image:
+    """Chuẩn hóa hướng ảnh EXIF từ điện thoại và xử lý nền trong suốt RGBA của ảnh .webp/.png."""
+    img = ImageOps.exif_transpose(img)
+    if img.mode in ("RGBA", "LA") or (img.mode == "P" and "transparency" in img.info):
+        rgba = img.convert("RGBA")
+        bg = Image.new("RGBA", rgba.size, (255, 255, 255, 255))
+        img = Image.alpha_composite(bg, rgba).convert("RGB")
+    else:
+        img = img.convert("RGB")
+    return img
+
+def find_foliage_centroid(img: Image.Image):
+    """Tìm trọng tâm vùng thực vật (Excess Green + Độ bão hòa màu) để tự động cắt bỏ nền gạch/bê tông."""
+    thumb = img.resize((128, 128), Image.Resampling.BILINEAR)
+    arr = np.array(thumb, dtype=np.float32)
+    r, g, b = arr[:, :, 0], arr[:, :, 1], arr[:, :, 2]
+    exg = np.clip(2.0 * g - r - b, 0, None)
+    max_c = np.maximum(np.maximum(r, g), b)
+    min_c = np.minimum(np.minimum(r, g), b)
+    sat = (max_c - min_c) / (max_c + 1e-5)
+    score_map = exg * (sat > 0.18) + (sat * 80.0) * ((max_c > 45) & (max_c < 240))
+    total = np.sum(score_map)
+    if total < 1e-3:
+        return 0.5, 0.5
+    ys, xs = np.indices(score_map.shape)
+    cy = float(np.sum(ys * score_map) / total) / 128.0
+    cx = float(np.sum(xs * score_map) / total) / 128.0
+    return float(np.clip(cx, 0.25, 0.75)), float(np.clip(cy, 0.25, 0.75))
+
+def vegetation_score(arr_rgb: np.ndarray) -> float:
+    """Tính tỷ lệ diện tích lá/hoa thực vật trong khung cắt (224x224) để giảm trọng số khung toàn nền gạch."""
+    r, g, b = arr_rgb[:, :, 0], arr_rgb[:, :, 1], arr_rgb[:, :, 2]
+    exg = (2.0 * g - r - b) > 18.0
+    max_c = np.maximum(np.maximum(r, g), b)
+    min_c = np.minimum(np.minimum(r, g), b)
+    sat = (max_c - min_c) / (max_c + 1e-5)
+    colorful = (sat > 0.22) & (max_c > 40) & (max_c < 245)
+    return float(np.mean(exg | colorful))
 
 def extract_multi_scale_tta_batch(img: Image.Image, input_shape=(224, 224)) -> np.ndarray:
     """
-    Chuẩn hóa hướng ảnh EXIF từ điện thoại và trích xuất 6 khung nhìn đa tỷ lệ (Multi-Scale Crop + TTA)
-    theo chuẩn các bài báo nhận diện thực vật thực địa (PlantCLEF / Howard et al. 2018 / Too et al. 2019).
-    Kết hợp cả nội suy NEAREST (khớp lúc train Colab) và BILINEAR (bảo toàn chi tiết gân lá).
+    Chuẩn hóa hướng ảnh EXIF, xử lý RGBA và trích xuất 8 khung nhìn đa tỷ lệ + tự động bám tâm vùng lá
+    (Multi-Scale Crop + Foliage-Centroid ROI TTA) giúp bảo toàn chi tiết gân lá và loại bỏ nền gạch ngoài trời.
     """
-    img = ImageOps.exif_transpose(img).convert("RGB")
+    img = normalize_pil_rgb(img)
     w, h = img.size
     m = min(w, h)
-    # 1. Toàn khung hình (giữ nguyên tán cây rộng như Trúc đốm, Cau, Dương xỉ)
-    c_full_near = img.resize(input_shape, Image.Resampling.NEAREST)
-    c_full_bil = img.resize(input_shape, Image.Resampling.BILINEAR)
-    # 2. Khung vuông trung tâm 100% (loại bỏ méo hình học khi chụp dọc 9:16 trên điện thoại)
-    sq = img.crop(((w - m) // 2, (h - m) // 2, (w + m) // 2, (h + m) // 2))
-    c_sq_near = sq.resize(input_shape, Image.Resampling.NEAREST)
-    c_sq_bil = sq.resize(input_shape, Image.Resampling.BILINEAR)
-    # 3. Khung vuông ROI 75% tâm lá (loại bỏ nền gạch, chậu cây, chai lọ xung quanh)
-    m75 = int(m * 0.75)
-    sq75 = img.crop(((w - m75) // 2, (h - m75) // 2, (w + m75) // 2, (h + m75) // 2))
-    c_tight = sq75.resize(input_shape, Image.Resampling.BILINEAR)
-    # 4. Khung vuông cận cảnh phía dưới (nơi người dùng thường hướng camera xuống chậu cây)
-    y_low = min(h - m75, int(h * 0.28))
-    sq_low = img.crop(((w - m75) // 2, y_low, (w + m75) // 2, y_low + m75)).resize(input_shape, Image.Resampling.BILINEAR)
+    # 1. Toàn khung hình & Khung vuông trung tâm 100%
+    c_full = img.resize(input_shape, Image.Resampling.BILINEAR)
+    sq100 = img.crop(((w - m) // 2, (h - m) // 2, (w + m) // 2, (h + m) // 2)).resize(input_shape, Image.Resampling.BILINEAR)
+    # 2. Khung vuông ROI 80% và 60% tâm ảnh
+    m80 = int(m * 0.80)
+    sq80 = img.crop(((w - m80) // 2, (h - m80) // 2, (w + m80) // 2, (h + m80) // 2)).resize(input_shape, Image.Resampling.BILINEAR)
+    m60 = int(m * 0.60)
+    sq60 = img.crop(((w - m60) // 2, (h - m60) // 2, (w + m60) // 2, (h + m60) // 2)).resize(input_shape, Image.Resampling.BILINEAR)
+    # 3. Khung vuông tự động bám trọng tâm vùng lá (Foliage-Centroid ROI 70%, 52%, cận dưới, cận trên)
+    fx, fy = find_foliage_centroid(img)
+    fcx, fcy = int(fx * w), int(fy * h)
 
-    crops = [c_full_near, c_full_bil, c_sq_near, c_sq_bil, c_tight, sq_low]
+    def crop_around(cx_px, cy_px, side):
+        x1 = max(0, min(w - side, cx_px - side // 2))
+        y1 = max(0, min(h - side, cy_px - side // 2))
+        return img.crop((x1, y1, x1 + side, y1 + side)).resize(input_shape, Image.Resampling.BILINEAR)
+
+    f_roi70 = crop_around(fcx, fcy, int(m * 0.70))
+    f_roi52 = crop_around(fcx, fcy, int(m * 0.52))
+    f_low = crop_around(fcx, int(min(h * 0.75, fcy + m * 0.15)), int(m * 0.62))
+    f_high = crop_around(fcx, int(max(h * 0.25, fcy - m * 0.15)), int(m * 0.62))
+
+    crops = [c_full, sq100, sq80, sq60, f_roi70, f_roi52, f_low, f_high]
     return np.stack([np.array(c, dtype=np.float32) for c in crops], axis=0)
 
-def entropy_weighted_pool(prob_matrix: np.ndarray, temp: float = 0.6) -> np.ndarray:
+def entropy_weighted_pool(prob_matrix: np.ndarray, tta_batch: Optional[np.ndarray] = None, temp: float = 0.15) -> np.ndarray:
     """
-    Gộp dự đoán từ các khung cắt TTA theo trọng số nghịch đảo Shannon Entropy:
-    Khung cắt nào bắt trúng vùng lá rõ nét (Entropy thấp) sẽ có trọng số quyết định cao hơn.
+    Gộp dự đoán từ các khung cắt TTA theo trọng số sắc nét (Shannon Entropy thấp + Đỉnh xác suất cao + Tỷ lệ lá thực vật):
+    Khung cắt nào bắt trúng vùng lá rõ nét sẽ quyết định kết quả thay vì bị pha loãng bởi các khung nền gạch.
     """
     clipped = np.clip(prob_matrix, 1e-9, 1.0)
     ent = -np.sum(clipped * np.log(clipped), axis=1) / np.log(prob_matrix.shape[1])
-    weights = np.exp(-(ent / temp))
-    # Ưu tiên nhẹ cho 2 khung vuông trung tâm đã khử méo tỷ lệ
-    view_boost = np.array([1.10, 1.10, 1.15, 1.15, 1.0, 0.95], dtype=np.float32)[:len(weights)]
+    max_p = np.max(clipped, axis=1)
+    weights = np.exp(-(ent / temp)) * (max_p ** 1.8)
+    if tta_batch is not None and len(tta_batch) == len(weights):
+        veg = np.array([max(0.25, vegetation_score(arr)) for arr in tta_batch], dtype=np.float32)
+        weights = weights * (veg ** 0.85)
+    view_boost = np.array([1.10, 1.20, 1.20, 1.10, 1.25, 1.15, 1.05, 1.00], dtype=np.float32)[:len(weights)]
     weights = weights * view_boost
     weights = weights / np.sum(weights)
     return np.sum(prob_matrix * weights[:, None], axis=0)
+
+def calibrate_predictions(raw_preds: np.ndarray) -> np.ndarray:
+    """
+    Hiệu chỉnh Prior (Logit Adjustment - Menon et al., 2021), khử nhiễu đồng kích hoạt lá đốm nhỏ
+    (#29 Dieffenbachia vs #37 Trúc đốm) và Temperature Scaling (Guo et al., 2017).
+    """
+    preds = raw_preds * PRIOR_CALIB
+    if int(np.argmax(preds)) == 29:
+        spotted_small_leaf_signal = raw_preds[37] + raw_preds[60]
+        araceae_large_leaf_signal = raw_preds[16]
+        if raw_preds[37] >= 0.0025 and spotted_small_leaf_signal > araceae_large_leaf_signal * 2.5:
+            preds[37] = preds[29] * 1.35
+            preds[29] = preds[29] * 0.25
+
+    preds = np.clip(preds, 1e-9, 1.0)
+    logits_calibrated = np.log(preds) / 0.35
+    logits_calibrated -= np.max(logits_calibrated)
+    exp_logits = np.exp(logits_calibrated)
+    return exp_logits / np.sum(exp_logits)
 
 @app.on_event("startup")
 def load_ai_resources():
     global model, ensemble_models, class_mapping
     ensemble_models = []
     candidate_models = [
-        (MODEL_PATH, 0.30, "MobileNetV2-30k-Seed123"),
-        (os.path.join("model", "best_model_seed_999_fixed.keras"), 0.25, "MobileNetV2-Seed999"),
-        (os.path.join("model", "efficientnet_b0_30k.keras"), 0.30, "EfficientNetB0-30k"),
-        (os.path.join("model", "best_model_80_10_10_clean.keras"), 0.15, "MobileNetV2-80-10-10"),
+        (MODEL_PATH, 0.25, "MobileNetV2-30k-Seed123"),
+        (os.path.join("model", "best_model_seed_999_fixed.keras"), 0.20, "MobileNetV2-Seed999"),
+        (os.path.join("model", "efficientnet_b0_30k.keras"), 0.45, "EfficientNetB0-30k"),
+        (os.path.join("model", "best_model_80_10_10_clean.keras"), 0.10, "MobileNetV2-80-10-10"),
     ]
     for m_path, m_weight, m_name in candidate_models:
         if os.path.exists(m_path):
@@ -333,19 +452,23 @@ def get_san_pham(ma_danh_muc: Optional[int] = None, search: Optional[str] = None
     # Lấy toàn bộ album ảnh thực tế cho từng sản phẩm
     try:
         conn = get_db_connection()
-        cur = conn.cursor()
-        cur.execute("SELECT MAANH, MASANPHAM, URLANH, LAANHCHINH FROM HINH_ANH_SAN_PHAM ORDER BY LAANHCHINH DESC, MAANH ASC")
-        img_dict = defaultdict(list)
-        for r in cur.fetchall():
-            img_dict[r[1]].append({
-                "MaAnh": r[0],
-                "MaSanPham": r[1],
-                "UrlAnh": r[2],
-                "LaAnhChinh": bool(r[3])
-            })
-        conn.close()
+        try:
+            cur = conn.cursor()
+            cur.execute("SELECT MAANH, MASANPHAM, URLANH, LAANHCHINH FROM HINH_ANH_SAN_PHAM ORDER BY LAANHCHINH DESC, MAANH ASC")
+            img_dict = defaultdict(list)
+            for r in cur.fetchall():
+                img_dict[r[1]].append({
+                    "MaAnh": r[0],
+                    "MaSanPham": r[1],
+                    "UrlAnh": r[2],
+                    "LaAnhChinh": bool(r[3]),
+                    "url": r[2],
+                    "isMain": bool(r[3])
+                })
+        finally:
+            conn.close()
         for p in prods:
-            sp_id = p.get("MASANPHAM") or p.get("masanpham")
+            sp_id = p.get("MASANPHAM") or p.get("masanpham") or p.get("MaSanPham")
             p["DanhSachAnh"] = img_dict.get(sp_id, [])
     except Exception as e:
         print("Lỗi nạp danh sách ảnh phụ sản phẩm:", e)
@@ -380,22 +503,16 @@ async def nhan_dien_cay(
         total_w = 0.0
         for ens_m, ens_w, _ in ensemble_models:
             batch_preds = ens_m(tta_batch, training=False).numpy()
-            pooled_p = entropy_weighted_pool(batch_preds)
+            pooled_p = entropy_weighted_pool(batch_preds, tta_batch)
             combined_probs += ens_w * pooled_p
             total_w += ens_w
-        preds = combined_probs / max(total_w, 1e-6)
+        raw_preds = combined_probs / max(total_w, 1e-6)
     else:
         batch_preds = model(tta_batch, training=False).numpy()
-        preds = entropy_weighted_pool(batch_preds)
+        raw_preds = entropy_weighted_pool(batch_preds, tta_batch)
 
     # Hiệu chỉnh Prior (Logit Adjustment - Menon et al., 2021) & Temperature Scaling (Guo et al., 2017)
-    preds = preds * PRIOR_CALIB
-    preds = np.clip(preds, 1e-9, 1.0)
-    # Temperature calibration (T = 0.72) để khôi phục biên độ xác suất sau khi gộp trung bình nhiều khung cắt TTA
-    logits_calibrated = np.log(preds) / 0.65
-    logits_calibrated -= np.max(logits_calibrated)
-    exp_logits = np.exp(logits_calibrated)
-    preds = exp_logits / np.sum(exp_logits)
+    preds = calibrate_predictions(raw_preds)
     top_indices = np.argsort(preds)[::-1][:3]
 
     top1_idx = int(top_indices[0])
@@ -598,8 +715,327 @@ async def nhan_dien_cay(
 
 # =====================================================================
 # 2B. NHẬN DIỆN ĐA CÂY TRÊN 1 KHUNG HÌNH (MULTI-PLANT DETECTION & NMS)
-# Hỗ trợ ảnh chứa 2-3 cây hoặc cụm cây ngoài trời như ảnh cô giáo yêu cầu
+# Tách vùng đa tín hiệu: Signal A (YOLOv8n) + Signal B (OpenCV HSV/LAB Foliage)
+# + Signal C (Fallback multi-scale windows khi <2 vùng lá), sau đó suy luận Ensemble 4 model
 # =====================================================================
+def _calc_box_iou(b1, b2) -> float:
+    x1 = max(b1[0], b2[0])
+    y1 = max(b1[1], b2[1])
+    x2 = min(b1[2], b2[2])
+    y2 = min(b1[3], b2[3])
+    inter = max(0, x2 - x1) * max(0, y2 - y1)
+    area1 = max(1, b1[2] - b1[0]) * max(1, b1[3] - b1[1])
+    area2 = max(1, b2[2] - b2[0]) * max(1, b2[3] - b2[1])
+    union = area1 + area2 - inter
+    return inter / max(union, 1e-6)
+
+
+def _calc_box_containment(inner, outer) -> float:
+    x1 = max(inner[0], outer[0])
+    y1 = max(inner[1], outer[1])
+    x2 = min(inner[2], outer[2])
+    y2 = min(inner[3], outer[3])
+    inter = max(0, x2 - x1) * max(0, y2 - y1)
+    area_inner = max(1, inner[2] - inner[0]) * max(1, inner[3] - inner[1])
+    return inter / area_inner
+
+
+def _pad_clamp_box(x1: int, y1: int, x2: int, y2: int, w: int, h: int, pad_ratio: float = 0.06):
+    bw = max(1, x2 - x1)
+    bh = max(1, y2 - y1)
+    px = int(bw * pad_ratio)
+    py = int(bh * pad_ratio)
+    nx1 = max(0, x1 - px)
+    ny1 = max(0, y1 - py)
+    nx2 = min(w, x2 + px)
+    ny2 = min(h, y2 + py)
+    if nx2 <= nx1 + 4 or ny2 <= ny1 + 4:
+        return None
+    return (int(nx1), int(ny1), int(nx2), int(ny2))
+
+
+def _crop_veg_score(orig_im: Image.Image, box) -> float:
+    crop = orig_im.crop(box).resize((128, 128), Image.Resampling.BILINEAR)
+    return vegetation_score(np.array(crop, dtype=np.float32))
+
+
+def propose_plant_regions(orig_im: Image.Image) -> List[Dict[str, Any]]:
+    """
+    Tách vùng thực vật đa tín hiệu trên ảnh gốc RGB:
+    - Signal A: YOLOv8n (COCO 58=potted plant, 75=vase mở rộng lên trên, hoặc box có mật độ lá cao)
+    - Signal B: Phân đoạn vùng lá OpenCV (HSV + LAB cho lá xanh, lá đốm vàng, lá đỏ/tím) + hình thái học + contours
+    - Signal C: Cửa sổ đa tỷ lệ dự phòng (chỉ kích hoạt khi Signal A + B < 2 vùng tách biệt)
+    Trả về danh sách ứng viên đã khử trùng lặp IoU trước khi chạy Ensemble 4 model.
+    """
+    w, h = orig_im.size
+    img_area = max(1, w * h)
+    proposals: List[Dict[str, Any]] = []
+
+    # --- Signal A: YOLOv8n ---
+    detector = get_yolo_detector()
+    if detector is not None:
+        try:
+            yolo_results = detector.predict(orig_im, conf=0.20, iou=0.50, verbose=False)
+            for res in yolo_results:
+                if res.boxes is None:
+                    continue
+                for b in res.boxes:
+                    cls_id = int(b.cls[0].item())
+                    conf = float(b.conf[0].item())
+                    x1, y1, x2, y2 = [int(round(v)) for v in b.xyxy[0].tolist()]
+                    bw = max(1, x2 - x1)
+                    bh = max(1, y2 - y1)
+
+                    if cls_id == 58:  # potted plant
+                        box = _pad_clamp_box(x1, y1, x2, y2, w, h, pad_ratio=0.05)
+                        if box and _crop_veg_score(orig_im, box) >= 0.06:
+                            proposals.append({"box": box, "source": "yolo_potted_plant", "priority": 3, "score": conf})
+                    elif cls_id == 75:  # vase -> mở rộng lên trên để lấy tán lá/hoa
+                        exp_y1 = max(0, int(y1 - bh * 0.90))
+                        exp_x1 = max(0, int(x1 - bw * 0.28))
+                        exp_x2 = min(w, int(x2 + bw * 0.28))
+                        box = _pad_clamp_box(exp_x1, exp_y1, exp_x2, y2, w, h, pad_ratio=0.04)
+                        if box and _crop_veg_score(orig_im, box) >= 0.08:
+                            proposals.append({"box": box, "source": "yolo_vase_expanded", "priority": 2, "score": conf * 0.9})
+                    else:
+                        area_ratio = (bw * bh) / img_area
+                        if 0.03 <= area_ratio <= 0.85:
+                            box = _pad_clamp_box(x1, y1, x2, y2, w, h, pad_ratio=0.04)
+                            if box and _crop_veg_score(orig_im, box) >= 0.25:
+                                proposals.append({"box": box, "source": f"yolo_cls_{cls_id}", "priority": 1, "score": conf * 0.8})
+        except Exception as e:
+            print(f"[AI] YOLOv8n inference warning: {e}")
+
+    # --- Signal B: OpenCV HSV/LAB Foliage Segmentation ---
+    if cv2 is not None:
+        try:
+            max_side = 640.0
+            scale = min(1.0, max_side / max(w, h))
+            ww = max(32, int(round(w * scale)))
+            wh = max(32, int(round(h * scale)))
+            rgb_small = np.array(orig_im.resize((ww, wh), Image.Resampling.BILINEAR), dtype=np.uint8)
+            hsv = cv2.cvtColor(rgb_small, cv2.COLOR_RGB2HSV)
+            lab = cv2.cvtColor(rgb_small, cv2.COLOR_RGB2LAB)
+
+            h_ch, s_ch, v_ch = hsv[:, :, 0], hsv[:, :, 1], hsv[:, :, 2]
+            a_ch = lab[:, :, 1]
+
+            # Lá xanh, xanh vàng, lá non
+            green_mask = (h_ch >= 22) & (h_ch <= 95) & (s_ch >= 32) & (v_ch >= 28)
+
+            # Excess Green & kênh a* của LAB (nhạy với lá đốm trắng/vàng/xanh nhạt)
+            r_f = rgb_small[:, :, 0].astype(np.float32)
+            g_f = rgb_small[:, :, 1].astype(np.float32)
+            b_f = rgb_small[:, :, 2].astype(np.float32)
+            exg_mask = ((2.0 * g_f - r_f - b_f) > 16.0) & (s_ch >= 22) & (v_ch >= 30)
+            lab_green_mask = (a_ch < 120) & (s_ch >= 24) & (v_ch >= 30)
+
+            # Lá đỏ, hồng, tím (Hồng môn, Đuôi công tím, Huyết dụ, Thu hải đường...)
+            red_purple_mask = (
+                ((h_ch <= 12) | (h_ch >= 152))
+                & (s_ch >= 52)
+                & (v_ch >= 35)
+                & (a_ch > 140)
+            )
+
+            foliage_mask = (green_mask | exg_mask | lab_green_mask | red_purple_mask).astype(np.uint8) * 255
+
+            k_open = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (5, 5))
+            k_close = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (7, 7))
+            cleaned = cv2.morphologyEx(foliage_mask, cv2.MORPH_OPEN, k_open)
+            cleaned = cv2.morphologyEx(cleaned, cv2.MORPH_CLOSE, k_close)
+
+            contours, _ = cv2.findContours(cleaned, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+            work_area = max(1, ww * wh)
+            inv_x = w / float(ww)
+            inv_y = h / float(wh)
+
+            for cnt in contours:
+                c_area = cv2.contourArea(cnt)
+                if c_area < 0.015 * work_area:
+                    continue
+                cx, cy, cw, ch_box = cv2.boundingRect(cnt)
+                if cw < 0.06 * ww or ch_box < 0.06 * wh:
+                    continue
+                ox1 = int(round(cx * inv_x))
+                oy1 = int(round(cy * inv_y))
+                ox2 = int(round((cx + cw) * inv_x))
+                oy2 = int(round((cy + ch_box) * inv_y))
+                box = _pad_clamp_box(ox1, oy1, ox2, oy2, w, h, pad_ratio=0.08)
+                if box and _crop_veg_score(orig_im, box) >= 0.14:
+                    area_norm = min(1.0, (c_area / work_area) * 4.0)
+                    proposals.append({
+                        "box": box,
+                        "source": "opencv_foliage",
+                        "priority": 2,
+                        "score": 0.55 + 0.35 * area_norm
+                    })
+        except Exception as e:
+            print(f"[AI] OpenCV foliage segmentation warning: {e}")
+
+    # Khử trùng lặp sơ bộ theo IoU trước khi kiểm tra ngưỡng Signal C
+    def _dedup_boxes(cands: List[Dict[str, Any]], iou_thresh: float = 0.72) -> List[Dict[str, Any]]:
+        ordered = sorted(cands, key=lambda x: (x["priority"], x["score"]), reverse=True)
+        unique: List[Dict[str, Any]] = []
+        for c in ordered:
+            if any(_calc_box_iou(c["box"], u["box"]) > iou_thresh for u in unique):
+                continue
+            unique.append(c)
+        return unique
+
+    unique_ab = _dedup_boxes(proposals, iou_thresh=0.72)
+
+    # --- Signal C: Fallback multi-scale windows (chỉ chạy khi < 2 vùng lá tách biệt) ---
+    if len(unique_ab) < 2:
+        fx, fy = find_foliage_centroid(orig_im)
+        fcx, fcy = int(fx * w), int(fy * h)
+        m_side = int(min(w, h) * 0.62)
+        fx1 = max(0, min(w - m_side, fcx - m_side // 2))
+        fy1 = max(0, min(h - m_side, fcy - m_side // 2))
+
+        fallback_boxes = [
+            (fx1, fy1, fx1 + m_side, fy1 + m_side),
+            (int(w * 0.10), int(h * 0.10), int(w * 0.90), int(h * 0.90)),
+            (0, 0, int(w * 0.55), h),
+            (int(w * 0.45), 0, w, h),
+            (0, 0, int(w * 0.65), int(h * 0.65)),
+            (int(w * 0.35), 0, w, int(h * 0.65)),
+            (0, int(h * 0.35), int(w * 0.65), h),
+            (int(w * 0.35), int(h * 0.35), w, h),
+        ]
+        for fb in fallback_boxes:
+            box = _pad_clamp_box(fb[0], fb[1], fb[2], fb[3], w, h, pad_ratio=0.0)
+            if box and _crop_veg_score(orig_im, box) >= 0.18:
+                proposals.append({"box": box, "source": "fallback_window", "priority": 0, "score": 0.40})
+
+        unique_ab = _dedup_boxes(proposals, iou_thresh=0.72)
+
+    # Nếu ảnh quá ít sắc xanh (nền đặc biệt), đảm bảo luôn có ít nhất vùng tâm lá
+    if not unique_ab:
+        fx, fy = find_foliage_centroid(orig_im)
+        fcx, fcy = int(fx * w), int(fy * h)
+        m_side = max(16, int(min(w, h) * 0.70))
+        fx1 = max(0, min(w - m_side, fcx - m_side // 2))
+        fy1 = max(0, min(h - m_side, fcy - m_side // 2))
+        unique_ab = [{
+            "box": (fx1, fy1, min(w, fx1 + m_side), min(h, fy1 + m_side)),
+            "source": "fallback_centroid",
+            "priority": 0,
+            "score": 0.30
+        }]
+
+    return unique_ab[:16]
+
+
+def classify_multi_plant_regions(orig_im: Image.Image, max_plants: int = 6) -> List[Dict[str, Any]]:
+    """
+    Chạy pipeline tách vùng đa tín hiệu + Ensemble 4 model ([0, 255], RGB, BILINEAR)
+    + PRIOR_CALIB + lọc confidence/entropy + Smart NMS/gộp loài trùng lặp.
+    """
+    if model is None and not ensemble_models:
+        raise RuntimeError("Model AI chưa được tải")
+
+    w, h = orig_im.size
+    img_area = max(1, w * h)
+    proposals = propose_plant_regions(orig_im)
+    patches = [p["box"] for p in proposals]
+
+    patch_arrays = [
+        np.array(orig_im.crop(b).resize((224, 224), Image.Resampling.BILINEAR), dtype=np.float32)
+        for b in patches
+    ]
+    patch_batch = np.stack(patch_arrays, axis=0)
+
+    if ensemble_models:
+        combined_batch = np.zeros((len(patches), 90), dtype=np.float32)
+        tot_w = 0.0
+        for ens_m, ens_w, _ in ensemble_models:
+            combined_batch += ens_w * ens_m(patch_batch, training=False).numpy()
+            tot_w += ens_w
+        raw_batch_preds = combined_batch / max(tot_w, 1e-6)
+    else:
+        raw_batch_preds = model(patch_batch, training=False).numpy()
+
+    def get_patch_prediction(idx_patch: int):
+        preds = calibrate_predictions(raw_batch_preds[idx_patch])
+        top_i = int(np.argmax(preds))
+        conf_val = float(preds[top_i])
+        clipped = np.clip(preds, 1e-12, 1.0)
+        ent = float(-np.sum(clipped * np.log(clipped)) / np.log(len(preds)))
+        return top_i, conf_val, ent
+
+    all_evaluated = []
+    raw_candidates = []
+    for idx_patch, prop in enumerate(proposals):
+        box = prop["box"]
+        top_i, conf_val, ent = get_patch_prediction(idx_patch)
+        mapped_info = class_mapping.get(top_i, {})
+        area_ratio = ((box[2] - box[0]) * (box[3] - box[1])) / img_area
+        item = {
+            "box": box,
+            "class_id": top_i,
+            "ma_loai_cay": mapped_info.get("MaLoaiCay", top_i + 1),
+            "ten_vn": mapped_info.get("vietnamese_name", f"Loài cây #{top_i + 1}"),
+            "ten_khoa_hoc": mapped_info.get("original_label", f"Class #{top_i}"),
+            "conf": conf_val,
+            "entropy": ent,
+            "area_ratio": area_ratio,
+            "source": prop["source"]
+        }
+        all_evaluated.append(item)
+        if conf_val >= 0.30 and ent <= 0.82:
+            raw_candidates.append(item)
+
+    # Smart NMS & Merging: gộp box chồng lấn cùng loài, giữ các loài khác biệt
+    raw_candidates.sort(key=lambda x: (x["conf"], x["area_ratio"]), reverse=True)
+    kept_plants: List[Dict[str, Any]] = []
+
+    for cand in raw_candidates:
+        merged_or_suppressed = False
+        for k in kept_plants:
+            ov = _calc_box_iou(cand["box"], k["box"])
+            cont_cand = _calc_box_containment(cand["box"], k["box"])
+            cont_k = _calc_box_containment(k["box"], cand["box"])
+
+            if cand["class_id"] == k["class_id"]:
+                if ov > 0.30 or max(cont_cand, cont_k) > 0.55:
+                    # Gộp box cùng loài nếu cả hai có độ tin cậy tốt
+                    if ov > 0.30 and cand["conf"] >= 0.40 and k["conf"] >= 0.40:
+                        k["box"] = (
+                            min(k["box"][0], cand["box"][0]),
+                            min(k["box"][1], cand["box"][1]),
+                            max(k["box"][2], cand["box"][2]),
+                            max(k["box"][3], cand["box"][3]),
+                        )
+                        k["area_ratio"] = ((k["box"][2] - k["box"][0]) * (k["box"][3] - k["box"][1])) / img_area
+                    if cand["conf"] > k["conf"]:
+                        k["conf"] = cand["conf"]
+                        k["entropy"] = cand["entropy"]
+                    merged_or_suppressed = True
+                    break
+            else:
+                if ov > 0.68:
+                    merged_or_suppressed = True
+                    break
+
+        if not merged_or_suppressed:
+            kept_plants.append(cand)
+
+    # Sắp xếp danh sách cuối theo độ tin cậy và diện tích vùng cây
+    kept_plants.sort(
+        key=lambda x: (x["conf"] * 0.8 + min(1.0, x["area_ratio"] * 2.0) * 0.2),
+        reverse=True
+    )
+    kept_plants = kept_plants[:max_plants]
+
+    # Fallback nếu không có ứng viên nào đạt ngưỡng
+    if not kept_plants and all_evaluated:
+        best_fallback = max(all_evaluated, key=lambda x: x["conf"])
+        kept_plants.append(best_fallback)
+
+    return kept_plants
+
+
 @app.post("/nhan-dien-da-cay")
 @app.post("/api/nhan-dien-da-cay")
 async def nhan_dien_da_cay(
@@ -621,105 +1057,12 @@ async def nhan_dien_da_cay(
 
     try:
         orig_im = Image.open(raw_filepath)
-        orig_im = ImageOps.exif_transpose(orig_im).convert("RGB")
+        orig_im = normalize_pil_rgb(orig_im)
         w, h = orig_im.size
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"Không thể đọc file ảnh: {e}")
 
-    # Tạo các patch quét đa tỷ lệ (Sliding Windows + Quadrants + Center)
-    patches = []
-    win_w = int(w * 0.45)
-    win_h = int(h * 0.45)
-    step_x = int(w * 0.25)
-    step_y = int(h * 0.25)
-
-    for y in range(0, max(1, h - win_h + 1), max(1, step_y)):
-        for x in range(0, max(1, w - win_w + 1), max(1, step_x)):
-            patches.append((x, y, min(w, x + win_w), min(h, y + win_h)))
-
-    patches.append((int(w * 0.1), int(h * 0.1), int(w * 0.9), int(h * 0.9)))  # Trung tâm
-    patches.append((0, 0, int(w * 0.7), int(h * 0.6)))                        # Góc trên trái
-    patches.append((int(w * 0.3), 0, w, int(h * 0.6)))                        # Góc trên phải
-    patches.append((0, int(h * 0.4), int(w * 0.7), h))                        # Góc dưới trái
-    patches.append((int(w * 0.3), int(h * 0.4), w, h))                        # Góc dưới phải
-
-    def predict_crop_box(crop_box):
-        crop_img = orig_im.crop(crop_box).resize((224, 224), Image.Resampling.BILINEAR)
-        arr = np.array(crop_img, dtype=np.float32)
-        batch = np.expand_dims(arr, axis=0)
-
-        if ensemble_models:
-            combined = np.zeros(90, dtype=np.float32)
-            tot_w = 0.0
-            for ens_m, ens_w, _ in ensemble_models:
-                p = ens_m(batch, training=False).numpy()[0]
-                combined += ens_w * p
-                tot_w += ens_w
-            preds = combined / max(tot_w, 1e-6)
-        else:
-            preds = model(batch, training=False).numpy()[0]
-
-        top_i = int(np.argmax(preds))
-        conf_val = float(preds[top_i])
-        clipped = np.clip(preds, 1e-12, 1.0)
-        ent = float(-np.sum(clipped * np.log(clipped)) / np.log(len(preds)))
-        return top_i, conf_val, ent
-
-    raw_candidates = []
-    for box in patches:
-        top_i, conf_val, ent = predict_crop_box(box)
-        if conf_val >= 0.25 and ent <= 0.88:
-            mapped_info = class_mapping.get(top_i, {})
-            raw_candidates.append({
-                "box": box,
-                "class_id": top_i,
-                "ma_loai_cay": mapped_info.get("MaLoaiCay", top_i + 1),
-                "ten_vn": mapped_info.get("vietnamese_name", f"Loài cây #{top_i + 1}"),
-                "ten_khoa_hoc": mapped_info.get("original_label", f"Class #{top_i}"),
-                "conf": conf_val,
-                "entropy": ent
-            })
-
-    # Non-Maximum Suppression (NMS)
-    raw_candidates.sort(key=lambda x: x["conf"], reverse=True)
-    kept_plants = []
-
-    def calc_iou(b1, b2):
-        x1 = max(b1[0], b2[0])
-        y1 = max(b1[1], b2[1])
-        x2 = min(b1[2], b2[2])
-        y2 = min(b1[3], b2[3])
-        inter = max(0, x2 - x1) * max(0, y2 - y1)
-        area1 = (b1[2] - b1[0]) * (b1[3] - b1[1])
-        area2 = (b2[2] - b2[0]) * (b2[3] - b2[1])
-        union = area1 + area2 - inter
-        return inter / max(union, 1e-6)
-
-    for cand in raw_candidates:
-        suppress = False
-        for k in kept_plants:
-            ov = calc_iou(cand["box"], k["box"])
-            if (cand["class_id"] == k["class_id"] and ov > 0.35) or ov > 0.68:
-                suppress = True
-                break
-        if not suppress:
-            kept_plants.append(cand)
-        if len(kept_plants) >= 6:
-            break
-
-    # Nếu không phát hiện patch nào trên ngưỡng -> Lấy kết quả toàn khung hình
-    if not kept_plants:
-        top_i, conf_val, ent = predict_crop_box((0, 0, w, h))
-        mapped_info = class_mapping.get(top_i, {})
-        kept_plants.append({
-            "box": (0, 0, w, h),
-            "class_id": top_i,
-            "ma_loai_cay": mapped_info.get("MaLoaiCay", top_i + 1),
-            "ten_vn": mapped_info.get("vietnamese_name", f"Loài cây #{top_i + 1}"),
-            "ten_khoa_hoc": mapped_info.get("original_label", f"Class #{top_i}"),
-            "conf": conf_val,
-            "entropy": ent
-        })
+    kept_plants = classify_multi_plant_regions(orig_im, max_plants=6)
 
     # Vẽ bounding boxes trực quan chuẩn ảnh cô giáo
     annotated_im = orig_im.copy()
@@ -806,6 +1149,14 @@ async def nhan_dien_da_cay(
                 "price": float(sp[5] or 0)
             })
 
+        crop_filename = f"multi_crop_{ts}_{i + 1}.jpg"
+        crop_filepath = os.path.join(UPLOAD_DIR, crop_filename)
+        try:
+            orig_im.crop(box).save(crop_filepath, quality=88)
+            crop_url = f"/uploads/{crop_filename}"
+        except Exception:
+            crop_url = f"/uploads/{raw_filename}"
+
         danh_sach_cay.append({
             "stt": i + 1,
             "maloaicay": p["ma_loai_cay"],
@@ -813,6 +1164,7 @@ async def nhan_dien_da_cay(
             "tenkhoahoc": p["ten_khoa_hoc"],
             "do_chinh_xac": round(p["conf"] * 100, 1),
             "mau_sac": c,
+            "crop_image": crop_url,
             "box_px": list(box),
             "box_normalized": [
                 round(box[1] / h, 4), # ymin
@@ -1821,12 +2173,13 @@ def update_san_pham(ma_san_pham: int, req: UpdateProductRequest):
     if req.NgayNhap is not None:
         cursor.execute("UPDATE SAN_PHAM SET NGAYNHAP = ? WHERE MASANPHAM = ?", (req.NgayNhap, ma_san_pham))
     if req.GiaBan is not None:
-        cursor.execute("SELECT ISNULL(MAX(MALICHSUGIA), 0) + 1 FROM LICH_SU_GIA_SAN_PHAM")
-        ma_gia = cursor.fetchone()[0]
+        cursor.execute("SELECT ISNULL(MAX(MALICHSUGIA), 0) + 1, ISNULL(MAX(MATHOIDIEM), 1) FROM LICH_SU_GIA_SAN_PHAM")
+        row_gia = cursor.fetchone()
+        ma_gia, ma_td = row_gia[0], row_gia[1]
         cursor.execute("""
-            INSERT INTO LICH_SU_GIA_SAN_PHAM (MALICHSUGIA, MASANPHAM, GIABAN, NGAYBATDAU)
-            VALUES (?, ?, ?, GETDATE())
-        """, (ma_gia, ma_san_pham, req.GiaBan))
+            INSERT INTO LICH_SU_GIA_SAN_PHAM (MASANPHAM, MATHOIDIEM, MALICHSUGIA, LYDOTHAIDOI, GIABAN)
+            VALUES (?, ?, ?, N'Cập nhật giá từ Admin', ?)
+        """, (ma_san_pham, ma_td, ma_gia, req.GiaBan))
 
     # Cập nhật danh sách album nhiều ảnh & ảnh chính
     if req.DanhSachAnh is not None and len(req.DanhSachAnh) > 0:
@@ -1873,12 +2226,13 @@ def create_san_pham(req: CreateProductRequest):
     """, (ma_sp, req.MaLoaiCay, req.TenSanPham, req.SoLuongTonKho, req.KichThuocCay, req.TinhTrangCay, req.NgayNhap))
 
     # Cập nhật lịch sử giá
-    cursor.execute("SELECT ISNULL(MAX(MALICHSUGIA), 0) + 1 FROM LICH_SU_GIA_SAN_PHAM")
-    ma_gia = cursor.fetchone()[0]
+    cursor.execute("SELECT ISNULL(MAX(MALICHSUGIA), 0) + 1, ISNULL(MAX(MATHOIDIEM), 1) FROM LICH_SU_GIA_SAN_PHAM")
+    row_gia = cursor.fetchone()
+    ma_gia, ma_td = row_gia[0], row_gia[1]
     cursor.execute("""
-        INSERT INTO LICH_SU_GIA_SAN_PHAM (MALICHSUGIA, MASANPHAM, GIABAN, NGAYBATDAU)
-        VALUES (?, ?, ?, GETDATE())
-    """, (ma_gia, ma_sp, req.GiaBan))
+        INSERT INTO LICH_SU_GIA_SAN_PHAM (MASANPHAM, MATHOIDIEM, MALICHSUGIA, LYDOTHAIDOI, GIABAN)
+        VALUES (?, ?, ?, N'Giá khởi tạo chậu mới', ?)
+    """, (ma_sp, ma_td, ma_gia, req.GiaBan))
 
     # Cập nhật nhiều hình ảnh & chọn ảnh chính
     danh_sach_anh = req.DanhSachAnh or []

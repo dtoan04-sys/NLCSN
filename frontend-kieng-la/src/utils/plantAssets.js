@@ -4,6 +4,8 @@
  * Đảm bảo 100% hình ảnh không bao giờ bị lỗi hiển thị (404 / blank)
  */
 
+import { getApiBaseUrl } from '../config';
+
 export const DEFAULT_PLANT_IMAGE =
   'https://images.unsplash.com/photo-1614594975525-e45190c55d0b?auto=format&fit=crop&w=800&q=80';
 
@@ -100,7 +102,10 @@ const SPECIES_IMAGE_MAP = {
  */
 export function getPlantImage(speciesId, speciesName = '', rawUrl = '') {
   // 1. Ưu tiên ảnh nội bộ thực tế trong /plants/1.jpg .. /plants/90.jpg hoặc /uploads/...
-  if (rawUrl && (rawUrl.startsWith('/plants/') || rawUrl.startsWith('/uploads/'))) {
+  if (rawUrl && rawUrl.startsWith('/uploads/')) {
+    return `${getApiBaseUrl()}${rawUrl}`;
+  }
+  if (rawUrl && rawUrl.startsWith('/plants/')) {
     return rawUrl;
   }
 

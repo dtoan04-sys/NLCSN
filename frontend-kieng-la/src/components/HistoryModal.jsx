@@ -1,5 +1,26 @@
 import React from 'react';
 import { useHistory } from '../context/HistoryContext';
+import { getApiBaseUrl } from '../config';
+
+function resolveHistoryImageUrl(url, fallbackImg) {
+  if (!url || typeof url !== 'string' || url.startsWith('blob:')) {
+    return fallbackImg;
+  }
+  if (url.startsWith('/uploads/')) {
+    return `${getApiBaseUrl()}${url}`;
+  }
+  return url;
+}
+
+function getShopSpeciesName(record) {
+  if (record.primarySpeciesName) return record.primarySpeciesName;
+  if (record.multiPlants?.[0]?.tenthuonggoi) return record.multiPlants[0].tenthuonggoi;
+  const raw = record.predictedName || '';
+  if (raw.startsWith('Đa cây:')) {
+    return raw.replace(/^Đa cây:\s*/, '').replace(/\s*\(\+\d+\s*loài khác\)$/, '').trim();
+  }
+  return raw;
+}
 
 export default function HistoryModal({ isOpen, onClose, onSelectSpecies }) {
   const { history, submitFeedback, clearHistory } = useHistory();
@@ -49,9 +70,14 @@ export default function HistoryModal({ isOpen, onClose, onSelectSpecies }) {
             </div>
           ) : (
             history.map((record) => {
-              const topAcc = ((record.accuracy || 0) * 100).toFixed(1);
+              const rawAcc = Number(record.accuracy || 0);
+              const topAcc = (rawAcc > 1 ? rawAcc : rawAcc * 100).toFixed(1);
               const dateStr = new Date(record.timestamp).toLocaleString('vi-VN');
               const fallbackImg = record.fallbackImg || `/plants/${record.speciesId || 54}.jpg`;
+              const displayImg = resolveHistoryImageUrl(record.imageUrl, fallbackImg);
+              const multiPlants = Array.isArray(record.multiPlants) ? record.multiPlants : [];
+              const isMultiRecord = Boolean(record.isMulti || multiPlants.length > 0 || (record.predictedName || '').startsWith('Đa cây:'));
+              const shopSpeciesName = getShopSpeciesName(record);
 
               return (
                 <div
@@ -59,7 +85,7 @@ export default function HistoryModal({ isOpen, onClose, onSelectSpecies }) {
                   className="p-4 rounded-2xl border border-gray-100 bg-[#f8faf7] hover:shadow-md transition-all flex flex-col sm:flex-row gap-4 items-start"
                 >
                   <img
-                    src={record.imageUrl || fallbackImg}
+                    src={displayImg}
                     alt={record.predictedName}
                     onError={(e) => {
                       e.currentTarget.onerror = null;
@@ -72,7 +98,9 @@ export default function HistoryModal({ isOpen, onClose, onSelectSpecies }) {
                     <div className="flex flex-wrap items-center justify-between gap-2">
                       <div>
                         <span className="text-[10px] uppercase font-bold tracking-wider text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded-full">
-                          Top 1 • Khớp {topAcc}%
+                          {isMultiRecord
+                            ? `Đa cây • ${multiPlants.length > 0 ? `${multiPlants.length} loài` : `Khớp ${topAcc}%`}`
+                            : `Top 1 • Khớp ${topAcc}%`}
                         </span>
                         <h4 className="text-base font-extrabold text-gray-900 mt-0.5">{record.predictedName}</h4>
                         <span className="text-xs text-gray-500 italic block">{record.originalLabel}</span>
@@ -80,16 +108,64 @@ export default function HistoryModal({ isOpen, onClose, onSelectSpecies }) {
                       <span className="text-[11px] text-gray-400 font-medium">{dateStr}</span>
                     </div>
 
+                    {multiPlants.length > 0 && (
+                      <div className="flex flex-wrap gap-1.5 pt-1">
+                        {multiPlants.map((plant, idx) => {
+                          const cropUrl = plant.crop_image
+                            ? resolveHistoryImageUrl(plant.crop_image, fallbackImg)
+                            : null;
+                          const plantAcc = Number(plant.do_chinh_xac || 0);
+                          const plantAccText = (plantAcc > 1 ? plantAcc : plantAcc * 100).toFixed(1);
+                          return (
+                            <button
+                              key={idx}
+                              type="button"
+                              onClick={() => {
+                                onClose();
+                                onSelectSpecies(plant.tenthuonggoi);
+                              }}
+                              title={`Xem chậu ${plant.tenthuonggoi}`}
+                              className="inline-flex items-center gap-1.5 text-[11px] bg-white hover:bg-emerald-50 border border-emerald-200 px-2 py-1 rounded-lg text-gray-700 font-semibold transition-colors"
+                            >
+                              {cropUrl ? (
+                                <img
+                                  src={cropUrl}
+                                  alt={plant.tenthuonggoi}
+                                  onError={(e) => {
+                                    e.currentTarget.style.display = 'none';
+                                  }}
+                                  className="w-5 h-5 rounded object-cover shrink-0"
+                                />
+                              ) : (
+                                <span
+                                  className="w-4 h-4 rounded text-[9px] font-black text-gray-950 flex items-center justify-center shrink-0"
+                                  style={{ backgroundColor: plant.mau_sac || '#00FF66' }}
+                                >
+                                  {plant.stt || idx + 1}
+                                </span>
+                              )}
+                              <span>{plant.tenthuonggoi}</span>
+                              <span className="text-[10px] font-mono text-emerald-700">{plantAccText}%</span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    )}
+
                     {record.topK && record.topK.length > 0 && (
                       <div className="flex flex-wrap gap-1.5 pt-1">
-                        {record.topK.map((item, idx) => (
-                          <span
-                            key={idx}
-                            className="text-[11px] bg-white border border-gray-200 px-2 py-0.5 rounded-md text-gray-600"
-                          >
-                            {idx + 1}. {item.loai} ({(item.xac_suat * 100).toFixed(0)}%)
-                          </span>
-                        ))}
+                        {record.topK.map((item, idx) => {
+                          const prob = Number(item.xac_suat || 0);
+                          const probPct = (prob > 1 ? prob : prob * 100).toFixed(0);
+                          return (
+                            <span
+                              key={idx}
+                              className="text-[11px] bg-white border border-gray-200 px-2 py-0.5 rounded-md text-gray-600"
+                            >
+                              {idx + 1}. {item.loai} ({probPct}%)
+                            </span>
+                          );
+                        })}
                       </div>
                     )}
 
@@ -126,12 +202,16 @@ export default function HistoryModal({ isOpen, onClose, onSelectSpecies }) {
                         type="button"
                         onClick={() => {
                           onClose();
-                          onSelectSpecies(record.predictedName);
+                          onSelectSpecies(shopSpeciesName);
                         }}
                         className="px-3 py-1.5 rounded-xl bg-[#012d1d] hover:bg-[#1b4332] text-white text-xs font-bold flex items-center gap-1 shadow-xs transition-colors"
                       >
                         <span className="material-symbols-outlined text-sm">storefront</span>
-                        <span>Xem chậu &amp; Đặt mua</span>
+                        <span>
+                          {isMultiRecord && shopSpeciesName
+                            ? `Xem chậu ${shopSpeciesName}`
+                            : 'Xem chậu & Đặt mua'}
+                        </span>
                       </button>
                     </div>
                   </div>
