@@ -1,10 +1,23 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { getApiBaseUrl } from '../config';
+import { useAuth } from './AuthContext';
 
 const HistoryContext = createContext();
 
-const HISTORY_STORAGE_KEY = 'florabotanic_scan_history_v2';
 const MAX_HISTORY_ITEMS = 30;
+
+function getHistoryStorageKey(userId) {
+  const userKey = userId || 'guest';
+  return `florabotanic_ai_history_${userKey}`;
+}
+
+function loadHistoryFromStorage(storageKey) {
+  try {
+    const saved = localStorage.getItem(storageKey);
+    return saved ? JSON.parse(saved) : [];
+  } catch {
+    return [];
+  }
+}
 
 function safeSaveToStorage(key, value) {
   try {
@@ -31,20 +44,34 @@ function safeSaveToStorage(key, value) {
 }
 
 export function HistoryProvider({ children }) {
-  const [history, setHistory] = useState(() => {
+  const { user } = useAuth();
+  const storageKey = getHistoryStorageKey(user?.id);
+
+  const [historyState, setHistoryState] = useState(() => {
     try {
       localStorage.removeItem('florabotanic_scan_history');
       localStorage.removeItem('florabotanic_my_garden_v1');
-      const saved = localStorage.getItem(HISTORY_STORAGE_KEY);
-      return saved ? JSON.parse(saved) : [];
-    } catch {
-      return [];
-    }
+    } catch {}
+    return {
+      key: storageKey,
+      items: loadHistoryFromStorage(storageKey)
+    };
   });
 
+  // Tải đúng lịch sử quét AI của tài khoản hiện tại mỗi khi đổi user (đăng nhập / đăng xuất)
   useEffect(() => {
-    safeSaveToStorage(HISTORY_STORAGE_KEY, history.slice(0, MAX_HISTORY_ITEMS));
-  }, [history]);
+    setHistoryState({
+      key: storageKey,
+      items: loadHistoryFromStorage(storageKey)
+    });
+  }, [storageKey]);
+
+  // Chỉ ghi vào đúng key của state hiện tại để không bao giờ ghi đè nhầm giữa các tài khoản
+  useEffect(() => {
+    safeSaveToStorage(historyState.key, historyState.items.slice(0, MAX_HISTORY_ITEMS));
+  }, [historyState]);
+
+  const history = historyState.key === storageKey ? historyState.items : [];
 
   // Thêm lần nhận diện mới (Nhẹ < 25KB, không gây đầy bộ nhớ Android WebView)
   const addScanRecord = ({ imageUrl, thumbnailDataUrl, result, userId = null }) => {
@@ -114,13 +141,17 @@ export function HistoryProvider({ children }) {
       feedback: null
     };
 
-    setHistory((prev) => [newRecord, ...prev.slice(0, MAX_HISTORY_ITEMS - 1)]);
+    setHistoryState((prev) => ({
+      key: storageKey,
+      items: [newRecord, ...(prev.key === storageKey ? prev.items : loadHistoryFromStorage(storageKey)).slice(0, MAX_HISTORY_ITEMS - 1)]
+    }));
     return newRecord;
   };
 
   const submitFeedback = (scanId, isCorrect, note = '') => {
-    setHistory((prev) =>
-      prev.map((item) =>
+    setHistoryState((prev) => ({
+      key: prev.key,
+      items: prev.items.map((item) =>
         item.id === scanId
           ? {
               ...item,
@@ -132,13 +163,13 @@ export function HistoryProvider({ children }) {
             }
           : item
       )
-    );
+    }));
   };
 
   const clearHistory = () => {
-    setHistory([]);
+    setHistoryState({ key: storageKey, items: [] });
     try {
-      localStorage.removeItem(HISTORY_STORAGE_KEY);
+      localStorage.removeItem(storageKey);
     } catch {}
   };
 

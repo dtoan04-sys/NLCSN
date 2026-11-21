@@ -28,3 +28,13 @@ uploads/*
 .DS_Store
 Thumbs.db
 *.log
+
+# Heavy training checkpoints & old backup models (keep only active 4-model ensemble)
+00_Tai_Lieu_Bao_Cao/Ket_Qua_Tu_So_0_99_123_999/
+ai-service/model/best_model_80_10_10_clean.keras
+ai-service/model/best_model_old_backup.keras
+ai-service/model/best_model_seed_999_fixed.keras
+ai-service/model/efficientnet_b0_30k.keras
+frontend-kieng-la/android/app/build/
+frontend-kieng-la/android/.gradle/
+frontend-kieng-la/dist/

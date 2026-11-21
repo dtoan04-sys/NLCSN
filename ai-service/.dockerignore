@@ -1,0 +1,14 @@
+__pycache__/
+*.pyc
+*.pyo
+*.bat
+*.log
+.venv/
+venv/
+uploads/
+model/best_model.keras
+model/best_model_80_10_10_clean.keras
+model/best_model_old_backup.keras
+model/best_model_seed_999_fixed.keras
+model/efficientnet_b0_30k.keras
+model/seed_999_report/

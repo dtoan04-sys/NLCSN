@@ -172,6 +172,24 @@ function MainApp({ isAuthOpen, setIsAuthOpen }) {
         return 'HANDLED';
       }
 
+      // 1b. Nếu đang ở trang Admin và có modal con đang mở -> đóng modal trước khi thoát Admin
+      if (st.currentPage === 'admin') {
+        if (typeof window.__adminModalBackHandler === 'function') {
+          const handled = window.__adminModalBackHandler();
+          if (handled) return 'HANDLED';
+        }
+        const adminOverlay = document.querySelector('[data-admin-page] .fixed.inset-0');
+        if (adminOverlay) {
+          const closeBtn = adminOverlay.querySelector('button[title*="Đóng"], button[aria-label*="Đóng"], button[aria-label*="Close"]');
+          if (closeBtn) {
+            closeBtn.click();
+          } else {
+            window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+          }
+          return 'HANDLED';
+        }
+      }
+
       // 2. Nếu đang ở trang Sản phẩm và có bộ lọc -> xóa bộ lọc trước
       if (st.currentPage === 'products') {
         if (st.activeSpeciesFilter) {
@@ -250,9 +268,19 @@ function MainApp({ isAuthOpen, setIsAuthOpen }) {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
+  const pushProductsHistory = () => {
+    navStackRef.current.push('products');
+    if (navStackRef.current.length > 15) {
+      navStackRef.current = navStackRef.current.slice(-15);
+    }
+    try {
+      window.history.pushState({ page: 'products' }, '');
+    } catch (_) {}
+  };
+
   const handleFilterBySpecies = (speciesName) => {
     setActiveSpeciesFilter(speciesName);
-    navStackRef.current.push('products');
+    pushProductsHistory();
     setCurrentPage('products');
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
@@ -261,7 +289,7 @@ function MainApp({ isAuthOpen, setIsAuthOpen }) {
     setActiveCategory(catId);
     setActiveSpeciesFilter(null);
     setSearchKeyword('');
-    navStackRef.current.push('products');
+    pushProductsHistory();
     setCurrentPage('products');
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
@@ -270,7 +298,7 @@ function MainApp({ isAuthOpen, setIsAuthOpen }) {
     setSearchKeyword(keyword || '');
     setActiveSpeciesFilter(null);
     setActiveCategory('all');
-    navStackRef.current.push('products');
+    pushProductsHistory();
     setCurrentPage('products');
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
@@ -286,7 +314,7 @@ function MainApp({ isAuthOpen, setIsAuthOpen }) {
   // Trang Admin Dashboard
   if (currentPage === 'admin') {
     return (
-      <div className="min-h-screen bg-[#f8faf7]">
+      <div className="min-h-screen bg-[#f8faf7]" data-admin-page="true">
         <AdminDashboardPage
           onBackToStore={() => handleNavigate('home')}
           onSelectProduct={handleSelectProduct}
@@ -375,7 +403,7 @@ function MainApp({ isAuthOpen, setIsAuthOpen }) {
           }}
           onOpenGarden={() => {
             setIsAiModalOpen(false);
-            openHistoryModalWithTab('garden');
+            setIsHistoryOpen(true);
           }}
         />
       )}

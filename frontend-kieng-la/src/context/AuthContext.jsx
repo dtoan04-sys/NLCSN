@@ -1,50 +1,56 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { apiFetch } from '../config';
+import { apiFetch, TOKEN_STORAGE_KEY } from '../config';
 
 const AuthContext = createContext();
 
 const STORAGE_KEY = 'florabotanic_user';
-const USERS_DB_KEY = 'florabotanic_registered_users';
+const LEGACY_USERS_DB_KEY = 'florabotanic_registered_users';
+
+function normalizeUser(raw) {
+  if (!raw || typeof raw !== 'object') return null;
+  const safe = {
+    id: raw.id ?? raw.MaNguoiDung ?? raw.MANGUOIDUNG ?? null,
+    username: raw.username ?? raw.taiKhoan ?? raw.TaiKhoan ?? raw.TAIKHOAN ?? '',
+    fullName: raw.fullName ?? raw.hoTen ?? raw.HoTen ?? raw.HOTEN ?? raw.username ?? '',
+    email: raw.email ?? raw.Email ?? raw.EMAIL ?? '',
+    phone: raw.phone ?? raw.soDienThoai ?? raw.SoDienThoai ?? raw.SODIENTHOAI ?? '',
+    address: raw.address ?? raw.diaChi ?? raw.DiaChi ?? raw.DIACHI ?? '',
+    avatar: raw.avatar ?? raw.Avatar ?? raw.AVATAR ?? '',
+    role: (raw.role ?? raw.vaiTro ?? raw.VaiTro ?? 'USER').toString().toUpperCase() === 'ADMIN' ? 'ADMIN' : 'USER',
+    status: raw.status ?? raw.trangThai ?? raw.TrangThaiTaiKhoan ?? 'HoatDong'
+  };
+  return safe;
+}
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(() => {
     try {
       const saved = localStorage.getItem(STORAGE_KEY);
-      return saved ? JSON.parse(saved) : null;
+      return saved ? normalizeUser(JSON.parse(saved)) : null;
     } catch {
       return null;
     }
   });
 
+  // Dọn sạch dữ liệu mật khẩu plain-text cũ trong localStorage nếu từng tồn tại
   useEffect(() => {
-    if (!localStorage.getItem(USERS_DB_KEY)) {
-      const defaultUsers = [
-        {
-          id: 11,
-          username: 'admin',
-          password: '123',
-          fullName: 'Quản trị viên FloraBotanic',
-          email: 'admin@florabotanic.ai',
-          phone: '0909123456',
-          address: 'Vườn ươm Bảo Lộc, Lâm Đồng',
-          role: 'ADMIN',
-          createdAt: new Date().toISOString()
-        },
-        {
-          id: 12,
-          username: 'khachhang',
-          password: '123',
-          fullName: 'Nguyễn Văn An',
-          email: 'an.nguyen@gmail.com',
-          phone: '0987654321',
-          address: '123 Nguyễn Văn Cừ, Quận 5, TP.HCM',
-          role: 'USER',
-          createdAt: new Date().toISOString()
-        }
-      ];
-      localStorage.setItem(USERS_DB_KEY, JSON.stringify(defaultUsers));
-    }
+    try {
+      localStorage.removeItem(LEGACY_USERS_DB_KEY);
+    } catch (_) {}
   }, []);
+
+  const persistSession = (data) => {
+    const safeUser = normalizeUser(data?.user || data);
+    const token = data?.token || data?.access_token || null;
+    setUser(safeUser);
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(safeUser));
+      if (token) {
+        localStorage.setItem(TOKEN_STORAGE_KEY, token);
+      }
+    } catch (_) {}
+    return safeUser;
+  };
 
   const login = async (username, password) => {
     try {
@@ -53,123 +59,162 @@ export function AuthProvider({ children }) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ taiKhoan: username.trim(), matKhau: password })
       });
+      const data = await res.json().catch(() => ({}));
       if (res.ok) {
-        const data = await res.json();
-        setUser(data);
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-        return { success: true };
-      } else {
-        const errData = await res.json().catch(() => ({}));
-        if (res.status === 401 || res.status === 403) {
-          return { success: false, error: errData.detail || 'Tên đăng nhập hoặc mật khẩu không chính xác!' };
-        }
+        const safeUser = persistSession(data);
+        return { success: true, user: safeUser };
       }
-    } catch (_) {
-      // Fallback sang dữ liệu nội bộ khi chạy tĩnh không có kết nối Backend
+      return {
+        success: false,
+        error: data.detail || 'Tên đăng nhập hoặc mật khẩu không chính xác!'
+      };
+    } catch (err) {
+      return {
+        success: false,
+        error: 'Không thể kết nối đến máy chủ xác thực! Vui lòng kiểm tra mạng hoặc cấu hình URL Server.'
+      };
     }
-
-    const rawUsers = localStorage.getItem(USERS_DB_KEY);
-    const users = rawUsers ? JSON.parse(rawUsers) : [];
-
-    const found = users.find(
-      (u) => u.username.toLowerCase() === username.trim().toLowerCase() && u.password === password
-    );
-
-    if (found) {
-      const safeUser = { ...found };
-      delete safeUser.password;
-      setUser(safeUser);
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(safeUser));
-      return { success: true };
-    }
-    return { success: false, error: 'Tên đăng nhập hoặc mật khẩu không chính xác!' };
   };
 
   const register = async (userData) => {
     try {
+      const phoneVal = (userData.phone || '').trim();
       const res = await apiFetch('/api/auth/dang-ky', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           taiKhoan: userData.username.trim(),
           matKhau: userData.password,
-          hoTen: userData.fullName || userData.username.trim(),
-          email: userData.email,
-          diaChi: userData.address || ''
+          hoTen: (userData.fullName || userData.username).trim(),
+          email: (userData.email || '').trim(),
+          phone: phoneVal,
+          soDienThoai: phoneVal,
+          SoDienThoai: phoneVal,
+          diaChi: (userData.address || '').trim()
         })
       });
+      const data = await res.json().catch(() => ({}));
       if (res.ok) {
-        const data = await res.json();
-        setUser(data);
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-        return { success: true };
-      } else if (res.status === 400) {
-        const errData = await res.json().catch(() => ({}));
-        return { success: false, error: errData.detail || 'Tên đăng nhập đã tồn tại!' };
+        const safeUser = persistSession(data);
+        return { success: true, user: safeUser };
       }
-    } catch (_) {
-      // Fallback sang dữ liệu nội bộ khi chạy tĩnh
+      return {
+        success: false,
+        error: data.detail || 'Đăng ký thất bại, vui lòng kiểm tra lại thông tin!'
+      };
+    } catch (err) {
+      return {
+        success: false,
+        error: 'Không thể kết nối đến máy chủ để đăng ký tài khoản!'
+      };
     }
-
-    const rawUsers = localStorage.getItem(USERS_DB_KEY);
-    const users = rawUsers ? JSON.parse(rawUsers) : [];
-
-    if (users.some((u) => u.username.toLowerCase() === userData.username.trim().toLowerCase())) {
-      return { success: false, error: 'Tên đăng nhập đã tồn tại, vui lòng chọn tên khác!' };
-    }
-    if (users.some((u) => u.email.toLowerCase() === userData.email.trim().toLowerCase())) {
-      return { success: false, error: 'Email đã được đăng ký tài khoản khác!' };
-    }
-
-    const newUser = {
-      id: Date.now(),
-      username: userData.username.trim(),
-      password: userData.password,
-      fullName: userData.fullName || userData.username,
-      email: userData.email,
-      phone: userData.phone || '',
-      address: userData.address || '',
-      role: 'USER',
-      createdAt: new Date().toISOString()
-    };
-
-    users.push(newUser);
-    localStorage.setItem(USERS_DB_KEY, JSON.stringify(users));
-
-    const safeUser = { ...newUser };
-    delete safeUser.password;
-    setUser(safeUser);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(safeUser));
-
-    return { success: true };
   };
 
   const updateProfile = async (updatedData) => {
+    if (!user?.id && !user?.username) {
+      return { success: false, error: 'Bạn chưa đăng nhập!' };
+    }
+    const identifier = user.id || user.username;
     try {
-      const rawUsers = localStorage.getItem(USERS_DB_KEY);
-      const users = rawUsers ? JSON.parse(rawUsers) : [];
-      const idx = users.findIndex((u) => u.id === user.id || u.username === user.username);
-      if (idx !== -1) {
-        users[idx] = { ...users[idx], ...updatedData };
-        localStorage.setItem(USERS_DB_KEY, JSON.stringify(users));
+      const hoTen = updatedData.fullName ?? updatedData.HoTen ?? user.fullName;
+      const email = updatedData.email ?? updatedData.Email ?? user.email;
+      const soDienThoai = updatedData.phone ?? updatedData.SoDienThoai ?? user.phone ?? '';
+      const diaChi = updatedData.address ?? updatedData.DiaChi ?? user.address ?? '';
+      const avatar = updatedData.avatar ?? updatedData.Avatar ?? user.avatar ?? '';
+
+      const payload = {
+        hoTen,
+        HoTen: hoTen,
+        email,
+        Email: email,
+        soDienThoai,
+        SoDienThoai: soDienThoai,
+        phone: soDienThoai,
+        diaChi,
+        DiaChi: diaChi,
+        avatar,
+        Avatar: avatar
+      };
+
+      const res = await apiFetch(`/api/nguoi-dung/${encodeURIComponent(identifier)}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        return { success: false, error: data.detail || 'Cập nhật hồ sơ thất bại!' };
       }
-      const nextUser = { ...user, ...updatedData };
-      delete nextUser.password;
+
+      const nextUser = normalizeUser({
+        ...user,
+        fullName: hoTen,
+        email,
+        phone: soDienThoai,
+        address: diaChi,
+        avatar,
+        ...(data.user || {})
+      });
       setUser(nextUser);
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(nextUser));
-      return { success: true };
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(nextUser));
+      } catch (_) {}
+      return { success: true, user: nextUser };
     } catch (err) {
-      return { success: false, error: err.message };
+      return { success: false, error: err?.message || 'Không thể kết nối đến máy chủ cập nhật!' };
+    }
+  };
+
+  const changePassword = async (oldPassword, newPassword) => {
+    if (!user?.id && !user?.username) {
+      return { success: false, error: 'Bạn chưa đăng nhập!' };
+    }
+    if (!oldPassword || !newPassword) {
+      return { success: false, error: 'Vui lòng nhập đầy đủ mật khẩu cũ và mật khẩu mới!' };
+    }
+    const identifier = user.id || user.username;
+    try {
+      const res = await apiFetch(`/api/nguoi-dung/${encodeURIComponent(identifier)}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          MatKhauCu: oldPassword,
+          matKhauCu: oldPassword,
+          MatKhauMoi: newPassword,
+          matKhauMoi: newPassword
+        })
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        return { success: false, error: data.detail || 'Đổi mật khẩu thất bại!' };
+      }
+      return { success: true, message: data.message || 'Đổi mật khẩu thành công!' };
+    } catch (err) {
+      return { success: false, error: 'Không thể kết nối đến máy chủ để đổi mật khẩu!' };
     }
   };
 
   const logout = () => {
     setUser(null);
-    localStorage.removeItem(STORAGE_KEY);
+    try {
+      localStorage.removeItem(STORAGE_KEY);
+      localStorage.removeItem(TOKEN_STORAGE_KEY);
+    } catch (_) {}
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, register, logout, updateProfile, isAuthenticated: !!user }}>
+    <AuthContext.Provider
+      value={{
+        user,
+        login,
+        register,
+        logout,
+        updateProfile,
+        changePassword,
+        isAuthenticated: !!user
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );

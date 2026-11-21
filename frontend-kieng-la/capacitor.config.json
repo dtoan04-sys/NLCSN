@@ -1,5 +1,8 @@
 {
   "appId": "com.kiengla.floraai",
   "appName": "Kieng La AI",
-  "webDir": "dist"
+  "webDir": "dist",
+  "android": {
+    "allowMixedContent": true
+  }
 }

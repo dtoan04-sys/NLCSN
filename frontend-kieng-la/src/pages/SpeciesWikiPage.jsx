@@ -97,7 +97,7 @@ export default function SpeciesWikiPage({ onSelectSpeciesToShop }) {
             </div>
             <div className="flex items-center gap-1.5">
               <span className="material-symbols-outlined text-emerald-400 text-base">photo_camera</span>
-              <span>Tích hợp AI MobileNetV2</span>
+              <span>Tích hợp AI v2.0-TuSo0 (4-Model)</span>
             </div>
             <div className="flex items-center gap-1.5">
               <span className="material-symbols-outlined text-emerald-400 text-base">potted_plant</span>

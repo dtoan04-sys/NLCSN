@@ -6,8 +6,17 @@ import sqlite3
 def translate_tsql_to_sqlite(sql: str) -> str:
     s = sql
 
-    # 1. Functions: ISNULL -> IFNULL, GETDATE() -> datetime('now','localtime'), SCOPE_IDENTITY() -> last_insert_rowid()
-    s = re.sub(r"\bISNULL\s*\(", "IFNULL(", s, flags=re.IGNORECASE)
+    # 0. Unicode string literals N'...' -> '...' (safe negative lookbehind so identifiers ending in N are untouched)
+    s = re.sub(r"(?<![A-Za-z0-9_])N'", "'", s)
+
+    # 1. Functions: CONVERT(NVARCHAR(50), GETDATE(), 120), GETDATE(), ISNULL -> COALESCE, SCOPE_IDENTITY(), NEWID()
+    s = re.sub(
+        r"\bCONVERT\s*\(\s*N?VARCHAR\s*\(\s*\d+\s*\)\s*,\s*GETDATE\s*\(\s*\)\s*(?:,\s*\d+\s*)?\)",
+        "datetime('now', 'localtime')",
+        s,
+        flags=re.IGNORECASE,
+    )
+    s = re.sub(r"\bISNULL\s*\(", "COALESCE(", s, flags=re.IGNORECASE)
     s = re.sub(r"\bGETDATE\s*\(\s*\)", "datetime('now', 'localtime')", s, flags=re.IGNORECASE)
     s = re.sub(r"\bSCOPE_IDENTITY\s*\(\s*\)", "last_insert_rowid()", s, flags=re.IGNORECASE)
     s = re.sub(r"\bNEWID\s*\(\s*\)", "hex(randomblob(16))", s, flags=re.IGNORECASE)
@@ -65,7 +74,6 @@ class SQLiteCursorWrapper:
             params = ()
         elif not isinstance(params, (tuple, list)):
             params = (params,)
-        # Handle multi-statement batches like "INSERT INTO ...; SELECT SCOPE_IDENTITY();"
         if ";" in translated.strip().rstrip(";"):
             parts = [p.strip() for p in translated.strip().rstrip(";").split(";") if p.strip()]
             if len(parts) == 2 and "last_insert_rowid()" in parts[1].lower():
@@ -104,5 +112,7 @@ class SQLiteConnectionWrapper:
 
 def get_sqlite_connection(db_path: str = None) -> SQLiteConnectionWrapper:
     if not db_path:
-        db_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "caykiengla.db")
+        db_path = os.getenv("SQLITE_DB_PATH") or os.path.join(
+            os.path.dirname(os.path.abspath(__file__)), "caykiengla.db"
+        )
     return SQLiteConnectionWrapper(db_path)

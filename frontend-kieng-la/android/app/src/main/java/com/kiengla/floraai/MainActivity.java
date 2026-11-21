@@ -8,12 +8,14 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.VibrationEffect;
 import android.os.Vibrator;
+import android.webkit.GeolocationPermissions;
 import android.webkit.JavascriptInterface;
 import android.webkit.PermissionRequest;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.widget.Toast;
 import androidx.activity.OnBackPressedCallback;
+import androidx.annotation.NonNull;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import com.getcapacitor.BridgeActivity;
@@ -22,6 +24,10 @@ import com.getcapacitor.BridgeWebChromeClient;
 public class MainActivity extends BridgeActivity {
     private long lastBackPressTime = 0;
     private static final int CAMERA_PERM_REQUEST_CODE = 1001;
+    private static final int REQUEST_LOCATION_PERMISSION = 1002;
+    private PermissionRequest pendingWebPermissionRequest = null;
+    private GeolocationPermissions.Callback pendingGeoCallback = null;
+    private String pendingGeoOrigin = null;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -35,12 +41,14 @@ public class MainActivity extends BridgeActivity {
             WebView webView = this.getBridge().getWebView();
             WebSettings settings = webView.getSettings();
             settings.setDomStorageEnabled(true);
+            settings.setGeolocationEnabled(true);
             settings.setMediaPlaybackRequiresUserGesture(false);
             settings.setJavaScriptCanOpenWindowsAutomatically(true);
+            settings.setMixedContentMode(WebSettings.MIXED_CONTENT_ALWAYS_ALLOW);
 
             webView.addJavascriptInterface(new AndroidNativeBridge(this), "AndroidNative");
 
-            // Tự động chấp thuận PermissionRequest (VIDEO_CAPTURE) của WebRTC sau khi user đã cấp quyền Android
+            // Tự động chấp thuận PermissionRequest (VIDEO_CAPTURE) và Geolocation (GPS) sau khi user đã cấp quyền Android
             webView.setWebChromeClient(new BridgeWebChromeClient(this.getBridge()) {
                 @Override
                 public void onPermissionRequest(final PermissionRequest request) {
@@ -49,12 +57,41 @@ public class MainActivity extends BridgeActivity {
                                 == PackageManager.PERMISSION_GRANTED) {
                             request.grant(request.getResources());
                         } else {
+                            if (pendingWebPermissionRequest != null) {
+                                try {
+                                    pendingWebPermissionRequest.deny();
+                                } catch (Exception ignored) {}
+                            }
+                            pendingWebPermissionRequest = request;
                             ActivityCompat.requestPermissions(
                                 MainActivity.this,
                                 new String[]{Manifest.permission.CAMERA},
                                 CAMERA_PERM_REQUEST_CODE
                             );
-                            super.onPermissionRequest(request);
+                        }
+                    });
+                }
+
+                @Override
+                public void onGeolocationPermissionsShowPrompt(final String origin, final GeolocationPermissions.Callback callback) {
+                    runOnUiThread(() -> {
+                        boolean hasFine = ContextCompat.checkSelfPermission(MainActivity.this, Manifest.permission.ACCESS_FINE_LOCATION)
+                                == PackageManager.PERMISSION_GRANTED;
+                        boolean hasCoarse = ContextCompat.checkSelfPermission(MainActivity.this, Manifest.permission.ACCESS_COARSE_LOCATION)
+                                == PackageManager.PERMISSION_GRANTED;
+                        if (hasFine || hasCoarse) {
+                            callback.invoke(origin, true, false);
+                        } else {
+                            pendingGeoOrigin = origin;
+                            pendingGeoCallback = callback;
+                            ActivityCompat.requestPermissions(
+                                MainActivity.this,
+                                new String[]{
+                                    Manifest.permission.ACCESS_FINE_LOCATION,
+                                    Manifest.permission.ACCESS_COARSE_LOCATION
+                                },
+                                REQUEST_LOCATION_PERMISSION
+                            );
                         }
                     });
                 }
@@ -79,6 +116,43 @@ public class MainActivity extends BridgeActivity {
                 new String[]{Manifest.permission.CAMERA},
                 CAMERA_PERM_REQUEST_CODE
             );
+        }
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        if (requestCode == CAMERA_PERM_REQUEST_CODE && pendingWebPermissionRequest != null) {
+            final PermissionRequest request = pendingWebPermissionRequest;
+            pendingWebPermissionRequest = null;
+            final boolean granted = grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED;
+            runOnUiThread(() -> {
+                try {
+                    if (granted) {
+                        request.grant(request.getResources());
+                    } else {
+                        request.deny();
+                    }
+                } catch (Exception ignored) {}
+            });
+        } else if (requestCode == REQUEST_LOCATION_PERMISSION && pendingGeoCallback != null) {
+            final GeolocationPermissions.Callback callback = pendingGeoCallback;
+            final String origin = pendingGeoOrigin;
+            pendingGeoCallback = null;
+            pendingGeoOrigin = null;
+            boolean granted = false;
+            for (int res : grantResults) {
+                if (res == PackageManager.PERMISSION_GRANTED) {
+                    granted = true;
+                    break;
+                }
+            }
+            final boolean isGranted = granted;
+            runOnUiThread(() -> {
+                try {
+                    callback.invoke(origin, isGranted, false);
+                } catch (Exception ignored) {}
+            });
         }
     }
 

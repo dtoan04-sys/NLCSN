@@ -1,5 +1,6 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { useAuth } from './AuthContext';
+import { apiFetch } from '../config';
 
 const CartContext = createContext();
 
@@ -14,16 +15,63 @@ export function CartProvider({ children, onRequireAuth }) {
   const [items, setItems] = useState([]);
   const [toastMsg, setToastMsg] = useState('');
 
+  const syncCartWithDb = useCallback(async () => {
+    try {
+      const res = await apiFetch('/api/san-pham');
+      if (!res.ok) return;
+      const data = await res.json();
+      if (!Array.isArray(data) || data.length === 0) return;
+      const byId = new Map();
+      for (const sp of data) {
+        const id = Number(sp.MaSanPham ?? sp.masanpham ?? sp.MASANPHAM);
+        if (!Number.isFinite(id)) continue;
+        byId.set(id, {
+          price: Number(sp.GiaBan ?? sp.giaban ?? sp.GIABAN ?? 0),
+          stock: Number(sp.SoLuongTonKho ?? sp.soluongtonkho ?? sp.SOLUONGTONKHO ?? 0),
+          name: sp.TenSanPham || sp.tensanpham || sp.TENSANPHAM || null
+        });
+      }
+      setItems((prevItems) => {
+        let changed = false;
+        const next = prevItems.map((item) => {
+          const live = byId.get(Number(item.product?.id));
+          if (!live || live.price <= 0) return item;
+          if (
+            Number(item.product.price) !== live.price ||
+            Number(item.product.stock) !== live.stock ||
+            (live.name && item.product.name !== live.name)
+          ) {
+            changed = true;
+            return {
+              ...item,
+              product: {
+                ...item.product,
+                price: live.price,
+                stock: live.stock,
+                name: live.name || item.product.name
+              }
+            };
+          }
+          return item;
+        });
+        return changed ? next : prevItems;
+      });
+    } catch (_) {
+      // Ignore offline sync errors
+    }
+  }, []);
+
   // Tải giỏ hàng khi người dùng thay đổi (Đăng nhập / Đăng xuất)
   useEffect(() => {
     if (user && user.id) {
       const saved = localStorage.getItem(getCartStorageKey(user.id));
       setItems(saved ? JSON.parse(saved) : []);
+      syncCartWithDb();
     } else {
       // Khi chưa đăng nhập (hoặc vừa đăng xuất) -> Giỏ hàng trống
       setItems([]);
     }
-  }, [user]);
+  }, [user, syncCartWithDb]);
 
   // Lưu giỏ hàng khi items thay đổi
   useEffect(() => {
@@ -124,6 +172,7 @@ export function CartProvider({ children, onRequireAuth }) {
         updateQuantity,
         removeFromCart,
         clearCart,
+        syncCartWithDb,
         totalCount,
         totalPrice,
         toastMsg,

@@ -202,28 +202,40 @@ export default function AiVisionModal({ onClose, onSelectProduct, onFilterBySpec
     });
   };
 
-  // Nén file ảnh chụp từ Camera Gốc Android (12MP-48MP) xuống 640x640 trước khi xử lý để chống văng App do hết RAM
-  const compressSelectedFile = (file) => {
+  // Nén file ảnh chụp từ Camera Gốc Android (12MP-48MP) trước khi xử lý để chống văng App do hết RAM / timeout
+  // - Đơn cây (mặc định maxSize=640, quality=0.88): crop vuông 640x640 tối ưu cho 224x224 Multi-Crop TTA
+  // - Đa cây (maxSize=1280, quality=0.85): giữ nguyên tỷ lệ toàn khung hình để không cắt mất cây ở rìa
+  const compressSelectedFile = (file, maxSize = 640, quality = 0.88) => {
     return new Promise((resolve) => {
       const img = new Image();
       const tempUrl = URL.createObjectURL(file);
       img.onload = () => {
         const vw = img.naturalWidth || img.width;
         const vh = img.naturalHeight || img.height;
-        const side = Math.min(vw, vh);
-        const sx = Math.floor((vw - side) / 2);
-        const sy = Math.floor((vh - side) / 2);
-        const targetSide = 640;
+        const preserveAspect = maxSize > 640;
 
         const canvas = document.createElement('canvas');
-        canvas.width = targetSide;
-        canvas.height = targetSide;
-        canvas.getContext('2d').drawImage(img, sx, sy, side, side, 0, 0, targetSide, targetSide);
+        if (preserveAspect) {
+          const scale = Math.max(vw, vh) > maxSize ? maxSize / Math.max(vw, vh) : 1;
+          canvas.width = Math.max(1, Math.round(vw * scale));
+          canvas.height = Math.max(1, Math.round(vh * scale));
+          canvas.getContext('2d').drawImage(img, 0, 0, vw, vh, 0, 0, canvas.width, canvas.height);
+        } else {
+          const side = Math.min(vw, vh);
+          const sx = Math.floor((vw - side) / 2);
+          const sy = Math.floor((vh - side) / 2);
+          canvas.width = maxSize;
+          canvas.height = maxSize;
+          canvas.getContext('2d').drawImage(img, sx, sy, side, side, 0, 0, maxSize, maxSize);
+        }
 
         const thumbCanvas = document.createElement('canvas');
         thumbCanvas.width = 160;
         thumbCanvas.height = 160;
-        thumbCanvas.getContext('2d').drawImage(canvas, 0, 0, 160, 160);
+        const thumbSide = Math.min(canvas.width, canvas.height);
+        const tsx = Math.floor((canvas.width - thumbSide) / 2);
+        const tsy = Math.floor((canvas.height - thumbSide) / 2);
+        thumbCanvas.getContext('2d').drawImage(canvas, tsx, tsy, thumbSide, thumbSide, 0, 0, 160, 160);
         const thumbnailDataUrl = thumbCanvas.toDataURL('image/jpeg', 0.6);
         thumbCanvas.width = 0;
         thumbCanvas.height = 0;
@@ -240,7 +252,7 @@ export default function AiVisionModal({ onClose, onSelectProduct, onFilterBySpec
             resolve({ blob: blob || file, previewUrl, thumbnailDataUrl });
           },
           'image/jpeg',
-          0.88
+          quality
         );
       };
       img.onerror = () => {
@@ -299,7 +311,7 @@ export default function AiVisionModal({ onClose, onSelectProduct, onFilterBySpec
   };
 
   // 3B. Quét đa cây trên toàn khung hình (Multi-Plant Detection)
-  const triggerMultiAiScan = async (blobOrFile, previewUrlParam) => {
+  const triggerMultiAiScan = async (blobOrFile, previewUrlParam, thumbnailDataUrl = null) => {
     if (!blobOrFile) return;
 
     setIsScanning(true);
@@ -331,7 +343,7 @@ export default function AiVisionModal({ onClose, onSelectProduct, onFilterBySpec
       const plantCount = data.tong_so_cay ?? data.danh_sach_cay?.length ?? 0;
       const record = addScanRecord({
         imageUrl: previewUrlParam || capturedUrl,
-        thumbnailDataUrl: null,
+        thumbnailDataUrl,
         result: {
           loai_du_doan: firstPlant
             ? plantCount > 1
@@ -384,6 +396,10 @@ export default function AiVisionModal({ onClose, onSelectProduct, onFilterBySpec
       }
       ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
       canvas.toBlob(async (blob) => {
+        // Giải phóng bộ nhớ canvas ngay lập tức để chống rò rỉ RAM trên Android WebView
+        canvas.width = 0;
+        canvas.height = 0;
+        if (!blob) return;
         cleanupPreviewUrl();
         const previewUrl = URL.createObjectURL(blob);
         prevObjectUrlRef.current = previewUrl;
@@ -435,11 +451,9 @@ export default function AiVisionModal({ onClose, onSelectProduct, onFilterBySpec
       setRawFile(file);
 
       if (scanMode === 'multi') {
-        const previewUrl = URL.createObjectURL(file);
-        cleanupPreviewUrl();
-        prevObjectUrlRef.current = previewUrl;
-        setCapturedUrl(previewUrl);
-        await triggerMultiAiScan(file, previewUrl);
+        const compressed = await compressSelectedFile(file, 1280, 0.85);
+        setCapturedUrl(compressed.previewUrl);
+        await triggerMultiAiScan(compressed.blob, compressed.previewUrl, compressed.thumbnailDataUrl);
       } else {
         const compressed = await compressSelectedFile(file);
         setCapturedUrl(compressed.previewUrl);
@@ -645,7 +659,7 @@ export default function AiVisionModal({ onClose, onSelectProduct, onFilterBySpec
                       <div className="flex justify-between items-end">
                         <div className="w-7 h-7 border-b-3 border-l-3 border-emerald-400"></div>
                         <span className="px-2 py-0.5 rounded-full bg-black/70 text-emerald-400 text-[10px] font-mono">
-                          Ensemble 6-TTA • 90 Loài
+                          v2.0-TuSo0 • 4-Model 8-TTA • 90 Loài
                         </span>
                         <div className="w-7 h-7 border-b-3 border-r-3 border-emerald-400"></div>
                       </div>
@@ -1136,7 +1150,9 @@ export default function AiVisionModal({ onClose, onSelectProduct, onFilterBySpec
                         onClick={async () => {
                           setScanMode('multi');
                           if (rawFile) {
-                            await triggerMultiAiScan(rawFile, capturedUrl);
+                            const compressed = await compressSelectedFile(rawFile, 1280, 0.85);
+                            setCapturedUrl(compressed.previewUrl);
+                            await triggerMultiAiScan(compressed.blob, compressed.previewUrl, compressed.thumbnailDataUrl);
                           } else if (capturedUrl) {
                             // Chuyển blob từ capturedUrl
                             const blob = await fetch(capturedUrl).then((r) => r.blob());

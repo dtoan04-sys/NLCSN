@@ -32,10 +32,12 @@ export default function Navbar({
   const { user, logout, isAuthenticated } = useAuth();
 
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+  const [isMobileAccountOpen, setIsMobileAccountOpen] = useState(false);
   const [isCatMenuOpen, setIsCatMenuOpen] = useState(false);
   const [searchValue, setSearchValue] = useState(searchKeyword);
 
   const userMenuRef = useRef(null);
+  const mobileAccountRef = useRef(null);
   const catMenuRef = useRef(null);
 
   useEffect(() => {
@@ -48,6 +50,9 @@ export default function Navbar({
     const handleClickOutside = (event) => {
       if (userMenuRef.current && !userMenuRef.current.contains(event.target)) {
         setIsUserMenuOpen(false);
+      }
+      if (mobileAccountRef.current && !mobileAccountRef.current.contains(event.target)) {
+        setIsMobileAccountOpen(false);
       }
       if (catMenuRef.current && !catMenuRef.current.contains(event.target)) {
         setIsCatMenuOpen(false);
@@ -287,7 +292,7 @@ export default function Navbar({
           </div>
         </div>
 
-        {/* NÚT THAO TÁC NHANH TRÊN MOBILE (Giỏ hàng & Camera) */}
+        {/* NÚT THAO TÁC NHANH TRÊN MOBILE (Camera, Giỏ hàng & Tài khoản) */}
         <div className="flex md:hidden items-center gap-1.5 shrink-0">
           <button
             type="button"
@@ -310,6 +315,109 @@ export default function Navbar({
               </span>
             )}
           </button>
+
+          {/* Nút Tài khoản trên Mobile (< 768px) */}
+          <div className="relative" ref={mobileAccountRef}>
+            {isAuthenticated ? (
+              <button
+                type="button"
+                onClick={() => setIsMobileAccountOpen(!isMobileAccountOpen)}
+                className="btn btn-sm h-8 min-h-8 px-2 bg-emerald-900 hover:bg-emerald-800 text-white border-none rounded-xl flex items-center gap-1 shadow-xs"
+                title="Tài khoản của tôi"
+                aria-label="Tài khoản"
+              >
+                <span className="w-5 h-5 rounded-full bg-white/20 text-white font-black text-[10px] flex items-center justify-center">
+                  {getInitials(user?.fullName || user?.username)}
+                </span>
+                <span className="material-symbols-outlined text-sm">
+                  {isMobileAccountOpen ? 'expand_less' : 'expand_more'}
+                </span>
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={onOpenAuth}
+                className="btn btn-sm h-8 min-h-8 px-2.5 bg-emerald-900 hover:bg-emerald-800 text-white border-none rounded-xl flex items-center gap-1 text-[11px] font-bold"
+                title="Đăng nhập / Tài khoản"
+              >
+                <span className="material-symbols-outlined text-base">account_circle</span>
+                <span>Tài khoản</span>
+              </button>
+            )}
+
+            {isAuthenticated && isMobileAccountOpen && (
+              <div className="absolute right-0 top-full mt-2 w-60 bg-[#fafaf7] text-[#132a1e] rounded-2xl shadow-2xl border border-emerald-900/15 py-2 z-50 text-xs animate-fadeIn">
+                <div className="px-4 py-2.5 border-b border-emerald-900/10 bg-emerald-950/[0.03]">
+                  <p className="text-[10px] text-emerald-700 font-bold uppercase tracking-wider">
+                    {user?.role === 'ADMIN' ? 'Quản trị viên' : 'Tài khoản khách hàng'}
+                  </p>
+                  <p className="font-bold text-emerald-950 truncate">{user?.fullName || user?.username}</p>
+                  <p className="text-[11px] text-emerald-800/70 truncate">{user?.email || user?.username}</p>
+                </div>
+                <div className="p-1 space-y-0.5">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsMobileAccountOpen(false);
+                      onOpenProfile();
+                    }}
+                    className="w-full flex items-center gap-2 px-3 py-2 font-semibold hover:bg-emerald-900/5 text-slate-700 hover:text-emerald-900 rounded-xl transition-colors cursor-pointer"
+                  >
+                    <span className="material-symbols-outlined text-base text-emerald-700">person</span>
+                    <span>Hồ sơ &amp; Cài đặt Server</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsMobileAccountOpen(false);
+                      onOpenOrders();
+                    }}
+                    className="w-full flex items-center gap-2 px-3 py-2 font-semibold hover:bg-emerald-900/5 text-slate-700 hover:text-emerald-900 rounded-xl transition-colors cursor-pointer"
+                  >
+                    <span className="material-symbols-outlined text-base text-emerald-700">receipt_long</span>
+                    <span>Đơn mua của tôi</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsMobileAccountOpen(false);
+                      onOpenHistory();
+                    }}
+                    className="w-full flex items-center gap-2 px-3 py-2 font-semibold hover:bg-emerald-900/5 text-slate-700 hover:text-emerald-900 rounded-xl transition-colors cursor-pointer"
+                  >
+                    <span className="material-symbols-outlined text-base text-emerald-700">history</span>
+                    <span>Lịch sử tìm kiếm AI</span>
+                  </button>
+                  {user?.role === 'ADMIN' && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsMobileAccountOpen(false);
+                        onNavigate('admin');
+                      }}
+                      className="w-full flex items-center gap-2 px-3 py-2 font-bold text-emerald-900 hover:bg-emerald-900/5 rounded-xl transition-colors cursor-pointer"
+                    >
+                      <span className="material-symbols-outlined text-base text-emerald-700">admin_panel_settings</span>
+                      <span>Quản trị Admin Hub</span>
+                    </button>
+                  )}
+                </div>
+                <div className="border-t border-emerald-900/10 p-1">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsMobileAccountOpen(false);
+                      logout();
+                    }}
+                    className="w-full flex items-center gap-2 px-3 py-2 font-bold text-rose-600 hover:bg-rose-50 rounded-xl transition-colors cursor-pointer"
+                  >
+                    <span className="material-symbols-outlined text-base">logout</span>
+                    <span>Đăng xuất</span>
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
 
         {/* CỤM TÌM KIẾM CO DÃN 100% TRÊN MOBILE / FLEX-1 TRÊN DESKTOP */}

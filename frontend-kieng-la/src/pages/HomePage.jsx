@@ -1,22 +1,66 @@
 import React, { useRef, useState, useEffect } from 'react';
 import { CATEGORIES, PRODUCTS, INITIAL_REVIEWS } from '../data/mockData';
 import { useCart } from '../context/CartContext';
+import { getPlantImage, getPlantCategory } from '../utils/plantAssets';
+import { apiFetch } from '../config';
 
 export default function HomePage({ onOpenAiModal, onSelectProduct, onNavigate, onSelectCategory }) {
   const carouselRef = useRef(null);
   const { addToCart } = useCart();
+  const [liveProducts, setLiveProducts] = useState(PRODUCTS);
 
-  const featuredProducts = PRODUCTS.slice(0, 4);
+  useEffect(() => {
+    let mounted = true;
+    apiFetch('/api/san-pham')
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (!mounted || !Array.isArray(data) || data.length === 0) return;
+        const mapped = data.slice(0, 8).map((sp, idx) => {
+          const pId = sp.MaSanPham ?? sp.masanpham ?? sp.MASANPHAM ?? (idx + 1);
+          const sId = sp.MaLoaiCay ?? sp.maloaicay ?? sp.MALOAICAY ?? pId;
+          const tenThuongGoi = sp.TenThuongGoi || sp.tenthuonggoi || sp.TENTHUONGGOI || '';
+          const tenKhoaHoc = sp.TenKhoaHoc || sp.tenkhoahoc || sp.TENKHOAHOC || '';
+          const tenSanPham = sp.TenSanPham || sp.tensanpham || sp.TENSANPHAM || tenThuongGoi || `Chậu Kiểng Lá #${pId}`;
+          const rawImgUrl = sp.UrlAnh || sp.urlanh || sp.URLANH || `/plants/${sId}.jpg`;
+          const giaBan = Number(sp.GiaBan ?? sp.giaban ?? sp.GIABAN ?? 150000);
+          const tonKho = Number(sp.SoLuongTonKho ?? sp.soluongtonkho ?? sp.SOLUONGTONKHO ?? 0);
+          const fallback = PRODUCTS.find((p) => p.id === pId) || PRODUCTS[idx % PRODUCTS.length] || {};
+          const cat = getPlantCategory(sId, `${tenThuongGoi} ${tenKhoaHoc} ${tenSanPham}`);
+          const validImg = getPlantImage(sId, `${tenThuongGoi} ${tenKhoaHoc} ${tenSanPham}`, rawImgUrl);
+          const speciesTitle = tenThuongGoi ? `${tenThuongGoi} (${tenKhoaHoc || 'Thực vật học'})` : fallback.speciesName || 'Kiểng lá';
+          return {
+            ...fallback,
+            id: pId,
+            speciesId: sId,
+            speciesName: speciesTitle,
+            name: tenSanPham,
+            category: cat,
+            price: giaBan,
+            originalPrice: Math.round(giaBan * 1.18),
+            stock: tonKho,
+            image: validImg,
+            tag: cat === 'dot-bien' ? 'Đột biến / Quý hiếm' : cat === 'loc-khong-khi' ? 'Lọc khí sạch' : cat === 'phong-thuy' ? 'Hút tài lộc' : 'Bán chạy'
+          };
+        });
+        setLiveProducts(mapped);
+      })
+      .catch(() => {});
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  const featuredProducts = liveProducts.slice(0, 4);
   const heroBanners = [
     {
       id: 'b1',
       badge: 'Cá Thể Tinh Hoa #MB-9902',
       tag: 'Đột Biến Cẩm Thạch',
-      title: PRODUCTS[0]?.name || 'Monstera Deliciosa Albo',
+      title: liveProducts[0]?.name || 'Monstera Deliciosa Albo',
       subtitle: 'Lá cẩm thạch trắng tuyết • Hợp mệnh Thủy - Kim',
-      image: PRODUCTS[0]?.image,
+      image: liveProducts[0]?.image,
       ctaLabel: 'Xem chậu',
-      onAction: () => onSelectProduct(PRODUCTS[0])
+      onAction: () => onSelectProduct(liveProducts[0])
     },
     {
       id: 'b2',
@@ -24,7 +68,7 @@ export default function HomePage({ onOpenAiModal, onSelectProduct, onNavigate, o
       tag: 'Chẩn Đoán & Tách Đa Cây',
       title: 'Quét Camera Nhận Diện Ngay',
       subtitle: 'Chụp 1 hoặc nhiều chậu cây cùng lúc, gợi ý chăm sóc chuẩn',
-      image: PRODUCTS[1]?.image || PRODUCTS[0]?.image,
+      image: liveProducts[1]?.image || liveProducts[0]?.image,
       ctaLabel: 'Quét AI ngay',
       onAction: onOpenAiModal
     },
@@ -32,19 +76,19 @@ export default function HomePage({ onOpenAiModal, onSelectProduct, onNavigate, o
       id: 'b3',
       badge: 'Bộ Sưu Tập Thanh Lọc Khí',
       tag: 'Bán Chạy Nhất Tuần',
-      title: PRODUCTS[2]?.name || 'Lưỡi Hổ & Trầu Bà Phong Thủy',
+      title: liveProducts[2]?.name || 'Lưỡi Hổ & Trầu Bà Phong Thủy',
       subtitle: 'Dễ chăm trong nhà, văn phòng • Lọc bụi mịn & sinh khí',
-      image: PRODUCTS[2]?.image || PRODUCTS[0]?.image,
+      image: liveProducts[2]?.image || liveProducts[0]?.image,
       ctaLabel: 'Xem chậu',
-      onAction: () => onSelectProduct(PRODUCTS[2] || PRODUCTS[0])
+      onAction: () => onSelectProduct(liveProducts[2] || liveProducts[0])
     },
     {
       id: 'b4',
       badge: 'Ưu Đãi Vườn Kiểng Lá',
       tag: 'Giao Nhanh Nội Ô',
-      title: PRODUCTS[3]?.name || 'Vườn Kiểng Lá Nhiệt Đới',
+      title: liveProducts[3]?.name || 'Vườn Kiểng Lá Nhiệt Đới',
       subtitle: 'Đóng gói chống sốc • Bảo hành cây khỏe 7 ngày',
-      image: PRODUCTS[3]?.image || PRODUCTS[0]?.image,
+      image: liveProducts[3]?.image || liveProducts[0]?.image,
       ctaLabel: 'Khám phá',
       onAction: () => onNavigate('products')
     }
@@ -389,7 +433,7 @@ export default function HomePage({ onOpenAiModal, onSelectProduct, onNavigate, o
             <div className="card p-6 rounded-3xl bg-white/10 border border-white/15 backdrop-blur-md max-w-md w-full space-y-4 shadow-2xl">
               <div className="flex items-center justify-between pb-3 border-b border-white/15 text-xs text-emerald-100/80">
                 <span className="font-bold text-emerald-300">Kiến trúc AI Vision</span>
-                <span>MobileNetV2 + Softmax 90</span>
+                <span>v2.0-TuSo0 (EffNetB0 + 3×MNV2)</span>
               </div>
               <div className="space-y-3 text-xs">
                 <div className="p-3.5 rounded-2xl bg-white/10 flex items-center justify-between">

@@ -1,9 +1,19 @@
 import os
 import sys
 import json
+import csv
+import io
+import hmac
+import time
+import base64
+import hashlib
+import secrets
 import shutil
+import tempfile
+import zipfile
 from collections import defaultdict
-from datetime import datetime
+from datetime import datetime, timedelta
+from pathlib import Path
 from typing import Optional, List, Dict, Any
 import numpy as np
 try:
@@ -16,11 +26,15 @@ try:
 except ImportError:
     cv2 = None
 try:
-    import tensorflow as tf
+    if os.getenv("SKIP_AI_LOAD", "0") == "1":
+        tf = None
+    else:
+        import tensorflow as tf
 except ImportError:
     tf = None
-from fastapi import FastAPI, UploadFile, File, Form, HTTPException
+from fastapi import FastAPI, UploadFile, File, Form, HTTPException, Depends, Header, Query
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import Response
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
@@ -48,14 +62,28 @@ PLANTS_DIR = r"E:\CNTT\NLCNHTTT\frontend-kieng-la\public\plants"
 if os.path.exists(PLANTS_DIR):
     app.mount("/plants", StaticFiles(directory=PLANTS_DIR), name="plants")
 
+ALLOWED_UPLOAD_EXTENSIONS = {".jpg", ".jpeg", ".png", ".webp", ".gif"}
+MAX_UPLOAD_SIZE_BYTES = 10 * 1024 * 1024  # 10 MB
+
 @app.post("/api/upload")
 async def upload_image_file(file: UploadFile = File(...)):
-    ext = os.path.splitext(file.filename)[1] or ".jpg"
-    filename = f"prod_{int(datetime.now().timestamp() * 1000)}{ext}"
+    orig_name = file.filename or ""
+    ext = os.path.splitext(orig_name)[1].lower()
+    if ext not in ALLOWED_UPLOAD_EXTENSIONS:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Định dạng ảnh không hợp lệ! Chỉ chấp nhận: {', '.join(sorted(ALLOWED_UPLOAD_EXTENSIONS))}"
+        )
+    content = await file.read()
+    if not content:
+        raise HTTPException(status_code=400, detail="File tải lên rỗng!")
+    if len(content) > MAX_UPLOAD_SIZE_BYTES:
+        raise HTTPException(status_code=413, detail="Kích thước ảnh vượt quá giới hạn tối đa 10MB!")
+    filename = f"prod_{int(datetime.now().timestamp() * 1000)}_{secrets.token_hex(4)}{ext}"
     filepath = os.path.join(UPLOAD_DIR, filename)
     with open(filepath, "wb") as buffer:
-        shutil.copyfileobj(file.file, buffer)
-    return {"url": f"/uploads/{filename}", "filename": filename}
+        buffer.write(content)
+    return {"url": f"/uploads/{filename}", "filename": filename, "size": len(content)}
 
 # =====================================================================
 # 1. KẾT NỐI SQL SERVER (DESKTOP-KTO6D9A\SQLEXPRESS)
@@ -91,7 +119,11 @@ KEY_MAP = {
     "mota": "MoTa", "ngaybatdau": "NgayBatDau", "ngayketthuc": "NgayKetThuc",
     "sotiengiam": "SoTienGiam", "trangthainhandien": "TrangThaiNhanDien",
     "anhsang": "AnhSang", "doam": "DoAm", "nhietdo": "NhietDo",
-    "doctinh": "DocTinh", "phongthuy": "PhongThuy", "ngaynhap": "NgayNhap"
+    "doctinh": "DocTinh", "phongthuy": "PhongThuy", "ngaynhap": "NgayNhap",
+    "sodienthoai": "SoDienThoai", "diachi": "DiaChi", "avatar": "Avatar",
+    "madiachi": "MaDiaChi", "tennguoinhan": "TenNguoiNhan",
+    "diachichitiet": "DiaChiChiTiet", "datmacdinh": "DatMacDinh",
+    "sdtnguoinhan": "SdtNguoiNhan", "nguoidanhgia": "NguoiDanhGia"
 }
 
 def normalize_row(cols, row):
@@ -104,11 +136,11 @@ def normalize_row(cols, row):
         res[c] = val
     return res
 
-from sqlite_adapter import get_sqlite_connection
+from sqlite_adapter import get_sqlite_connection, SQLiteConnectionWrapper
 
 def get_db_connection():
-    if os.getenv("USE_SQLITE", "0") == "1":
-        return get_sqlite_connection()
+    if os.getenv("USE_SQLITE", "0") == "1" or os.getenv("SQLITE_DB_PATH"):
+        return get_sqlite_connection(os.getenv("SQLITE_DB_PATH"))
     if pyodbc is not None:
         for driver in ["{SQL Server}", "{ODBC Driver 17 for SQL Server}", "{ODBC Driver 18 for SQL Server}"]:
             try:
@@ -145,6 +177,212 @@ def query_db(sql: str, params: tuple = (), fetch_one=False, commit=False):
         return result
     finally:
         conn.close()
+
+# =====================================================================
+# 1B. BẢO MẬT: PBKDF2-HMAC-SHA256, BEARER TOKEN HMAC-SHA256 & MIGRATION
+# =====================================================================
+AUTH_SECRET_KEY = os.getenv("AUTH_SECRET_KEY", "florabotanic-kieng-la-hmac-secret-2026").encode("utf-8")
+TOKEN_TTL_SECONDS = 60 * 60 * 24 * 7  # 7 ngày
+PBKDF2_ITERATIONS = 120_000
+LOCKED_ACCOUNT_STATUSES = {"khoa", "bikhoa", "bi_khoa", "locked", "bịkhóa", "bị_khóa"}
+CANCELLED_ORDER_STATUSES = {"đã hủy", "da_huy", "dahuy", "hủy", "huy", "cancelled", "canceled"}
+COMPLETED_ORDER_STATUSES = {"đã hoàn thành", "hoan_thanh", "hoanthanh", "dagiao", "đã giao", "hoàn thành"}
+
+# Lưu OTP demo cho luồng quên mật khẩu: {user_id: {"otp": str, "exp": float}}
+PASSWORD_RESET_OTPS: Dict[int, Dict[str, Any]] = {}
+
+def is_account_locked(status: Any) -> bool:
+    if not status:
+        return False
+    norm = str(status).strip().lower().replace(" ", "")
+    return norm in LOCKED_ACCOUNT_STATUSES
+
+def is_cancelled_status(status: Any) -> bool:
+    if not status:
+        return False
+    return str(status).strip().lower() in CANCELLED_ORDER_STATUSES
+
+def is_completed_status(status: Any) -> bool:
+    if not status:
+        return False
+    return str(status).strip().lower() in COMPLETED_ORDER_STATUSES
+
+def hash_password(plain_password: str) -> str:
+    salt = secrets.token_hex(16)
+    dk = hashlib.pbkdf2_hmac(
+        "sha256",
+        plain_password.encode("utf-8"),
+        salt.encode("utf-8"),
+        PBKDF2_ITERATIONS,
+    )
+    return f"pbkdf2$sha256${PBKDF2_ITERATIONS}${salt}${dk.hex()}"
+
+def verify_password(plain_password: str, stored_password: Any) -> bool:
+    if stored_password is None:
+        return False
+    stored = str(stored_password)
+    if stored.startswith("pbkdf2$"):
+        parts = stored.split("$")
+        if len(parts) != 5:
+            return False
+        _, algo, iter_str, salt, expected_hex = parts
+        try:
+            iterations = int(iter_str)
+            dk = hashlib.pbkdf2_hmac(
+                algo,
+                plain_password.encode("utf-8"),
+                salt.encode("utf-8"),
+                iterations,
+            )
+            return hmac.compare_digest(dk.hex(), expected_hex)
+        except Exception:
+            return False
+    # Tương thích ngược với tài khoản demo plain-text cũ
+    return hmac.compare_digest(stored, str(plain_password))
+
+def _b64url_encode(data: bytes) -> str:
+    return base64.urlsafe_b64encode(data).rstrip(b"=").decode("ascii")
+
+def _b64url_decode(data: str) -> bytes:
+    padding = "=" * (-len(data) % 4)
+    return base64.urlsafe_b64decode(data + padding)
+
+def create_access_token(user_id: int, username: str, role: str) -> str:
+    now_ts = int(time.time())
+    payload = {
+        "sub": int(user_id),
+        "username": str(username),
+        "role": str(role).upper(),
+        "iat": now_ts,
+        "exp": now_ts + TOKEN_TTL_SECONDS,
+    }
+    payload_b64 = _b64url_encode(json.dumps(payload, separators=(",", ":"), ensure_ascii=False).encode("utf-8"))
+    sig = hmac.new(AUTH_SECRET_KEY, payload_b64.encode("ascii"), hashlib.sha256).digest()
+    return f"{payload_b64}.{_b64url_encode(sig)}"
+
+def verify_access_token(token: str) -> Optional[Dict[str, Any]]:
+    try:
+        if not token or "." not in token:
+            return None
+        payload_b64, sig_b64 = token.split(".", 1)
+        expected_sig = hmac.new(AUTH_SECRET_KEY, payload_b64.encode("ascii"), hashlib.sha256).digest()
+        if not hmac.compare_digest(_b64url_encode(expected_sig), sig_b64):
+            return None
+        payload = json.loads(_b64url_decode(payload_b64).decode("utf-8"))
+        if int(payload.get("exp", 0)) < int(time.time()):
+            return None
+        return payload
+    except Exception:
+        return None
+
+def _extract_bearer_token(authorization: Optional[str]) -> Optional[str]:
+    if not authorization:
+        return None
+    parts = authorization.strip().split(" ", 1)
+    if len(parts) == 2 and parts[0].lower() == "bearer":
+        return parts[1].strip()
+    return None
+
+def get_optional_user(authorization: Optional[str] = Header(None)) -> Optional[Dict[str, Any]]:
+    token = _extract_bearer_token(authorization)
+    if not token:
+        return None
+    return verify_access_token(token)
+
+def get_current_user(authorization: Optional[str] = Header(None)) -> Dict[str, Any]:
+    token = _extract_bearer_token(authorization)
+    if not token:
+        raise HTTPException(status_code=401, detail="Yêu cầu đăng nhập (thiếu Authorization: Bearer <token>)!")
+    payload = verify_access_token(token)
+    if not payload:
+        raise HTTPException(status_code=401, detail="Token không hợp lệ hoặc đã hết hạn!")
+    return payload
+
+def require_admin(current_user: Dict[str, Any] = Depends(get_current_user)) -> Dict[str, Any]:
+    if str(current_user.get("role", "")).upper() != "ADMIN":
+        raise HTTPException(status_code=403, detail="Chỉ quản trị viên (ADMIN) mới có quyền thực hiện thao tác này!")
+    return current_user
+
+def parse_db_datetime(val: Any) -> Optional[datetime]:
+    if val is None:
+        return None
+    if isinstance(val, datetime):
+        return val
+    s = str(val).strip()
+    if not s:
+        return None
+    for fmt in (
+        "%Y-%m-%d %H:%M:%S.%f",
+        "%Y-%m-%d %H:%M:%S",
+        "%Y-%m-%dT%H:%M:%S.%f",
+        "%Y-%m-%dT%H:%M:%S",
+        "%Y-%m-%d",
+        "%d/%m/%Y",
+    ):
+        try:
+            return datetime.strptime(s[:26], fmt)
+        except ValueError:
+            continue
+    try:
+        return datetime.fromisoformat(s[:19])
+    except Exception:
+        return None
+
+def ensure_db_schema():
+    """Tự động bổ sung cột SODIENTHOAI, DIACHI, AVATAR cho NGUOI_DUNG và bảng DIA_CHI_NGUOI_DUNG nếu thiếu."""
+    try:
+        conn = get_db_connection()
+        try:
+            cursor = conn.cursor()
+            is_sqlite = isinstance(conn, SQLiteConnectionWrapper)
+            if is_sqlite:
+                cursor.execute("PRAGMA table_info(NGUOI_DUNG)")
+                existing_cols = {str(r[1]).upper() for r in cursor.fetchall()}
+                for col_name, col_def in [
+                    ("SODIENTHOAI", "TEXT DEFAULT ''"),
+                    ("DIACHI", "TEXT DEFAULT ''"),
+                    ("AVATAR", "TEXT DEFAULT ''"),
+                ]:
+                    if col_name not in existing_cols:
+                        cursor.execute(f"ALTER TABLE NGUOI_DUNG ADD COLUMN {col_name} {col_def}")
+                cursor.execute("""
+                    CREATE TABLE IF NOT EXISTS DIA_CHI_NGUOI_DUNG (
+                        MADIACHI INTEGER PRIMARY KEY,
+                        MANGUOIDUNG INTEGER,
+                        TENNGUOINHAN TEXT,
+                        DIACHICHITIET TEXT,
+                        DATMACDINH INTEGER DEFAULT 0,
+                        SDTNGUOINHAN TEXT
+                    )
+                """)
+            else:
+                for col_name, col_def in [
+                    ("SODIENTHOAI", "NVARCHAR(50) NULL"),
+                    ("DIACHI", "NVARCHAR(500) NULL"),
+                    ("AVATAR", "NVARCHAR(500) NULL"),
+                ]:
+                    cursor.execute(
+                        "SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'NGUOI_DUNG' AND COLUMN_NAME = ?",
+                        (col_name,),
+                    )
+                    if not cursor.fetchone():
+                        cursor.execute(f"ALTER TABLE NGUOI_DUNG ADD {col_name} {col_def}")
+                cursor.execute("""
+                    IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='DIA_CHI_NGUOI_DUNG' AND xtype='U')
+                    CREATE TABLE DIA_CHI_NGUOI_DUNG (
+                        MADIACHI INT PRIMARY KEY,
+                        MANGUOIDUNG INT,
+                        TENNGUOINHAN NVARCHAR(200),
+                        DIACHICHITIET NVARCHAR(500),
+                        DATMACDINH BIT DEFAULT 0,
+                        SDTNGUOINHAN NVARCHAR(50)
+                    )
+                """)
+            conn.commit()
+        finally:
+            conn.close()
+    except Exception as e:
+        print(f"[DB] Notice ensuring schema columns/tables: {e}")
 
 # =====================================================================
 # 2. TẢI MODEL AI KERAS & FILE ÁNH XẠ 90 LỚP
@@ -290,44 +528,81 @@ def entropy_weighted_pool(prob_matrix: np.ndarray, tta_batch: Optional[np.ndarra
 
 def calibrate_predictions(raw_preds: np.ndarray) -> np.ndarray:
     """
-    Hiệu chỉnh Prior (Logit Adjustment - Menon et al., 2021), khử nhiễu đồng kích hoạt lá đốm nhỏ
-    (#29 Dieffenbachia vs #37 Trúc đốm) và Temperature Scaling (Guo et al., 2017).
+    Chuẩn hóa phân phối xác suất Ensemble Từ số 0 (giữ nguyên xác suất gốc T=1.0,
+    không phóng đại nhiệt độ T=0.35 để bảo toàn độ chính xác 96.88% và khả năng tách cây lạ OOD).
     """
-    preds = raw_preds * PRIOR_CALIB
-    if int(np.argmax(preds)) == 29:
-        spotted_small_leaf_signal = raw_preds[37] + raw_preds[60]
-        araceae_large_leaf_signal = raw_preds[16]
-        if raw_preds[37] >= 0.0025 and spotted_small_leaf_signal > araceae_large_leaf_signal * 2.5:
-            preds[37] = preds[29] * 1.35
-            preds[29] = preds[29] * 0.25
+    preds = np.clip(np.asarray(raw_preds, dtype=np.float32), 1e-9, 1.0)
+    total = float(np.sum(preds))
+    return preds / total if total > 0 else preds
 
-    preds = np.clip(preds, 1e-9, 1.0)
-    logits_calibrated = np.log(preds) / 0.35
-    logits_calibrated -= np.max(logits_calibrated)
-    exp_logits = np.exp(logits_calibrated)
-    return exp_logits / np.sum(exp_logits)
+
+def load_keras_compat(model_path: str):
+    """Tải model .keras an toàn giữa các phiên bản Keras 3.12/3.13 (tự lọc quantization_config nếu cần)."""
+    try:
+        return tf.keras.models.load_model(model_path, compile=False)
+    except TypeError:
+        fd, tmp_name = tempfile.mkstemp(suffix=".keras")
+        os.close(fd)
+        tmp_path = Path(tmp_name)
+        try:
+            with zipfile.ZipFile(model_path, "r") as zin, zipfile.ZipFile(
+                tmp_path, "w", compression=zipfile.ZIP_DEFLATED
+            ) as zout:
+                for item in zin.infolist():
+                    data = zin.read(item.filename)
+                    if item.filename == "config.json":
+                        cfg = json.loads(data.decode("utf-8"))
+
+                        def _strip(obj):
+                            if isinstance(obj, dict):
+                                obj.pop("quantization_config", None)
+                                for v in obj.values():
+                                    _strip(v)
+                            elif isinstance(obj, list):
+                                for v in obj:
+                                    _strip(v)
+
+                        _strip(cfg)
+                        data = json.dumps(cfg).encode("utf-8")
+                    zout.writestr(item, data)
+            return tf.keras.models.load_model(str(tmp_path), compile=False)
+        finally:
+            tmp_path.unlink(missing_ok=True)
+
 
 @app.on_event("startup")
 def load_ai_resources():
     global model, ensemble_models, class_mapping
+    ensure_db_schema()
     ensemble_models = []
-    candidate_models = [
-        (MODEL_PATH, 0.25, "MobileNetV2-30k-Seed123"),
-        (os.path.join("model", "best_model_seed_999_fixed.keras"), 0.20, "MobileNetV2-Seed999"),
-        (os.path.join("model", "efficientnet_b0_30k.keras"), 0.45, "EfficientNetB0-30k"),
-        (os.path.join("model", "best_model_80_10_10_clean.keras"), 0.10, "MobileNetV2-80-10-10"),
-    ]
-    for m_path, m_weight, m_name in candidate_models:
-        if os.path.exists(m_path):
+    if os.getenv("SKIP_AI_LOAD", "0") != "1" and tf is not None:
+        candidate_models = [
+            (os.path.join("model", "efficientnet_b0_tu_so_0.keras"), 0.34, "EfficientNetB0-TuSo0-84.5"),
+            (os.path.join("model", "mobilenetv2_tu_so_0_seed_99.keras"), 0.22, "MobileNetV2-TuSo0-Seed99"),
+            (os.path.join("model", "mobilenetv2_tu_so_0_seed_123.keras"), 0.22, "MobileNetV2-TuSo0-Seed123"),
+            (os.path.join("model", "mobilenetv2_tu_so_0_seed_999.keras"), 0.22, "MobileNetV2-TuSo0-Seed999"),
+        ]
+        for m_path, m_weight, m_name in candidate_models:
+            if os.path.exists(m_path):
+                try:
+                    loaded_m = load_keras_compat(m_path)
+                    if loaded_m.output_shape[-1] == 90:
+                        ensemble_models.append((loaded_m, m_weight, m_name))
+                        if model is None:
+                            model = loaded_m
+                        print(f"[AI] Loaded ensemble member: {m_name} ({m_path}, weight={m_weight})")
+                except Exception as e:
+                    print(f"[AI] Warning loading {m_path}: {e}")
+
+        if not ensemble_models and os.path.exists(MODEL_PATH):
             try:
-                loaded_m = tf.keras.models.load_model(m_path, compile=False)
+                loaded_m = load_keras_compat(MODEL_PATH)
                 if loaded_m.output_shape[-1] == 90:
-                    ensemble_models.append((loaded_m, m_weight, m_name))
-                    if model is None:
-                        model = loaded_m
-                    print(f"[AI] Loaded ensemble member: {m_name} ({m_path}, weight={m_weight})")
+                    ensemble_models.append((loaded_m, 1.0, "Fallback-BestModel"))
+                    model = loaded_m
+                    print(f"[AI] Loaded fallback model: {MODEL_PATH}")
             except Exception as e:
-                print(f"[AI] Warning loading {m_path}: {e}")
+                print(f"[AI] Warning loading fallback {MODEL_PATH}: {e}")
 
     labels_vi_path = os.path.join("model", "labels_vi.json")
     class_names_path = os.path.join("model", "class_names.json")
@@ -407,7 +682,13 @@ class CheckoutRequest(BaseModel):
 
 @app.get("/health")
 def health_check():
-    return {"status": "ok", "service": "FloraBotanic AI Service"}
+    return {
+        "status": "ok",
+        "service": "FloraBotanic AI Service",
+        "model_version": "v2.0-TuSo0",
+        "ensemble_count": len(ensemble_models),
+        "ensemble_members": [m[2] for m in ensemble_models],
+    }
 
 @app.get("/api/danh-muc")
 def get_danh_muc():
@@ -548,8 +829,8 @@ async def nhan_dien_cay(
     # 4. Hoặc mã loài không tồn tại trong bảng LOAI_CAY
     # =====================================================================
     UNKNOWN_CLASS_ID = 91
-    CONFIDENCE_THRESHOLD = 0.16
-    ENTROPY_THRESHOLD = 0.88
+    CONFIDENCE_THRESHOLD = 0.55
+    ENTROPY_THRESHOLD = 0.55
     is_unknown_species = (
         top1_prob < CONFIDENCE_THRESHOLD
         or norm_entropy > ENTROPY_THRESHOLD
@@ -564,7 +845,7 @@ async def nhan_dien_cay(
     )
     cursor.execute("""
         INSERT INTO TIM_ANH (MATIMKIEM, MANGUOIDUNG, HINHANHURL, THOIGIAN, NENTANG, PHIENBANMODEL, TRANGTHAINHANDIEN)
-        VALUES (?, ?, ?, GETDATE(), N'Web', N'v1.0', ?)
+        VALUES (?, ?, ?, GETDATE(), N'Web', N'v2.0-TuSo0', ?)
     """, (ma_tim_kiem, user_id_val, f"/uploads/{filename}", trang_thai_nhan_dien))
 
     ket_qua_tra_ve = []
@@ -1345,83 +1626,310 @@ class CreateSpeciesRequest(BaseModel):
 class UpdateOrderStatusRequest(BaseModel):
     TrangThaiDonHang: str
 
-@app.get("/api/admin/thong-ke")
-def get_admin_thong_ke():
+def _compute_admin_stats(
+    from_date: Optional[str] = None,
+    to_date: Optional[str] = None,
+    group_by: str = "day",
+) -> Dict[str, Any]:
+    gb = (group_by or "day").strip().lower()
+    if gb not in ("day", "month", "year"):
+        raise HTTPException(status_code=400, detail="group_by chỉ chấp nhận: day, month, year")
+
+    start_dt = parse_db_datetime(from_date) if from_date else None
+    end_dt = parse_db_datetime(to_date) if to_date else None
+    if from_date and start_dt is None:
+        raise HTTPException(status_code=400, detail="from_date không đúng định dạng (YYYY-MM-DD)")
+    if to_date and end_dt is None:
+        raise HTTPException(status_code=400, detail="to_date không đúng định dạng (YYYY-MM-DD)")
+    if end_dt is not None:
+        end_dt = end_dt.replace(hour=23, minute=59, second=59, microsecond=999999)
+    if start_dt and end_dt and start_dt > end_dt:
+        raise HTTPException(status_code=400, detail="from_date phải nhỏ hơn hoặc bằng to_date")
+
+    # Xác định khoảng kỳ trước để tính tăng trưởng
+    now = datetime.now()
+    if start_dt and end_dt:
+        span_days = max(1, (end_dt.date() - start_dt.date()).days + 1)
+        prev_end = start_dt - timedelta(seconds=1)
+        prev_start = (start_dt - timedelta(days=span_days)).replace(hour=0, minute=0, second=0, microsecond=0)
+    elif start_dt:
+        span_days = max(1, (now.date() - start_dt.date()).days + 1)
+        prev_end = start_dt - timedelta(seconds=1)
+        prev_start = (start_dt - timedelta(days=span_days)).replace(hour=0, minute=0, second=0, microsecond=0)
+    elif end_dt:
+        prev_end = (end_dt - timedelta(days=30)).replace(hour=23, minute=59, second=59, microsecond=999999)
+        prev_start = (prev_end - timedelta(days=29)).replace(hour=0, minute=0, second=0, microsecond=0)
+    else:
+        # Không truyền filter ngày: kỳ hiện tại = toàn bộ (hoặc 30 ngày gần nhất cho so sánh kỳ trước)
+        cur_30_start = (now - timedelta(days=29)).replace(hour=0, minute=0, second=0, microsecond=0)
+        prev_end = cur_30_start - timedelta(seconds=1)
+        prev_start = (cur_30_start - timedelta(days=30)).replace(hour=0, minute=0, second=0, microsecond=0)
+
     conn = get_db_connection()
-    cursor = conn.cursor()
+    try:
+        cursor = conn.cursor()
 
-    # 1. Tổng doanh thu
-    cursor.execute("SELECT ISNULL(SUM(TONGTIEN), 0) FROM DON_HANG WHERE TRANGTHAIDONHANG != N'Đã hủy'")
-    tong_doanh_thu = float(cursor.fetchone()[0] or 0)
+        # Lấy tất cả đơn hàng để lọc chính xác trên cả SQLite và SQL Server
+        cursor.execute("SELECT MADONHANG, NGAYDATHANG, TONGTIEN, TRANGTHAIDONHANG FROM DON_HANG")
+        all_orders = cursor.fetchall()
 
-    # 2. Tổng đơn hàng
-    cursor.execute("SELECT COUNT(*) FROM DON_HANG")
-    tong_don_hang = int(cursor.fetchone()[0] or 0)
+        filtered_order_ids = set()
+        tong_doanh_thu = 0.0
+        doanh_thu_ky_truoc = 0.0
+        doanh_thu_30_ngay = 0.0
+        tong_don_hang = 0
+        don_hoan_thanh = 0
+        don_da_huy = 0
 
-    # 3. Tổng số chậu cây và tồn kho
-    cursor.execute("SELECT COUNT(*), ISNULL(SUM(SOLUONGTONKHO), 0) FROM SAN_PHAM")
-    sp_row = cursor.fetchone()
-    so_san_pham = int(sp_row[0] or 0)
-    tong_ton_kho = int(sp_row[1] or 0)
+        time_buckets: Dict[str, Dict[str, Any]] = {}
+        status_counts: Dict[str, int] = defaultdict(int)
 
-    # 4. Tổng lượt tìm kiếm ảnh AI
-    cursor.execute("SELECT COUNT(*) FROM TIM_ANH")
-    tong_luot_quet = int(cursor.fetchone()[0] or 0)
+        cur_30_start_ref = (now - timedelta(days=29)).replace(hour=0, minute=0, second=0, microsecond=0)
 
-    # 5. Đơn hàng gần đây
-    cursor.execute("""
-        SELECT TOP 5 dh.MADONHANG, dh.NGAYDATHANG, dh.TONGTIEN, dh.TRANGTHAIDONHANG,
-                     dh.DIACHINHANHANG, dh.SDTNHANHANG, ISNULL(nd.HOTEN, nd.TAIKHOAN) AS KHACHHANG
-        FROM DON_HANG dh
-        LEFT JOIN NGUOI_DUNG nd ON dh.MANGUOIDUNG = nd.MANGUOIDUNG
-        ORDER BY dh.MADONHANG DESC
-    """)
-    recent_orders = [
-        {
-            "MaDonHang": r[0],
-            "NgayDatHang": str(r[1])[:19] if r[1] else "",
-            "TongTien": float(r[2] or 0),
-            "TrangThai": r[3],
-            "DiaChi": r[4],
-            "SDT": r[5],
-            "KhachHang": r[6] or "Khách mua lẻ"
+        for oid, ngay_raw, tong_raw, status_raw in all_orders:
+            odt = parse_db_datetime(ngay_raw)
+            amount = float(tong_raw or 0.0)
+            status_str = str(status_raw or "Chờ xử lý").strip()
+            cancelled = is_cancelled_status(status_str)
+
+            # Kiểm tra kỳ trước
+            if odt is not None and prev_start <= odt <= prev_end and not cancelled:
+                doanh_thu_ky_truoc += amount
+
+            if odt is not None and odt >= cur_30_start_ref and not cancelled:
+                doanh_thu_30_ngay += amount
+
+            # Kiểm tra khoảng lọc hiện tại
+            if start_dt is not None and (odt is None or odt < start_dt):
+                continue
+            if end_dt is not None and (odt is None or odt > end_dt):
+                continue
+
+            filtered_order_ids.add(oid)
+            tong_don_hang += 1
+            status_counts[status_str] += 1
+
+            if cancelled:
+                don_da_huy += 1
+            else:
+                tong_doanh_thu += amount
+                if is_completed_status(status_str):
+                    don_hoan_thanh += 1
+
+                if odt is not None:
+                    if gb == "year":
+                        label = odt.strftime("%Y")
+                    elif gb == "month":
+                        label = odt.strftime("%Y-%m")
+                    else:
+                        label = odt.strftime("%Y-%m-%d")
+                else:
+                    label = "Không rõ"
+
+                if label not in time_buckets:
+                    time_buckets[label] = {"label": label, "doanh_thu": 0.0, "so_don": 0}
+                time_buckets[label]["doanh_thu"] += amount
+                time_buckets[label]["so_don"] += 1
+
+        # Tính % tăng trưởng
+        cur_compare = tong_doanh_thu if (start_dt or end_dt) else doanh_thu_30_ngay
+        if doanh_thu_ky_truoc > 0:
+            tang_truong_phan_tram = round(((cur_compare - doanh_thu_ky_truoc) / doanh_thu_ky_truoc) * 100.0, 2)
+        else:
+            tang_truong_phan_tram = 100.0 if cur_compare > 0 else 0.0
+
+        ty_le_huy = round((don_da_huy / tong_don_hang) * 100.0, 2) if tong_don_hang > 0 else 0.0
+
+        doanh_thu_theo_thoi_gian = [
+            {
+                "label": v["label"],
+                "doanh_thu": round(v["doanh_thu"], 2),
+                "so_don": v["so_don"],
+            }
+            for _, v in sorted(time_buckets.items(), key=lambda x: x[0])
+        ]
+
+        don_hang_theo_trang_thai = [
+            {"trang_thai": k, "so_luong": v}
+            for k, v in sorted(status_counts.items(), key=lambda x: x[1], reverse=True)
+        ]
+
+        # Top sản phẩm bán chạy (chỉ tính đơn không hủy trong khoảng lọc)
+        cursor.execute("""
+            SELECT ct.MADONHANG, ct.MASANPHAM, sp.TENSANPHAM, ct.SOLUONGMUA, ct.DONGIAMUA, dh.TRANGTHAIDONHANG
+            FROM CHI_TIET_DON_HANG ct
+            JOIN DON_HANG dh ON ct.MADONHANG = dh.MADONHANG
+            LEFT JOIN SAN_PHAM sp ON ct.MASANPHAM = sp.MASANPHAM
+        """)
+        prod_sales: Dict[int, Dict[str, Any]] = {}
+        for oid, sp_id, sp_ten, qty_raw, price_raw, status_raw in cursor.fetchall():
+            if oid not in filtered_order_ids or is_cancelled_status(status_raw):
+                continue
+            qty = int(qty_raw or 0)
+            rev = qty * float(price_raw or 0.0)
+            if sp_id not in prod_sales:
+                prod_sales[sp_id] = {
+                    "id": sp_id,
+                    "ten": sp_ten or f"Sản phẩm #{sp_id}",
+                    "da_ban": 0,
+                    "doanh_thu": 0.0,
+                }
+            prod_sales[sp_id]["da_ban"] += qty
+            prod_sales[sp_id]["doanh_thu"] += rev
+
+        top_san_pham_ban_chay = sorted(
+            [
+                {
+                    "id": v["id"],
+                    "ten": v["ten"],
+                    "da_ban": v["da_ban"],
+                    "doanh_thu": round(v["doanh_thu"], 2),
+                }
+                for v in prod_sales.values()
+            ],
+            key=lambda x: (x["da_ban"], x["doanh_thu"]),
+            reverse=True,
+        )[:10]
+
+        # Tổng số chậu cây, tồn kho & sản phẩm sắp hết (ton_kho <= 5)
+        cursor.execute("SELECT COUNT(*), ISNULL(SUM(SOLUONGTONKHO), 0) FROM SAN_PHAM")
+        sp_row = cursor.fetchone()
+        so_san_pham = int(sp_row[0] or 0)
+        tong_ton_kho = int(sp_row[1] or 0)
+
+        cursor.execute("""
+            SELECT TOP 20 MASANPHAM, TENSANPHAM, SOLUONGTONKHO
+            FROM SAN_PHAM
+            WHERE SOLUONGTONKHO <= 5
+            ORDER BY SOLUONGTONKHO ASC, MASANPHAM ASC
+        """)
+        san_pham_sap_het = [
+            {"id": r[0], "ten": r[1] or f"Sản phẩm #{r[0]}", "ton_kho": int(r[2] or 0)}
+            for r in cursor.fetchall()
+        ]
+
+        # Tổng lượt tìm kiếm ảnh AI
+        cursor.execute("SELECT COUNT(*) FROM TIM_ANH")
+        tong_luot_quet = int(cursor.fetchone()[0] or 0)
+
+        # Đơn hàng gần đây
+        cursor.execute("""
+            SELECT TOP 5 dh.MADONHANG, dh.NGAYDATHANG, dh.TONGTIEN, dh.TRANGTHAIDONHANG,
+                         dh.DIACHINHANHANG, dh.SDTNHANHANG, ISNULL(nd.HOTEN, nd.TAIKHOAN) AS KHACHHANG
+            FROM DON_HANG dh
+            LEFT JOIN NGUOI_DUNG nd ON dh.MANGUOIDUNG = nd.MANGUOIDUNG
+            ORDER BY dh.MADONHANG DESC
+        """)
+        recent_orders = [
+            {
+                "MaDonHang": r[0],
+                "NgayDatHang": str(r[1])[:19] if r[1] else "",
+                "TongTien": float(r[2] or 0),
+                "TrangThai": r[3],
+                "DiaChi": r[4],
+                "SDT": r[5],
+                "KhachHang": r[6] or "Khách mua lẻ",
+            }
+            for r in cursor.fetchall()
+        ]
+
+        # Nhật ký quét AI gần đây
+        cursor.execute("""
+            SELECT TOP 6 ta.MATIMKIEM, ta.THOIGIAN, ta.HINHANHURL,
+                         lc.TENTHUONGGOI, kq.XACSUATCHINHXAC, lc.MALOAICAY, ta.TRANGTHAINHANDIEN
+            FROM TIM_ANH ta
+            LEFT JOIN KET_QUA_NHAN_DIEN kq ON ta.MATIMKIEM = kq.MATIMKIEM AND kq.THUHANG = 1
+            LEFT JOIN LOAI_CAY lc ON kq.MALOAICAY = lc.MALOAICAY
+            ORDER BY ta.MATIMKIEM DESC
+        """)
+        recent_scans = [
+            {
+                "MaTimKiem": r[0],
+                "ThoiGian": str(r[1])[:19] if r[1] else "",
+                "HinhAnh": r[2],
+                "LoaiDuDoan": r[3] or "Cây kiểng lá",
+                "DoChinhXac": float(r[4] or 90.0),
+                "MaLoaiCay": r[5] or 1,
+                "TrangThaiNhanDien": r[6] or "Thành công",
+                "LaLoaiKhac": (r[5] == 91) or ("lớp khác" in str(r[6] or "").lower()),
+            }
+            for r in cursor.fetchall()
+        ]
+
+        return {
+            "tong_doanh_thu": round(tong_doanh_thu, 2),
+            "tong_don_hang": tong_don_hang,
+            "so_san_pham": so_san_pham,
+            "tong_ton_kho": tong_ton_kho,
+            "tong_luot_quet": tong_luot_quet,
+            "don_hang_gan_day": recent_orders,
+            "quet_ai_gan_day": recent_scans,
+            "from_date": from_date,
+            "to_date": to_date,
+            "group_by": gb,
+            "doanh_thu_ky_truoc": round(doanh_thu_ky_truoc, 2),
+            "tang_truong_phan_tram": tang_truong_phan_tram,
+            "don_hoan_thanh": don_hoan_thanh,
+            "don_da_huy": don_da_huy,
+            "ty_le_huy": ty_le_huy,
+            "doanh_thu_theo_thoi_gian": doanh_thu_theo_thoi_gian,
+            "don_hang_theo_trang_thai": don_hang_theo_trang_thai,
+            "top_san_pham_ban_chay": top_san_pham_ban_chay,
+            "san_pham_sap_het": san_pham_sap_het,
         }
-        for r in cursor.fetchall()
-    ]
+    finally:
+        conn.close()
 
-    # 6. Nhật ký quét AI gần đây
-    cursor.execute("""
-        SELECT TOP 6 ta.MATIMKIEM, ta.THOIGIAN, ta.HINHANHURL,
-                     lc.TENTHUONGGOI, kq.XACSUATCHINHXAC, lc.MALOAICAY, ta.TRANGTHAINHANDIEN
-        FROM TIM_ANH ta
-        LEFT JOIN KET_QUA_NHAN_DIEN kq ON ta.MATIMKIEM = kq.MATIMKIEM AND kq.THUHANG = 1
-        LEFT JOIN LOAI_CAY lc ON kq.MALOAICAY = lc.MALOAICAY
-        ORDER BY ta.MATIMKIEM DESC
-    """)
-    recent_scans = [
-        {
-            "MaTimKiem": r[0],
-            "ThoiGian": str(r[1])[:19] if r[1] else "",
-            "HinhAnh": r[2],
-            "LoaiDuDoan": r[3] or "Cây kiểng lá",
-            "DoChinhXac": float(r[4] or 90.0),
-            "MaLoaiCay": r[5] or 1,
-            "TrangThaiNhanDien": r[6] or "Thành công",
-            "LaLoaiKhac": (r[5] == 91) or ("lớp khác" in str(r[6] or "").lower())
-        }
-        for r in cursor.fetchall()
-    ]
+@app.get("/api/admin/thong-ke")
+def get_admin_thong_ke(
+    from_date: Optional[str] = Query(None),
+    to_date: Optional[str] = Query(None),
+    group_by: str = Query("day"),
+    _admin: Dict[str, Any] = Depends(require_admin),
+):
+    return _compute_admin_stats(from_date=from_date, to_date=to_date, group_by=group_by)
 
-    conn.close()
-    return {
-        "tong_doanh_thu": tong_doanh_thu,
-        "tong_don_hang": tong_don_hang,
-        "so_san_pham": so_san_pham,
-        "tong_ton_kho": tong_ton_kho,
-        "tong_luot_quet": tong_luot_quet,
-        "don_hang_gan_day": recent_orders,
-        "quet_ai_gan_day": recent_scans
-    }
+@app.get("/api/admin/thong-ke/export-csv")
+def export_admin_thong_ke_csv(
+    from_date: Optional[str] = Query(None),
+    to_date: Optional[str] = Query(None),
+    group_by: str = Query("day"),
+    _admin: Dict[str, Any] = Depends(require_admin),
+):
+    stats = _compute_admin_stats(from_date=from_date, to_date=to_date, group_by=group_by)
+    buf = io.StringIO()
+    writer = csv.writer(buf)
+
+    writer.writerow(["BÁO CÁO THỐNG KÊ DOANH THU - CÂY KIỂNG LÁ AI"])
+    writer.writerow(["Từ ngày", from_date or "Tất cả", "Đến ngày", to_date or "Tất cả", "Nhóm theo", stats["group_by"]])
+    writer.writerow([])
+    writer.writerow(["Chỉ số", "Giá trị"])
+    writer.writerow(["Tổng doanh thu (VNĐ)", stats["tong_doanh_thu"]])
+    writer.writerow(["Doanh thu kỳ trước (VNĐ)", stats["doanh_thu_ky_truoc"]])
+    writer.writerow(["Tăng trưởng (%)", stats["tang_truong_phan_tram"]])
+    writer.writerow(["Tổng đơn hàng", stats["tong_don_hang"]])
+    writer.writerow(["Đơn hoàn thành", stats["don_hoan_thanh"]])
+    writer.writerow(["Đơn đã hủy", stats["don_da_huy"]])
+    writer.writerow(["Tỷ lệ hủy (%)", stats["ty_le_huy"]])
+    writer.writerow([])
+
+    writer.writerow(["DOANH THU THEO THỜI GIAN"])
+    writer.writerow(["Thời gian", "Doanh thu (VNĐ)", "Số đơn"])
+    for item in stats["doanh_thu_theo_thoi_gian"]:
+        writer.writerow([item["label"], item["doanh_thu"], item["so_don"]])
+    writer.writerow([])
+
+    writer.writerow(["TOP SẢN PHẨM BÁN CHẠY"])
+    writer.writerow(["Mã SP", "Tên sản phẩm", "Đã bán", "Doanh thu (VNĐ)"])
+    for item in stats["top_san_pham_ban_chay"]:
+        writer.writerow([item["id"], item["ten"], item["da_ban"], item["doanh_thu"]])
+
+    csv_bytes = ("\ufeff" + buf.getvalue()).encode("utf-8")
+    return Response(
+        content=csv_bytes,
+        media_type="text/csv; charset=utf-8",
+        headers={"Content-Disposition": 'attachment; filename="bao_cao_doanh_thu.csv"'},
+    )
 
 class UpdateUserStatusRequest(BaseModel):
     trangThai: str
@@ -1435,6 +1943,7 @@ class CreateUserAdminRequest(BaseModel):
     hoTen: str
     email: Optional[str] = ""
     diaChi: Optional[str] = ""
+    soDienThoai: Optional[str] = ""
     vaiTro: str = "KhachHang"
     trangThaiTaiKhoan: str = "HoatDong"
 
@@ -1442,22 +1951,25 @@ class UpdateUserAdminRequest(BaseModel):
     hoTen: Optional[str] = None
     email: Optional[str] = None
     diaChi: Optional[str] = None
+    soDienThoai: Optional[str] = None
     vaiTro: Optional[str] = None
     trangThaiTaiKhoan: Optional[str] = None
     matKhau: Optional[str] = None
 
 @app.get("/api/admin/nguoi-dung")
-def get_admin_users():
+def get_admin_users(_admin: Dict[str, Any] = Depends(require_admin)):
     conn = get_db_connection()
     cursor = conn.cursor()
     cursor.execute("""
         SELECT nd.MANGUOIDUNG, nd.TAIKHOAN, nd.HOTEN, nd.EMAIL, nd.DIACHI,
+               nd.SODIENTHOAI, nd.AVATAR,
                nd.VAITRO, nd.NGAYDANGKY, nd.TRANGTHAITAIKHOAN,
                COUNT(dh.MADONHANG) AS SOTRUONGDONHANG,
                ISNULL(SUM(dh.TONGTIEN), 0) AS TONGCHITIEU
         FROM NGUOI_DUNG nd
         LEFT JOIN DON_HANG dh ON nd.MANGUOIDUNG = dh.MANGUOIDUNG
         GROUP BY nd.MANGUOIDUNG, nd.TAIKHOAN, nd.HOTEN, nd.EMAIL, nd.DIACHI,
+                 nd.SODIENTHOAI, nd.AVATAR,
                  nd.VAITRO, nd.NGAYDANGKY, nd.TRANGTHAITAIKHOAN
         ORDER BY nd.MANGUOIDUNG ASC
     """)
@@ -1469,7 +1981,7 @@ def get_admin_users():
     return users
 
 @app.put("/api/admin/nguoi-dung/{ma_nguoi_dung}/trang-thai")
-def update_user_status(ma_nguoi_dung: int, req: UpdateUserStatusRequest):
+def update_user_status(ma_nguoi_dung: int, req: UpdateUserStatusRequest, _admin: Dict[str, Any] = Depends(require_admin)):
     conn = get_db_connection()
     cursor = conn.cursor()
     cursor.execute("UPDATE NGUOI_DUNG SET TRANGTHAITAIKHOAN = ? WHERE MANGUOIDUNG = ?", (req.trangThai, ma_nguoi_dung))
@@ -1478,7 +1990,7 @@ def update_user_status(ma_nguoi_dung: int, req: UpdateUserStatusRequest):
     return {"message": f"Đã chuyển trạng thái tài khoản thành {req.trangThai}", "MaNguoiDung": ma_nguoi_dung, "TrangThaiMoi": req.trangThai}
 
 @app.put("/api/admin/nguoi-dung/{ma_nguoi_dung}/vai-tro")
-def update_user_role(ma_nguoi_dung: int, req: UpdateUserRoleRequest):
+def update_user_role(ma_nguoi_dung: int, req: UpdateUserRoleRequest, _admin: Dict[str, Any] = Depends(require_admin)):
     conn = get_db_connection()
     cursor = conn.cursor()
     cursor.execute("UPDATE NGUOI_DUNG SET VAITRO = ? WHERE MANGUOIDUNG = ?", (req.vaiTro, ma_nguoi_dung))
@@ -1487,7 +1999,7 @@ def update_user_role(ma_nguoi_dung: int, req: UpdateUserRoleRequest):
     return {"message": f"Đã đổi vai trò người dùng thành {req.vaiTro}", "MaNguoiDung": ma_nguoi_dung, "VaiTroMoi": req.vaiTro}
 
 @app.post("/api/admin/nguoi-dung")
-def create_admin_user(req: CreateUserAdminRequest):
+def create_admin_user(req: CreateUserAdminRequest, _admin: Dict[str, Any] = Depends(require_admin)):
     conn = get_db_connection()
     cursor = conn.cursor()
     cursor.execute("SELECT MANGUOIDUNG FROM NGUOI_DUNG WHERE LOWER(TAIKHOAN) = LOWER(?)", (req.taiKhoan.strip(),))
@@ -1498,16 +2010,27 @@ def create_admin_user(req: CreateUserAdminRequest):
     cursor.execute("SELECT ISNULL(MAX(MANGUOIDUNG), 0) + 1 FROM NGUOI_DUNG")
     next_id = cursor.fetchone()[0]
 
+    hashed_pw = hash_password(req.matKhau.strip())
     cursor.execute("""
-        INSERT INTO NGUOI_DUNG (MANGUOIDUNG, TAIKHOAN, MATKHAU, HOTEN, EMAIL, DIACHI, VAITRO, TRANGTHAITAIKHOAN, NGAYDANGKY)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, GETDATE())
-    """, (next_id, req.taiKhoan.strip(), req.matKhau.strip(), req.hoTen.strip(), req.email.strip() if req.email else "", req.diaChi.strip() if req.diaChi else "", req.vaiTro, req.trangThaiTaiKhoan))
+        INSERT INTO NGUOI_DUNG (MANGUOIDUNG, TAIKHOAN, MATKHAU, HOTEN, EMAIL, DIACHI, SODIENTHOAI, VAITRO, TRANGTHAITAIKHOAN, NGAYDANGKY)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, GETDATE())
+    """, (
+        next_id,
+        req.taiKhoan.strip(),
+        hashed_pw,
+        req.hoTen.strip(),
+        req.email.strip() if req.email else "",
+        req.diaChi.strip() if req.diaChi else "",
+        req.soDienThoai.strip() if req.soDienThoai else "",
+        req.vaiTro,
+        req.trangThaiTaiKhoan,
+    ))
     conn.commit()
     conn.close()
     return {"message": "Tạo tài khoản / nhân sự mới thành công!", "MaNguoiDung": next_id, "TaiKhoan": req.taiKhoan}
 
 @app.put("/api/admin/nguoi-dung/{ma_nguoi_dung}")
-def update_admin_user(ma_nguoi_dung: int, req: UpdateUserAdminRequest):
+def update_admin_user(ma_nguoi_dung: int, req: UpdateUserAdminRequest, _admin: Dict[str, Any] = Depends(require_admin)):
     conn = get_db_connection()
     cursor = conn.cursor()
     cursor.execute("SELECT MANGUOIDUNG FROM NGUOI_DUNG WHERE MANGUOIDUNG = ?", (ma_nguoi_dung,))
@@ -1521,19 +2044,21 @@ def update_admin_user(ma_nguoi_dung: int, req: UpdateUserAdminRequest):
         cursor.execute("UPDATE NGUOI_DUNG SET EMAIL = ? WHERE MANGUOIDUNG = ?", (req.email, ma_nguoi_dung))
     if req.diaChi is not None:
         cursor.execute("UPDATE NGUOI_DUNG SET DIACHI = ? WHERE MANGUOIDUNG = ?", (req.diaChi, ma_nguoi_dung))
+    if req.soDienThoai is not None:
+        cursor.execute("UPDATE NGUOI_DUNG SET SODIENTHOAI = ? WHERE MANGUOIDUNG = ?", (req.soDienThoai, ma_nguoi_dung))
     if req.vaiTro is not None:
         cursor.execute("UPDATE NGUOI_DUNG SET VAITRO = ? WHERE MANGUOIDUNG = ?", (req.vaiTro, ma_nguoi_dung))
     if req.trangThaiTaiKhoan is not None:
         cursor.execute("UPDATE NGUOI_DUNG SET TRANGTHAITAIKHOAN = ? WHERE MANGUOIDUNG = ?", (req.trangThaiTaiKhoan, ma_nguoi_dung))
     if req.matKhau is not None and req.matKhau.strip():
-        cursor.execute("UPDATE NGUOI_DUNG SET MATKHAU = ? WHERE MANGUOIDUNG = ?", (req.matKhau.strip(), ma_nguoi_dung))
+        cursor.execute("UPDATE NGUOI_DUNG SET MATKHAU = ? WHERE MANGUOIDUNG = ?", (hash_password(req.matKhau.strip()), ma_nguoi_dung))
 
     conn.commit()
     conn.close()
     return {"message": "Cập nhật tài khoản thành công!", "MaNguoiDung": ma_nguoi_dung}
 
 @app.delete("/api/admin/nguoi-dung/{ma_nguoi_dung}")
-def delete_admin_user(ma_nguoi_dung: int):
+def delete_admin_user(ma_nguoi_dung: int, _admin: Dict[str, Any] = Depends(require_admin)):
     conn = get_db_connection()
     cursor = conn.cursor()
     cursor.execute("SELECT COUNT(*) FROM DON_HANG WHERE MANGUOIDUNG = ?", (ma_nguoi_dung,))
@@ -1544,6 +2069,7 @@ def delete_admin_user(ma_nguoi_dung: int):
         conn.close()
         return {"message": "Người dùng đã có đơn hàng trong hệ thống nên được chuyển sang trạng thái 'Bị khóa' để bảo toàn dữ liệu!", "action": "locked"}
 
+    cursor.execute("DELETE FROM DIA_CHI_NGUOI_DUNG WHERE MANGUOIDUNG = ?", (ma_nguoi_dung,))
     cursor.execute("DELETE FROM GIO_HANG WHERE MANGUOIDUNG = ?", (ma_nguoi_dung,))
     cursor.execute("DELETE FROM NGUOI_DUNG WHERE MANGUOIDUNG = ?", (ma_nguoi_dung,))
     conn.commit()
@@ -1551,7 +2077,7 @@ def delete_admin_user(ma_nguoi_dung: int):
     return {"message": "Đã xóa tài khoản thành công!", "action": "deleted"}
 
 @app.get("/api/admin/don-hang")
-def get_admin_don_hang():
+def get_admin_don_hang(_admin: Dict[str, Any] = Depends(require_admin)):
     return query_db("""
         SELECT dh.MADONHANG, dh.NGAYDATHANG, dh.TONGTIEN, dh.TAMTINH, dh.SOTIENGIAM, dh.PHIVANCHUYEN,
                dh.TRANGTHAIDONHANG, dh.TRANGTHAITHANHTOAN, dh.PHUONGTHUCTHANHTOAN,
@@ -1564,7 +2090,7 @@ def get_admin_don_hang():
     """)
 
 @app.get("/api/admin/don-hang/{ma_don_hang}/chi-tiet")
-def get_admin_don_hang_chi_tiet(ma_don_hang: int):
+def get_admin_don_hang_chi_tiet(ma_don_hang: int, _admin: Dict[str, Any] = Depends(require_admin)):
     conn = get_db_connection()
     cursor = conn.cursor()
     cursor.execute("""
@@ -1609,36 +2135,64 @@ def get_admin_don_hang_chi_tiet(ma_don_hang: int):
     }
 
 @app.put("/api/admin/don-hang/{ma_don_hang}/trang-thai")
-def update_trang_thai_don_hang(ma_don_hang: int, req: UpdateOrderStatusRequest):
+def update_trang_thai_don_hang(
+    ma_don_hang: int,
+    req: UpdateOrderStatusRequest,
+    _admin: Dict[str, Any] = Depends(require_admin),
+):
     conn = get_db_connection()
-    cursor = conn.cursor()
+    try:
+        cursor = conn.cursor()
 
-    cursor.execute("SELECT TRANGTHAIDONHANG, MACHUONGTRINHGIAMGIA FROM DON_HANG WHERE MADONHANG = ?", (ma_don_hang,))
-    curr_row = cursor.fetchone()
-    old_status = curr_row[0] if curr_row else None
-    voucher_id = curr_row[1] if curr_row else None
+        cursor.execute("SELECT TRANGTHAIDONHANG, MACHUONGTRINHGIAMGIA FROM DON_HANG WHERE MADONHANG = ?", (ma_don_hang,))
+        curr_row = cursor.fetchone()
+        if not curr_row:
+            raise HTTPException(status_code=404, detail="Không tìm thấy đơn hàng!")
 
-    cursor.execute("UPDATE DON_HANG SET TRANGTHAIDONHANG = ? WHERE MADONHANG = ?", (req.TrangThaiDonHang, ma_don_hang))
+        old_status, voucher_id = curr_row[0], curr_row[1]
+        was_cancelled = is_cancelled_status(old_status)
+        will_cancel = is_cancelled_status(req.TrangThaiDonHang)
 
-    # Nếu hoàn thành đơn hàng -> Tự động cập nhật đã thanh toán
-    if req.TrangThaiDonHang in ['Đã hoàn thành', 'HOAN_THANH']:
-        cursor.execute("UPDATE DON_HANG SET TRANGTHAITHANHTOAN = N'Đã thanh toán' WHERE MADONHANG = ?", (ma_don_hang,))
+        # Chống hoàn kho & hoàn voucher 2 lần nếu đơn đã ở trạng thái Đã hủy
+        if was_cancelled and will_cancel:
+            return {
+                "message": "Đơn hàng đã ở trạng thái Đã hủy trước đó (không hoàn kho lại).",
+                "MaDonHang": ma_don_hang,
+                "TrangThaiMoi": old_status,
+            }
 
-    # Nếu chuyển sang Đã hủy và trước đó chưa hủy -> Hoàn lại tồn kho và số lượt dùng voucher
-    if req.TrangThaiDonHang in ['Đã hủy', 'DA_HUY', 'HỦY'] and old_status not in ['Đã hủy', 'DA_HUY', 'HỦY']:
-        cursor.execute("SELECT MASANPHAM, SOLUONGMUA FROM CHI_TIET_DON_HANG WHERE MADONHANG = ?", (ma_don_hang,))
-        for sp_id, qty in cursor.fetchall():
-            cursor.execute("UPDATE SAN_PHAM SET SOLUONGTONKHO = SOLUONGTONKHO + ? WHERE MASANPHAM = ?", (qty, sp_id))
-        if voucher_id:
-            cursor.execute("""
-                UPDATE CHUONG_TRINH_GIAM_GIA 
-                SET SOLUONGDADUNG = CASE WHEN SOLUONGDADUNG > 0 THEN SOLUONGDADUNG - 1 ELSE 0 END 
-                WHERE MACHUONGTRINHGIAMGIA = ?
-            """, (voucher_id,))
+        cursor.execute(
+            "UPDATE DON_HANG SET TRANGTHAIDONHANG = ? WHERE MADONHANG = ?",
+            (req.TrangThaiDonHang, ma_don_hang),
+        )
 
-    conn.commit()
-    conn.close()
-    return {"message": "Đã cập nhật trạng thái đơn hàng thành công", "MaDonHang": ma_don_hang, "TrangThaiMoi": req.TrangThaiDonHang}
+        # Nếu hoàn thành đơn hàng -> Tự động cập nhật đã thanh toán
+        if is_completed_status(req.TrangThaiDonHang):
+            cursor.execute(
+                "UPDATE DON_HANG SET TRANGTHAITHANHTOAN = N'Đã thanh toán' WHERE MADONHANG = ?",
+                (ma_don_hang,),
+            )
+
+        # Nếu chuyển sang Đã hủy và trước đó chưa hủy -> Hoàn lại tồn kho và số lượt dùng voucher đúng 1 lần
+        if will_cancel and not was_cancelled:
+            cursor.execute("SELECT MASANPHAM, SOLUONGMUA FROM CHI_TIET_DON_HANG WHERE MADONHANG = ?", (ma_don_hang,))
+            for sp_id, qty in cursor.fetchall():
+                cursor.execute("UPDATE SAN_PHAM SET SOLUONGTONKHO = SOLUONGTONKHO + ? WHERE MASANPHAM = ?", (qty, sp_id))
+            if voucher_id:
+                cursor.execute("""
+                    UPDATE CHUONG_TRINH_GIAM_GIA
+                    SET SOLUONGDADUNG = CASE WHEN SOLUONGDADUNG > 0 THEN SOLUONGDADUNG - 1 ELSE 0 END
+                    WHERE MACHUONGTRINHGIAMGIA = ?
+                """, (voucher_id,))
+
+        conn.commit()
+        return {
+            "message": "Đã cập nhật trạng thái đơn hàng thành công",
+            "MaDonHang": ma_don_hang,
+            "TrangThaiMoi": req.TrangThaiDonHang,
+        }
+    finally:
+        conn.close()
 
 # =====================================================================
 # VOUCHER & CHƯƠNG TRÌNH GIẢM GIÁ (CDM: CHUONG_TRINH_GIAM_GIA)
@@ -1659,14 +2213,69 @@ class AdminVoucherRequest(BaseModel):
 
 @app.get("/api/giam-gia")
 def get_danh_sach_giam_gia():
-    return query_db("""
+    rows = query_db("""
         SELECT MACHUONGTRINHGIAMGIA, TENMAGIAMGIA, TENCHUONGTRINHGIAMGIA,
                LOAIGIAMGIA, GIATRIGIAM, TOIDA, TOITHIEU, SOLUONGPHIEU,
                SOLUONGDADUNG, MOTA, NGAYBATDAU, NGAYKETTHUC
         FROM CHUONG_TRINH_GIAM_GIA
         WHERE (SOLUONGPHIEU IS NULL OR SOLUONGDADUNG < SOLUONGPHIEU)
-        ORDER BY MACHUONGTRINHGIAMGIA ASC
+        ORDER BY MACHUONGTRINHGIAMGIA DESC
     """)
+    now = datetime.now()
+    active = []
+    for v in rows:
+        ngay_bd = parse_db_datetime(v.get("NgayBatDau") or v.get("NGAYBATDAU"))
+        ngay_kt = parse_db_datetime(v.get("NgayKetThuc") or v.get("NGAYKETTHUC"))
+        if ngay_bd is not None and now < ngay_bd:
+            continue
+        if ngay_kt is not None and now > ngay_kt:
+            continue
+        qty = v.get("SoLuongPhieu") if "SoLuongPhieu" in v else v.get("SOLUONGPHIEU")
+        used = v.get("SoLuongDaDung") if "SoLuongDaDung" in v else v.get("SOLUONGDADUNG")
+        if qty is not None and int(used or 0) >= int(qty):
+            continue
+        active.append(v)
+    return active
+
+def _validate_and_calc_voucher(v: Dict[str, Any], tam_tinh: float, code_label: Optional[str] = None) -> float:
+    code = code_label or str(v.get("TenMaGiamGia") or v.get("TENMAGIAMGIA") or "")
+    now = datetime.now()
+    ngay_bd = parse_db_datetime(v.get("NgayBatDau") or v.get("NGAYBATDAU"))
+    ngay_kt = parse_db_datetime(v.get("NgayKetThuc") or v.get("NGAYKETTHUC"))
+    if ngay_bd is not None and now < ngay_bd:
+        raise HTTPException(status_code=400, detail=f"Mã giảm giá '{code}' chưa đến thời gian áp dụng!")
+    if ngay_kt is not None and now > ngay_kt:
+        raise HTTPException(status_code=400, detail=f"Mã giảm giá '{code}' đã hết hạn sử dụng!")
+
+    qty = v.get("SoLuongPhieu")
+    if qty is None:
+        qty = v.get("SOLUONGPHIEU") or 0
+    used = v.get("SoLuongDaDung")
+    if used is None:
+        used = v.get("SOLUONGDADUNG") or 0
+    if int(qty or 0) > 0 and int(used or 0) >= int(qty):
+        raise HTTPException(status_code=400, detail=f"Mã giảm giá '{code}' đã hết lượt sử dụng!")
+
+    min_order = float(v.get("ToiThieu") or v.get("TOITHIEU") or 0)
+    if tam_tinh < min_order:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Mã '{code}' chỉ áp dụng cho đơn hàng từ {min_order:,.0f} ₫ (Tạm tính hiện tại: {tam_tinh:,.0f} ₫)!",
+        )
+
+    v_type = str(v.get("LoaiGiamGia") or v.get("LOAIGIAMGIA") or "").strip().lower()
+    val = float(v.get("GiaTriGiam") or v.get("GIATRIGIAM") or 0)
+    max_discount = float(v.get("ToiDa") or v.get("TOIDA") or 0)
+
+    if "phantram" in v_type:
+        discount = (tam_tinh * val) / 100.0
+        if max_discount > 0 and discount > max_discount:
+            discount = max_discount
+    else:
+        discount = val
+    if discount > tam_tinh:
+        discount = tam_tinh
+    return round(max(0.0, discount), 2)
 
 @app.post("/api/giam-gia/kiem-tra")
 def check_voucher(req: CheckVoucherRequest):
@@ -1681,38 +2290,14 @@ def check_voucher(req: CheckVoucherRequest):
         WHERE UPPER(LTRIM(RTRIM(TENMAGIAMGIA))) = ?
     """, (code,))
     row = cursor.fetchone()
+    cols = [c[0] for c in cursor.description] if cursor.description else []
     conn.close()
 
     if not row:
         raise HTTPException(status_code=404, detail=f"Mã giảm giá '{code}' không tồn tại hoặc đã hết hạn!")
 
-    cols = [c[0] for c in cursor.description]
     v = normalize_row(cols, row)
-
-    qty = v.get("SoLuongPhieu") or 0
-    used = v.get("SoLuongDaDung") or 0
-    if qty > 0 and used >= qty:
-        raise HTTPException(status_code=400, detail=f"Mã giảm giá '{code}' đã hết lượt sử dụng!")
-
-    min_order = float(v.get("ToiThieu") or 0)
-    if req.TamTinh < min_order:
-        raise HTTPException(
-            status_code=400,
-            detail=f"Mã '{code}' chỉ áp dụng cho đơn hàng từ {min_order:,.0f} ₫ (Tạm tính hiện tại: {req.TamTinh:,.0f} ₫)!"
-        )
-
-    v_type = str(v.get("LoaiGiamGia") or '').strip().lower()
-    val = float(v.get("GiaTriGiam") or 0)
-    max_discount = float(v.get("ToiDa") or 0)
-
-    if "phantram" in v_type:
-        discount = (req.TamTinh * val) / 100.0
-        if max_discount > 0 and discount > max_discount:
-            discount = max_discount
-    else:
-        discount = val
-        if discount > req.TamTinh:
-            discount = req.TamTinh
+    discount = _validate_and_calc_voucher(v, float(req.TamTinh), code_label=code)
 
     return {
         "hopLe": True,
@@ -1728,7 +2313,8 @@ class CreateAdminVoucherRequest(BaseModel):
     GiaTriGiam: float
     ToiDa: Optional[float] = None
     ToiThieu: Optional[float] = 0.0
-    SoLuongPhieu: Optional[int] = 100
+    SoLuongPhieu: Optional[int] = None
+    SoLuongToiDa: Optional[int] = None
     MoTa: Optional[str] = None
     NgayBatDau: Optional[str] = None
     NgayKetThuc: Optional[str] = None
@@ -1741,11 +2327,13 @@ class UpdateAdminVoucherRequest(BaseModel):
     ToiDa: Optional[float] = None
     ToiThieu: Optional[float] = None
     SoLuongPhieu: Optional[int] = None
+    SoLuongToiDa: Optional[int] = None
     MoTa: Optional[str] = None
+    NgayBatDau: Optional[str] = None
     NgayKetThuc: Optional[str] = None
 
 @app.get("/api/admin/giam-gia")
-def get_admin_danh_sach_giam_gia():
+def get_admin_danh_sach_giam_gia(_admin: Dict[str, Any] = Depends(require_admin)):
     return query_db("""
         SELECT MACHUONGTRINHGIAMGIA, TENMAGIAMGIA, TENCHUONGTRINHGIAMGIA,
                LOAIGIAMGIA, GIATRIGIAM, TOIDA, TOITHIEU, SOLUONGPHIEU,
@@ -1755,7 +2343,7 @@ def get_admin_danh_sach_giam_gia():
     """)
 
 @app.post("/api/admin/giam-gia")
-def create_admin_voucher(req: CreateAdminVoucherRequest):
+def create_admin_voucher(req: CreateAdminVoucherRequest, _admin: Dict[str, Any] = Depends(require_admin)):
     code = req.TenMaGiamGia.strip().upper()
     if not code:
         raise HTTPException(status_code=400, detail="Mã giảm giá không được để trống!")
@@ -1776,10 +2364,10 @@ def create_admin_voucher(req: CreateAdminVoucherRequest):
     gia_tri = float(req.GiaTriGiam)
     toi_da = float(req.ToiDa) if req.ToiDa is not None else (gia_tri if loai == "SoTien" else 50000.0)
     toi_thieu = float(req.ToiThieu or 0.0)
-    so_luong = int(req.SoLuongPhieu or 100)
+    so_luong = int(req.SoLuongPhieu if req.SoLuongPhieu is not None else (req.SoLuongToiDa if req.SoLuongToiDa is not None else 100))
     mo_ta = req.MoTa or f"Giảm {gia_tri:,.0f}{'%' if loai == 'PhanTram' else ' ₫'} cho đơn từ {toi_thieu:,.0f} ₫"
-    ngay_bd = datetime.now()
-    ngay_kt = datetime(2027, 12, 31)
+    ngay_bd = (parse_db_datetime(req.NgayBatDau) or datetime.now()).strftime("%Y-%m-%d %H:%M:%S")
+    ngay_kt = (parse_db_datetime(req.NgayKetThuc) or datetime(2027, 12, 31, 23, 59, 59)).strftime("%Y-%m-%d %H:%M:%S")
 
     cursor.execute("""
         INSERT INTO CHUONG_TRINH_GIAM_GIA (
@@ -1803,11 +2391,18 @@ def create_admin_voucher(req: CreateAdminVoucherRequest):
         "ToiThieu": toi_thieu,
         "SoLuongPhieu": so_luong,
         "SoLuongDaDung": 0,
-        "MoTa": mo_ta
+        "MoTa": mo_ta,
+        "NgayBatDau": ngay_bd,
+        "NgayKetThuc": ngay_kt,
     }
 
 @app.put("/api/admin/giam-gia/{ma_chuong_trinh}")
-def update_admin_voucher(ma_chuong_trinh: int, req: UpdateAdminVoucherRequest):
+@app.put("/api/admin/voucher/{ma_chuong_trinh}")
+def update_admin_voucher(
+    ma_chuong_trinh: int,
+    req: UpdateAdminVoucherRequest,
+    _admin: Dict[str, Any] = Depends(require_admin),
+):
     conn = get_db_connection()
     cursor = conn.cursor()
     cursor.execute("SELECT MACHUONGTRINHGIAMGIA FROM CHUONG_TRINH_GIAM_GIA WHERE MACHUONGTRINHGIAMGIA = ?", (ma_chuong_trinh,))
@@ -1829,17 +2424,22 @@ def update_admin_voucher(ma_chuong_trinh: int, req: UpdateAdminVoucherRequest):
         cursor.execute("UPDATE CHUONG_TRINH_GIAM_GIA SET TOIDA = ? WHERE MACHUONGTRINHGIAMGIA = ?", (float(req.ToiDa), ma_chuong_trinh))
     if req.ToiThieu is not None:
         cursor.execute("UPDATE CHUONG_TRINH_GIAM_GIA SET TOITHIEU = ? WHERE MACHUONGTRINHGIAMGIA = ?", (float(req.ToiThieu), ma_chuong_trinh))
-    if req.SoLuongPhieu is not None:
-        cursor.execute("UPDATE CHUONG_TRINH_GIAM_GIA SET SOLUONGPHIEU = ? WHERE MACHUONGTRINHGIAMGIA = ?", (int(req.SoLuongPhieu), ma_chuong_trinh))
+    so_luong_val = req.SoLuongPhieu if req.SoLuongPhieu is not None else req.SoLuongToiDa
+    if so_luong_val is not None:
+        cursor.execute("UPDATE CHUONG_TRINH_GIAM_GIA SET SOLUONGPHIEU = ? WHERE MACHUONGTRINHGIAMGIA = ?", (int(so_luong_val), ma_chuong_trinh))
     if req.MoTa is not None:
         cursor.execute("UPDATE CHUONG_TRINH_GIAM_GIA SET MOTA = ? WHERE MACHUONGTRINHGIAMGIA = ?", (req.MoTa, ma_chuong_trinh))
+    if req.NgayBatDau is not None:
+        cursor.execute("UPDATE CHUONG_TRINH_GIAM_GIA SET NGAYBATDAU = ? WHERE MACHUONGTRINHGIAMGIA = ?", (req.NgayBatDau, ma_chuong_trinh))
+    if req.NgayKetThuc is not None:
+        cursor.execute("UPDATE CHUONG_TRINH_GIAM_GIA SET NGAYKETTHUC = ? WHERE MACHUONGTRINHGIAMGIA = ?", (req.NgayKetThuc, ma_chuong_trinh))
 
     conn.commit()
     conn.close()
     return {"message": "Cập nhật mã giảm giá thành công!", "MaChuongTrinhGiamGia": ma_chuong_trinh}
 
 @app.delete("/api/admin/giam-gia/{ma_chuong_trinh}")
-def delete_admin_voucher(ma_chuong_trinh: int):
+def delete_admin_voucher(ma_chuong_trinh: int, _admin: Dict[str, Any] = Depends(require_admin)):
     conn = get_db_connection()
     cursor = conn.cursor()
 
@@ -1860,7 +2460,7 @@ def delete_admin_voucher(ma_chuong_trinh: int):
 class CreateOrderItem(BaseModel):
     MaSanPham: int
     SoLuongMua: int
-    DonGiaMua: float
+    DonGiaMua: Optional[float] = None
 
 class CreateOrderRequest(BaseModel):
     MaNguoiDung: Optional[int] = None
@@ -1868,21 +2468,107 @@ class CreateOrderRequest(BaseModel):
     SdtNhanHang: str
     DiaChiNhanHang: str
     PhuongThucThanhToan: Optional[str] = "COD"
-    TamTinh: float
+    TamTinh: Optional[float] = None
     SoTienGiam: Optional[float] = 0.0
     MaChuongTrinhGiamGia: Optional[int] = None
     PhiVanChuyen: Optional[float] = 30000.0
-    TongTien: float
+    TongTien: Optional[float] = None
     GhiChu: Optional[str] = None
     Items: List[CreateOrderItem]
 
 @app.post("/api/don-hang")
-def create_customer_order(req: CreateOrderRequest):
+def create_customer_order(
+    req: CreateOrderRequest,
+    current_user: Optional[Dict[str, Any]] = Depends(get_optional_user),
+):
+    if not req.Items:
+        raise HTTPException(status_code=400, detail="Đơn hàng phải có ít nhất 1 sản phẩm!")
+
+    # Gộp số lượng nếu client gửi trùng MaSanPham và kiểm tra SoLuongMua > 0
+    qty_by_product: Dict[int, int] = defaultdict(int)
+    for item in req.Items:
+        if item.SoLuongMua is None or item.SoLuongMua <= 0:
+            raise HTTPException(status_code=400, detail="Số lượng mua mỗi sản phẩm phải lớn hơn 0!")
+        qty_by_product[int(item.MaSanPham)] += int(item.SoLuongMua)
+
+    ma_nguoi_dung = req.MaNguoiDung if req.MaNguoiDung is not None else (current_user["sub"] if current_user else None)
+
     conn = get_db_connection()
     cursor = conn.cursor()
 
     try:
-        # Lấy ID đơn hàng mới
+        # 1. Tính lại đơn giá & kiểm tra tồn kho trực tiếp từ DB (không tin giá client gửi)
+        verified_items = []
+        tam_tinh = 0.0
+        for sp_id, total_qty in qty_by_product.items():
+            cursor.execute("""
+                SELECT sp.MASANPHAM, sp.TENSANPHAM, sp.SOLUONGTONKHO,
+                       ISNULL(
+                           (SELECT TOP 1 GIABAN FROM LICH_SU_GIA_SAN_PHAM lsg WHERE lsg.MASANPHAM = sp.MASANPHAM ORDER BY MALICHSUGIA DESC),
+                           lc.GIATHAMKHAO
+                       ) AS GIABAN
+                FROM SAN_PHAM sp
+                LEFT JOIN LOAI_CAY lc ON sp.MALOAICAY = lc.MALOAICAY
+                WHERE sp.MASANPHAM = ?
+            """, (sp_id,))
+            sp_row = cursor.fetchone()
+            if not sp_row:
+                raise HTTPException(status_code=404, detail=f"Sản phẩm #{sp_id} không tồn tại!")
+            sp_name = sp_row[1] or f"Sản phẩm #{sp_id}"
+            ton_kho = int(sp_row[2] or 0)
+            don_gia_db = float(sp_row[3] or 0.0)
+            if ton_kho < total_qty:
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Sản phẩm '{sp_name}' không đủ tồn kho (còn {ton_kho}, yêu cầu {total_qty})!",
+                )
+            tam_tinh += don_gia_db * total_qty
+            verified_items.append((sp_id, total_qty, don_gia_db))
+
+        tam_tinh = round(tam_tinh, 2)
+
+        # 2. Kiểm tra & tính toán lại voucher từ DB nếu có
+        so_tien_giam = 0.0
+        voucher_id = req.MaChuongTrinhGiamGia
+        if voucher_id:
+            cursor.execute("""
+                SELECT MACHUONGTRINHGIAMGIA, TENMAGIAMGIA, TENCHUONGTRINHGIAMGIA,
+                       LOAIGIAMGIA, GIATRIGIAM, TOIDA, TOITHIEU, SOLUONGPHIEU,
+                       SOLUONGDADUNG, MOTA, NGAYBATDAU, NGAYKETTHUC
+                FROM CHUONG_TRINH_GIAM_GIA
+                WHERE MACHUONGTRINHGIAMGIA = ?
+            """, (voucher_id,))
+            v_row = cursor.fetchone()
+            if not v_row:
+                raise HTTPException(status_code=404, detail="Mã giảm giá không tồn tại!")
+            v_cols = [c[0] for c in cursor.description]
+            v_dict = normalize_row(v_cols, v_row)
+            so_tien_giam = _validate_and_calc_voucher(v_dict, tam_tinh)
+
+            # Tăng lượt dùng voucher an toàn (tránh vượt SOLUONGPHIEU)
+            cursor.execute("""
+                UPDATE CHUONG_TRINH_GIAM_GIA
+                SET SOLUONGDADUNG = ISNULL(SOLUONGDADUNG, 0) + 1
+                WHERE MACHUONGTRINHGIAMGIA = ?
+                  AND (SOLUONGPHIEU IS NULL OR SOLUONGPHIEU <= 0 OR ISNULL(SOLUONGDADUNG, 0) < SOLUONGPHIEU)
+            """, (voucher_id,))
+            if cursor.rowcount == 0:
+                raise HTTPException(status_code=400, detail="Mã giảm giá đã hết lượt sử dụng!")
+
+        phi_van_chuyen = max(0.0, float(req.PhiVanChuyen if req.PhiVanChuyen is not None else 30000.0))
+        tong_tien = round(max(0.0, tam_tinh - so_tien_giam + phi_van_chuyen), 2)
+
+        # 3. Trừ tồn kho an toàn (kiểm tra lại điều kiện SOLUONGTONKHO >= qty)
+        for sp_id, total_qty, _ in verified_items:
+            cursor.execute("""
+                UPDATE SAN_PHAM
+                SET SOLUONGTONKHO = SOLUONGTONKHO - ?
+                WHERE MASANPHAM = ? AND SOLUONGTONKHO >= ?
+            """, (total_qty, sp_id, total_qty))
+            if cursor.rowcount == 0:
+                raise HTTPException(status_code=400, detail=f"Sản phẩm #{sp_id} vừa hết hàng, vui lòng kiểm tra lại!")
+
+        # 4. Lưu đơn hàng & chi tiết đơn hàng với đơn giá chuẩn từ DB
         cursor.execute("SELECT ISNULL(MAX(MADONHANG), 0) + 1 FROM DON_HANG")
         next_dh = cursor.fetchone()[0]
 
@@ -1899,51 +2585,41 @@ def create_customer_order(req: CreateOrderRequest):
             )
             VALUES (?, ?, GETDATE(), ?, ?, ?, ?, ?, ?, ?, ?, N'Chờ xử lý', ?)
         """, (
-            next_dh, req.MaNguoiDung, req.TamTinh, req.SoTienGiam or 0, req.PhiVanChuyen,
-            req.TongTien, req.DiaChiNhanHang, req.SdtNhanHang,
-            req.PhuongThucThanhToan, payment_status, req.MaChuongTrinhGiamGia
+            next_dh, ma_nguoi_dung, tam_tinh, so_tien_giam, phi_van_chuyen,
+            tong_tien, req.DiaChiNhanHang, req.SdtNhanHang,
+            req.PhuongThucThanhToan or "COD", payment_status, voucher_id
         ))
 
-        # Cập nhật số lượt sử dụng voucher nếu có
-        if req.MaChuongTrinhGiamGia:
-            cursor.execute("""
-                UPDATE CHUONG_TRINH_GIAM_GIA
-                SET SOLUONGDADUNG = ISNULL(SOLUONGDADUNG, 0) + 1
-                WHERE MACHUONGTRINHGIAMGIA = ?
-            """, (req.MaChuongTrinhGiamGia,))
-
-        # Lấy ID chi tiết đơn hàng bắt đầu
         cursor.execute("SELECT ISNULL(MAX(MACHITIETDONHANG), 0) FROM CHI_TIET_DON_HANG")
         curr_ct_id = cursor.fetchone()[0]
 
-        for item in req.Items:
+        for sp_id, total_qty, don_gia_db in verified_items:
             curr_ct_id += 1
             cursor.execute("""
                 INSERT INTO CHI_TIET_DON_HANG (
                     MADONHANG, MASANPHAM, MACHITIETDONHANG, SOLUONGMUA, DONGIAMUA
                 )
                 VALUES (?, ?, ?, ?, ?)
-            """, (next_dh, item.MaSanPham, curr_ct_id, item.SoLuongMua, item.DonGiaMua))
-
-            # Trừ tồn kho sản phẩm nếu còn
-            cursor.execute("""
-                UPDATE SAN_PHAM 
-                SET SOLUONGTONKHO = CASE WHEN SOLUONGTONKHO >= ? THEN SOLUONGTONKHO - ? ELSE 0 END
-                WHERE MASANPHAM = ?
-            """, (item.SoLuongMua, item.SoLuongMua, item.MaSanPham))
+            """, (next_dh, sp_id, curr_ct_id, total_qty, don_gia_db))
 
         conn.commit()
-        conn.close()
         return {
             "message": "Đặt hàng thành công!",
             "MaDonHang": next_dh,
-            "TongTien": req.TongTien,
+            "TamTinh": tam_tinh,
+            "SoTienGiam": so_tien_giam,
+            "PhiVanChuyen": phi_van_chuyen,
+            "TongTien": tong_tien,
             "TrangThai": "Chờ xử lý"
         }
+    except HTTPException:
+        conn.rollback()
+        raise
     except Exception as e:
         conn.rollback()
-        conn.close()
         raise HTTPException(status_code=500, detail=f"Lỗi khi lưu đơn hàng: {str(e)}")
+    finally:
+        conn.close()
 
 @app.get("/api/nguoi-dung/{ma_nguoi_dung}/don-hang")
 def get_user_orders(ma_nguoi_dung: int):
@@ -1981,36 +2657,57 @@ def get_user_orders(ma_nguoi_dung: int):
     return orders
 
 @app.put("/api/don-hang/{ma_don_hang}/huy")
-def cancel_user_order(ma_don_hang: int):
+def cancel_user_order(
+    ma_don_hang: int,
+    current_user: Dict[str, Any] = Depends(get_current_user),
+):
     conn = get_db_connection()
-    cursor = conn.cursor()
-    cursor.execute("SELECT TRANGTHAIDONHANG, MACHUONGTRINHGIAMGIA FROM DON_HANG WHERE MADONHANG = ?", (ma_don_hang,))
-    row = cursor.fetchone()
-    if not row:
-        conn.close()
-        raise HTTPException(status_code=404, detail="Không tìm thấy đơn hàng!")
-    if row[0] not in ['Chờ xử lý', 'CHO_XAC_NHAN']:
-        conn.close()
-        raise HTTPException(status_code=400, detail="Chỉ có thể hủy đơn hàng khi shop chưa bắt đầu giao!")
+    try:
+        cursor = conn.cursor()
+        cursor.execute(
+            "SELECT TRANGTHAIDONHANG, MACHUONGTRINHGIAMGIA, MANGUOIDUNG FROM DON_HANG WHERE MADONHANG = ?",
+            (ma_don_hang,),
+        )
+        row = cursor.fetchone()
+        if not row:
+            raise HTTPException(status_code=404, detail="Không tìm thấy đơn hàng!")
 
-    cursor.execute("UPDATE DON_HANG SET TRANGTHAIDONHANG = N'Đã hủy' WHERE MADONHANG = ?", (ma_don_hang,))
+        curr_status, voucher_id, order_owner_id = row[0], row[1], row[2]
+        if current_user.get("role") != "ADMIN" and order_owner_id != current_user.get("sub"):
+            raise HTTPException(status_code=403, detail="Bạn không có quyền hủy đơn hàng của người khác!")
 
-    # Hoàn lại số lượng tồn kho cho các sản phẩm trong đơn
-    cursor.execute("SELECT MASANPHAM, SOLUONGMUA FROM CHI_TIET_DON_HANG WHERE MADONHANG = ?", (ma_don_hang,))
-    for sp_id, qty in cursor.fetchall():
-        cursor.execute("UPDATE SAN_PHAM SET SOLUONGTONKHO = SOLUONGTONKHO + ? WHERE MASANPHAM = ?", (qty, sp_id))
+        if is_cancelled_status(curr_status):
+            raise HTTPException(status_code=400, detail="Đơn hàng này đã được hủy trước đó!")
 
-    # Hoàn lại lượt dùng voucher nếu có
-    if row[1]:
+        if curr_status not in ["Chờ xử lý", "CHO_XAC_NHAN"]:
+            raise HTTPException(status_code=400, detail="Chỉ có thể hủy đơn hàng khi shop chưa bắt đầu giao!")
+
+        # Cập nhật trạng thái kèm điều kiện chống hoàn kho 2 lần
         cursor.execute("""
-            UPDATE CHUONG_TRINH_GIAM_GIA 
-            SET SOLUONGDADUNG = CASE WHEN SOLUONGDADUNG > 0 THEN SOLUONGDADUNG - 1 ELSE 0 END 
-            WHERE MACHUONGTRINHGIAMGIA = ?
-        """, (row[1],))
+            UPDATE DON_HANG
+            SET TRANGTHAIDONHANG = N'Đã hủy'
+            WHERE MADONHANG = ? AND TRANGTHAIDONHANG IN (N'Chờ xử lý', N'CHO_XAC_NHAN')
+        """, (ma_don_hang,))
+        if cursor.rowcount == 0:
+            raise HTTPException(status_code=400, detail="Đơn hàng đã thay đổi trạng thái hoặc đã hủy trước đó!")
 
-    conn.commit()
-    conn.close()
-    return {"message": "Đã hủy đơn hàng thành công!", "MaDonHang": ma_don_hang}
+        # Hoàn lại số lượng tồn kho cho các sản phẩm trong đơn
+        cursor.execute("SELECT MASANPHAM, SOLUONGMUA FROM CHI_TIET_DON_HANG WHERE MADONHANG = ?", (ma_don_hang,))
+        for sp_id, qty in cursor.fetchall():
+            cursor.execute("UPDATE SAN_PHAM SET SOLUONGTONKHO = SOLUONGTONKHO + ? WHERE MASANPHAM = ?", (qty, sp_id))
+
+        # Hoàn lại lượt dùng voucher nếu có
+        if voucher_id:
+            cursor.execute("""
+                UPDATE CHUONG_TRINH_GIAM_GIA
+                SET SOLUONGDADUNG = CASE WHEN SOLUONGDADUNG > 0 THEN SOLUONGDADUNG - 1 ELSE 0 END
+                WHERE MACHUONGTRINHGIAMGIA = ?
+            """, (voucher_id,))
+
+        conn.commit()
+        return {"message": "Đã hủy đơn hàng thành công!", "MaDonHang": ma_don_hang}
+    finally:
+        conn.close()
 
 # =====================================================================
 # ĐÁNH GIÁ SẢN PHẨM (CDM: DANH_GIA_SAN_PHAM)
@@ -2088,66 +2785,112 @@ def get_danh_gia_noi_bat():
     return results
 
 @app.post("/api/danh-gia")
-def create_danh_gia(req: CreateReviewRequest):
+def create_danh_gia(
+    req: CreateReviewRequest,
+    current_user: Optional[Dict[str, Any]] = Depends(get_optional_user),
+):
     if not req.NoiDungBinhLuan or not req.NoiDungBinhLuan.strip():
         raise HTTPException(status_code=400, detail="Vui lòng nhập nội dung đánh giá sản phẩm!")
     if req.SoSao < 1 or req.SoSao > 5:
         raise HTTPException(status_code=400, detail="Số sao đánh giá phải từ 1 đến 5 sao!")
 
+    uid = current_user["sub"] if current_user else req.MaNguoiDung
+
     conn = get_db_connection()
-    cursor = conn.cursor()
+    try:
+        cursor = conn.cursor()
 
-    cursor.execute("SELECT ISNULL(MAX(MADANHGIA), 0) + 1 FROM DANH_GIA_SAN_PHAM")
-    next_id = cursor.fetchone()[0]
+        cursor.execute("SELECT 1 FROM SAN_PHAM WHERE MASANPHAM = ?", (req.MaSanPham,))
+        if not cursor.fetchone():
+            raise HTTPException(status_code=404, detail="Sản phẩm không tồn tại!")
 
-    m_dh = req.MaDonHang
-    if not m_dh:
-        if req.MaNguoiDung:
-            cursor.execute("""
-                SELECT TOP 1 dh.MADONHANG
-                FROM DON_HANG dh
-                JOIN CHI_TIET_DON_HANG ct ON dh.MADONHANG = ct.MADONHANG
-                WHERE dh.MANGUOIDUNG = ? AND ct.MASANPHAM = ?
-                ORDER BY dh.MADONHANG DESC
-            """, (req.MaNguoiDung, req.MaSanPham))
-            row_dh = cursor.fetchone()
-            if row_dh:
-                m_dh = row_dh[0]
-        if not m_dh:
-            cursor.execute("SELECT TOP 1 MADONHANG FROM DON_HANG")
-            r_dh = cursor.fetchone()
-            m_dh = r_dh[0] if r_dh else 1
+        # Chỉ gán MADONHANG nếu chính user có đơn hàng chứa sản phẩm này; tuyệt đối không gán bừa đơn người khác
+        m_dh = None
+        if uid is not None:
+            if req.MaDonHang:
+                cursor.execute("""
+                    SELECT dh.MADONHANG
+                    FROM DON_HANG dh
+                    JOIN CHI_TIET_DON_HANG ct ON dh.MADONHANG = ct.MADONHANG
+                    WHERE dh.MADONHANG = ? AND dh.MANGUOIDUNG = ? AND ct.MASANPHAM = ?
+                """, (req.MaDonHang, uid, req.MaSanPham))
+                row_dh = cursor.fetchone()
+                if row_dh:
+                    m_dh = row_dh[0]
+            else:
+                cursor.execute("""
+                    SELECT TOP 1 dh.MADONHANG
+                    FROM DON_HANG dh
+                    JOIN CHI_TIET_DON_HANG ct ON dh.MADONHANG = ct.MADONHANG
+                    WHERE dh.MANGUOIDUNG = ? AND ct.MASANPHAM = ?
+                    ORDER BY dh.MADONHANG DESC
+                """, (uid, req.MaSanPham))
+                row_dh = cursor.fetchone()
+                if row_dh:
+                    m_dh = row_dh[0]
 
-    now = datetime.now()
-    cursor.execute("""
-        INSERT INTO DANH_GIA_SAN_PHAM (
-            MADANHGIA, MADONHANG, MASANPHAM, SOSAO,
-            HINHANHTHUCTE, NOIDUNGBINHLUAN, NGAYDANHGIA
-        ) VALUES (?, ?, ?, ?, ?, ?, ?)
-    """, (
-        next_id,
-        m_dh,
-        req.MaSanPham,
-        req.SoSao,
-        req.HinhAnhThucTe or "",
-        req.NoiDungBinhLuan.strip(),
-        now
-    ))
+        cursor.execute("SELECT ISNULL(MAX(MADANHGIA), 0) + 1 FROM DANH_GIA_SAN_PHAM")
+        next_id = cursor.fetchone()[0]
 
-    conn.commit()
-    conn.close()
+        now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        cursor.execute("""
+            INSERT INTO DANH_GIA_SAN_PHAM (
+                MADANHGIA, MADONHANG, MASANPHAM, SOSAO,
+                HINHANHTHUCTE, NOIDUNGBINHLUAN, NGAYDANHGIA
+            ) VALUES (?, ?, ?, ?, ?, ?, ?)
+        """, (
+            next_id,
+            m_dh,
+            req.MaSanPham,
+            req.SoSao,
+            req.HinhAnhThucTe or "",
+            req.NoiDungBinhLuan.strip(),
+            now_str,
+        ))
 
-    return {
-        "message": "Cảm ơn bạn đã gửi đánh giá sản phẩm!",
-        "MaDanhGia": next_id,
-        "MaSanPham": req.MaSanPham,
-        "SoSao": req.SoSao,
-        "NoiDungBinhLuan": req.NoiDungBinhLuan.strip(),
-        "NgayDanhGia": str(now)[:10]
-    }
+        conn.commit()
+        return {
+            "message": "Cảm ơn bạn đã gửi đánh giá sản phẩm!",
+            "MaDanhGia": next_id,
+            "MaDonHang": m_dh,
+            "MaSanPham": req.MaSanPham,
+            "SoSao": req.SoSao,
+            "NoiDungBinhLuan": req.NoiDungBinhLuan.strip(),
+            "NgayDanhGia": now_str[:10],
+        }
+    finally:
+        conn.close()
+
+@app.delete("/api/danh-gia/{ma_danh_gia}")
+def delete_danh_gia(
+    ma_danh_gia: int,
+    current_user: Dict[str, Any] = Depends(get_current_user),
+):
+    conn = get_db_connection()
+    try:
+        cursor = conn.cursor()
+        cursor.execute("""
+            SELECT dg.MADANHGIA, dh.MANGUOIDUNG
+            FROM DANH_GIA_SAN_PHAM dg
+            LEFT JOIN DON_HANG dh ON dg.MADONHANG = dh.MADONHANG
+            WHERE dg.MADANHGIA = ?
+        """, (ma_danh_gia,))
+        row = cursor.fetchone()
+        if not row:
+            raise HTTPException(status_code=404, detail="Không tìm thấy đánh giá!")
+
+        owner_id = row[1]
+        if current_user.get("role") != "ADMIN" and (owner_id is None or owner_id != current_user.get("sub")):
+            raise HTTPException(status_code=403, detail="Bạn không có quyền xóa đánh giá này!")
+
+        cursor.execute("DELETE FROM DANH_GIA_SAN_PHAM WHERE MADANHGIA = ?", (ma_danh_gia,))
+        conn.commit()
+        return {"message": "Đã xóa đánh giá thành công!", "MaDanhGia": ma_danh_gia}
+    finally:
+        conn.close()
 
 @app.get("/api/admin/ai-logs")
-def get_admin_ai_logs():
+def get_admin_ai_logs(_admin: Dict[str, Any] = Depends(require_admin)):
     return query_db("""
         SELECT TOP 50 ta.MATIMKIEM, ta.THOIGIAN, ta.HINHANHURL, ta.NENTANG, ta.TRANGTHAINHANDIEN,
                kq.THUHANG, kq.XACSUATCHINHXAC, lc.MALOAICAY, lc.TENTHUONGGOI, lc.TENKHOAHOC
@@ -2158,7 +2901,7 @@ def get_admin_ai_logs():
     """)
 
 @app.put("/api/admin/san-pham/{ma_san_pham}")
-def update_san_pham(ma_san_pham: int, req: UpdateProductRequest):
+def update_san_pham(ma_san_pham: int, req: UpdateProductRequest, _admin: Dict[str, Any] = Depends(require_admin)):
     conn = get_db_connection()
     cursor = conn.cursor()
 
@@ -2213,7 +2956,7 @@ def update_san_pham(ma_san_pham: int, req: UpdateProductRequest):
     return {"message": "Đã cập nhật sản phẩm thành công", "MaSanPham": ma_san_pham}
 
 @app.post("/api/admin/san-pham")
-def create_san_pham(req: CreateProductRequest):
+def create_san_pham(req: CreateProductRequest, _admin: Dict[str, Any] = Depends(require_admin)):
     conn = get_db_connection()
     cursor = conn.cursor()
 
@@ -2260,27 +3003,30 @@ def create_san_pham(req: CreateProductRequest):
     conn.close()
     return {"message": "Thêm chậu cây mới thành công", "MaSanPham": ma_sp}
 
+class UpdateSpeciesRequest(BaseModel):
+    TenThuongGoi: Optional[str] = None
+    TenKhoaHoc: Optional[str] = None
+    MaDanhMuc: Optional[int] = None
+    GiaThamKhao: Optional[float] = None
+    HuongDanChamSoc: Optional[str] = None
+    DacDiemNhanDang: Optional[str] = None
+    XuatXu: Optional[str] = None
+    AnhSang: Optional[str] = None
+    DoAm: Optional[str] = None
+    NhietDo: Optional[str] = None
+    DocTinh: Optional[str] = None
+    PhongThuy: Optional[str] = None
+
 @app.post("/api/admin/loai-cay")
-def create_loai_cay(req: CreateSpeciesRequest):
+def create_loai_cay(req: CreateSpeciesRequest, _admin: Dict[str, Any] = Depends(require_admin)):
     conn = get_db_connection()
     cursor = conn.cursor()
 
-    # Tìm ID loài cây sinh học tiếp theo (không tính lớp khác #91)
-    cursor.execute("""
-        SELECT ISNULL(MAX(MALOAICAY), 90) FROM LOAI_CAY 
-        WHERE MALOAICAY != 91 AND TENTHUONGGOI NOT LIKE N'%Lớp khác%'
-    """)
-    current_max = cursor.fetchone()[0]
-    next_id = current_max + 1
-
-    # Nếu Lớp khác có ID trùng hoặc nhỏ hơn next_id, tịnh tiến Lớp khác lên next_id + 1
-    cursor.execute("SELECT MALOAICAY FROM LOAI_CAY WHERE TENTHUONGGOI LIKE N'%Lớp khác%'")
-    row_khac = cursor.fetchone()
-    if row_khac:
-        old_khac_id = row_khac[0]
-        if old_khac_id <= next_id:
-            new_khac_id = next_id + 1
-            cursor.execute("UPDATE LOAI_CAY SET MALOAICAY = ? WHERE MALOAICAY = ?", (new_khac_id, old_khac_id))
+    # Tìm ID loài cây tiếp theo an toàn (không trùng khóa chính với lớp #91)
+    cursor.execute("SELECT ISNULL(MAX(MALOAICAY), 91) + 1 FROM LOAI_CAY")
+    next_id = int(cursor.fetchone()[0] or 92)
+    if next_id == 91:
+        next_id = 92
 
     cursor.execute("""
         INSERT INTO LOAI_CAY (MALOAICAY, MADANHMUC, TENKHOAHOC, TENTHUONGGOI, GIATHAMKHAO, HUONGDANCHAMSOC, DACDIEMNHANDANG, XUATXU, ANHSANG, DOAM, NHIETDO, DOCTINH, PHONGTHUY)
@@ -2319,8 +3065,74 @@ def create_loai_cay(req: CreateSpeciesRequest):
         "TenKhoaHoc": req.TenKhoaHoc
     }
 
+@app.put("/api/admin/loai-cay/{ma_loai_cay}")
+def update_loai_cay(
+    ma_loai_cay: int,
+    req: UpdateSpeciesRequest,
+    _admin: Dict[str, Any] = Depends(require_admin),
+):
+    conn = get_db_connection()
+    try:
+        cursor = conn.cursor()
+        cursor.execute("SELECT MALOAICAY FROM LOAI_CAY WHERE MALOAICAY = ?", (ma_loai_cay,))
+        if not cursor.fetchone():
+            raise HTTPException(status_code=404, detail="Không tìm thấy loài cây cần cập nhật!")
+
+        updates = {
+            "TENTHUONGGOI": req.TenThuongGoi,
+            "TENKHOAHOC": req.TenKhoaHoc,
+            "MADANHMUC": req.MaDanhMuc,
+            "GIATHAMKHAO": req.GiaThamKhao,
+            "HUONGDANCHAMSOC": req.HuongDanChamSoc,
+            "DACDIEMNHANDANG": req.DacDiemNhanDang,
+            "XUATXU": req.XuatXu,
+            "ANHSANG": req.AnhSang,
+            "DOAM": req.DoAm,
+            "NHIETDO": req.NhietDo,
+            "DOCTINH": req.DocTinh,
+            "PHONGTHUY": req.PhongThuy,
+        }
+        for col, val in updates.items():
+            if val is not None:
+                cursor.execute(f"UPDATE LOAI_CAY SET {col} = ? WHERE MALOAICAY = ?", (val, ma_loai_cay))
+
+        conn.commit()
+        return {"message": "Cập nhật thông tin loài cây thành công!", "MaLoaiCay": ma_loai_cay}
+    finally:
+        conn.close()
+
+@app.delete("/api/admin/loai-cay/{ma_loai_cay}")
+def delete_loai_cay(
+    ma_loai_cay: int,
+    _admin: Dict[str, Any] = Depends(require_admin),
+):
+    conn = get_db_connection()
+    try:
+        cursor = conn.cursor()
+        cursor.execute("SELECT MALOAICAY, TENTHUONGGOI FROM LOAI_CAY WHERE MALOAICAY = ?", (ma_loai_cay,))
+        row = cursor.fetchone()
+        if not row:
+            raise HTTPException(status_code=404, detail="Không tìm thấy loài cây cần xóa!")
+        if ma_loai_cay == 91 or "lớp khác" in str(row[1] or "").lower():
+            raise HTTPException(status_code=400, detail="Không thể xóa lớp hệ thống Out-of-Distribution (Lớp khác)!")
+
+        cursor.execute("SELECT COUNT(1) FROM SAN_PHAM WHERE MALOAICAY = ?", (ma_loai_cay,))
+        sp_count = int(cursor.fetchone()[0] or 0)
+        if sp_count > 0:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Không thể xóa loài cây #{ma_loai_cay} vì đang có {sp_count} sản phẩm liên kết!",
+            )
+
+        cursor.execute("DELETE FROM KET_QUA_NHAN_DIEN WHERE MALOAICAY = ?", (ma_loai_cay,))
+        cursor.execute("DELETE FROM LOAI_CAY WHERE MALOAICAY = ?", (ma_loai_cay,))
+        conn.commit()
+        return {"message": "Đã xóa loài cây thành công!", "MaLoaiCay": ma_loai_cay}
+    finally:
+        conn.close()
+
 @app.delete("/api/admin/san-pham/{ma_san_pham}")
-def delete_san_pham(ma_san_pham: int):
+def delete_san_pham(ma_san_pham: int, _admin: Dict[str, Any] = Depends(require_admin)):
     conn = get_db_connection()
     cursor = conn.cursor()
 
@@ -2346,7 +3158,7 @@ def delete_san_pham(ma_san_pham: int):
     return {"message": "Đã xóa chậu cây thành công khỏi hệ thống", "MaSanPham": ma_san_pham}
 
 # =====================================================================
-# 5. XÁC THỰC NGƯỜI DÙNG (NGUOI_DUNG)
+# 5. XÁC THỰC NGƯỜI DÙNG, HỒ SƠ & SỔ ĐỊA CHỈ (NGUOI_DUNG, DIA_CHI_NGUOI_DUNG)
 # =====================================================================
 class LoginRequest(BaseModel):
     taiKhoan: str
@@ -2358,13 +3170,25 @@ class RegisterRequest(BaseModel):
     hoTen: Optional[str] = None
     email: Optional[str] = None
     diaChi: Optional[str] = None
+    soDienThoai: Optional[str] = None
+    SoDienThoai: Optional[str] = None
+    phone: Optional[str] = None
+
+class ForgotPasswordRequest(BaseModel):
+    email: Optional[str] = None
+    ten_dang_nhap: Optional[str] = None
+    taiKhoan: Optional[str] = None
+    mat_khau_moi: Optional[str] = None
+    matKhauMoi: Optional[str] = None
+    ma_xac_nhan: Optional[str] = None
+    maXacNhan: Optional[str] = None
 
 @app.post("/api/auth/dang-nhap")
 def login_user(req: LoginRequest):
     conn = get_db_connection()
     cursor = conn.cursor()
     cursor.execute("""
-        SELECT MANGUOIDUNG, TAIKHOAN, MATKHAU, HOTEN, EMAIL, DIACHI, VAITRO, TRANGTHAITAIKHOAN
+        SELECT MANGUOIDUNG, TAIKHOAN, MATKHAU, HOTEN, EMAIL, DIACHI, SODIENTHOAI, AVATAR, VAITRO, TRANGTHAITAIKHOAN
         FROM NGUOI_DUNG
         WHERE LOWER(TAIKHOAN) = LOWER(?)
     """, (req.taiKhoan.strip(),))
@@ -2374,15 +3198,16 @@ def login_user(req: LoginRequest):
     if not row:
         raise HTTPException(status_code=401, detail="Tài khoản không tồn tại trên hệ thống!")
 
-    manguoidung, taikhoan, matkhau, hoten, email, diachi, vaitro, trangthai = row
+    manguoidung, taikhoan, matkhau, hoten, email, diachi, sodienthoai, avatar, vaitro, trangthai = row
 
-    if trangthai and str(trangthai).strip().lower() == 'khoa':
+    if is_account_locked(trangthai):
         raise HTTPException(status_code=403, detail="Tài khoản này hiện đang bị khóa! Vui lòng liên hệ quản trị viên.")
 
-    if str(matkhau) != req.matKhau:
+    if not verify_password(req.matKhau, matkhau):
         raise HTTPException(status_code=401, detail="Mật khẩu không chính xác!")
 
     role = "ADMIN" if (vaitro and str(vaitro).strip().lower() == "admin") else "USER"
+    token = create_access_token(manguoidung, taikhoan, role)
 
     return {
         "id": manguoidung,
@@ -2390,16 +3215,26 @@ def login_user(req: LoginRequest):
         "fullName": hoten or taikhoan,
         "email": email or "",
         "address": diachi or "",
+        "phone": sodienthoai or "",
+        "soDienThoai": sodienthoai or "",
+        "avatar": avatar or "",
         "role": role,
-        "status": trangthai
+        "status": trangthai,
+        "token": token,
     }
 
 @app.post("/api/auth/dang-ky")
 def register_user(req: RegisterRequest):
+    username = req.taiKhoan.strip()
+    if not username:
+        raise HTTPException(status_code=400, detail="Tên tài khoản không được để trống!")
+    if not req.matKhau or len(req.matKhau) < 4:
+        raise HTTPException(status_code=400, detail="Mật khẩu phải có ít nhất 4 ký tự!")
+
     conn = get_db_connection()
     cursor = conn.cursor()
 
-    cursor.execute("SELECT MANGUOIDUNG FROM NGUOI_DUNG WHERE LOWER(TAIKHOAN) = LOWER(?)", (req.taiKhoan.strip(),))
+    cursor.execute("SELECT MANGUOIDUNG FROM NGUOI_DUNG WHERE LOWER(TAIKHOAN) = LOWER(?)", (username,))
     if cursor.fetchone():
         conn.close()
         raise HTTPException(status_code=400, detail="Tên tài khoản đã tồn tại, vui lòng chọn tên khác!")
@@ -2407,58 +3242,319 @@ def register_user(req: RegisterRequest):
     cursor.execute("SELECT ISNULL(MAX(MANGUOIDUNG), 0) + 1 FROM NGUOI_DUNG")
     next_id = cursor.fetchone()[0]
 
+    hashed_pw = hash_password(req.matKhau)
+    full_name = req.hoTen or username
+    phone_val = (req.soDienThoai or req.SoDienThoai or req.phone or "").strip()
     cursor.execute("""
-        INSERT INTO NGUOI_DUNG (MANGUOIDUNG, TAIKHOAN, MATKHAU, HOTEN, EMAIL, DIACHI, VAITRO, TRANGTHAITAIKHOAN, NGAYDANGKY)
-        VALUES (?, ?, ?, ?, ?, ?, 'KhachHang', N'HoatDong', GETDATE())
-    """, (next_id, req.taiKhoan.strip(), req.matKhau, req.hoTen or req.taiKhoan.strip(), req.email or "", req.diaChi or ""))
+        INSERT INTO NGUOI_DUNG (MANGUOIDUNG, TAIKHOAN, MATKHAU, HOTEN, EMAIL, DIACHI, SODIENTHOAI, AVATAR, VAITRO, TRANGTHAITAIKHOAN, NGAYDANGKY)
+        VALUES (?, ?, ?, ?, ?, ?, ?, '', 'KhachHang', N'HoatDong', GETDATE())
+    """, (next_id, username, hashed_pw, full_name, req.email or "", req.diaChi or "", phone_val))
 
     conn.commit()
     conn.close()
 
+    token = create_access_token(next_id, username, "USER")
     return {
         "id": next_id,
-        "username": req.taiKhoan.strip(),
-        "fullName": req.hoTen or req.taiKhoan.strip(),
+        "username": username,
+        "fullName": full_name,
         "email": req.email or "",
         "address": req.diaChi or "",
+        "phone": phone_val,
+        "soDienThoai": phone_val,
+        "avatar": "",
         "role": "USER",
-        "status": "HoatDong"
+        "status": "HoatDong",
+        "token": token,
     }
+
+@app.post("/api/auth/quen-mat-khau")
+def forgot_password(req: ForgotPasswordRequest):
+    uname = (req.ten_dang_nhap or req.taiKhoan or "").strip()
+    email = (req.email or "").strip()
+    if not uname and not email:
+        raise HTTPException(status_code=400, detail="Vui lòng cung cấp email hoặc tên đăng nhập!")
+
+    conn = get_db_connection()
+    try:
+        cursor = conn.cursor()
+        if uname:
+            cursor.execute(
+                "SELECT MANGUOIDUNG, TAIKHOAN, EMAIL, TRANGTHAITAIKHOAN FROM NGUOI_DUNG WHERE LOWER(TAIKHOAN) = LOWER(?)",
+                (uname,),
+            )
+        else:
+            cursor.execute(
+                "SELECT MANGUOIDUNG, TAIKHOAN, EMAIL, TRANGTHAITAIKHOAN FROM NGUOI_DUNG WHERE LOWER(EMAIL) = LOWER(?)",
+                (email,),
+            )
+        row = cursor.fetchone()
+        if not row:
+            raise HTTPException(status_code=404, detail="Không tìm thấy tài khoản tương ứng!")
+
+        uid, taikhoan, user_email, trangthai = row
+        if is_account_locked(trangthai):
+            raise HTTPException(status_code=403, detail="Tài khoản đang bị khóa, không thể đặt lại mật khẩu!")
+
+        new_pw = req.mat_khau_moi or req.matKhauMoi
+        otp_in = (req.ma_xac_nhan or req.maXacNhan or "").strip()
+
+        # Bước 1: Chưa gửi mật khẩu mới -> Sinh mã OTP demo 6 chữ số để test luận văn
+        if not new_pw:
+            otp_code = f"{secrets.randbelow(900000) + 100000}"
+            PASSWORD_RESET_OTPS[uid] = {"otp": otp_code, "exp": time.time() + 600}
+            return {
+                "message": "Đã tạo mã xác nhận đặt lại mật khẩu (OTP Demo).",
+                "tai_khoan": taikhoan,
+                "email": user_email or "",
+                "ma_xac_nhan_demo": otp_code,
+                "expires_in": 600,
+            }
+
+        # Bước 2: Đã gửi mật khẩu mới -> Bắt buộc kiểm tra mã OTP
+        if len(new_pw.strip()) < 4:
+            raise HTTPException(status_code=400, detail="Mật khẩu mới phải có ít nhất 4 ký tự!")
+        stored = PASSWORD_RESET_OTPS.get(uid)
+        if not stored or stored["exp"] < time.time():
+            raise HTTPException(status_code=400, detail="Mã xác nhận đã hết hạn hoặc chưa được tạo. Vui lòng yêu cầu mã mới!")
+        if not otp_in or not hmac.compare_digest(stored["otp"], otp_in):
+            raise HTTPException(status_code=400, detail="Mã xác nhận OTP không chính xác!")
+
+        cursor.execute(
+            "UPDATE NGUOI_DUNG SET MATKHAU = ? WHERE MANGUOIDUNG = ?",
+            (hash_password(new_pw.strip()), uid),
+        )
+        conn.commit()
+        PASSWORD_RESET_OTPS.pop(uid, None)
+        return {"message": "Đặt lại mật khẩu thành công! Bạn có thể đăng nhập bằng mật khẩu mới.", "tai_khoan": taikhoan}
+    finally:
+        conn.close()
 
 class UpdateUserRequest(BaseModel):
     hoTen: Optional[str] = None
+    HoTen: Optional[str] = None
     email: Optional[str] = None
+    Email: Optional[str] = None
+    soDienThoai: Optional[str] = None
+    SoDienThoai: Optional[str] = None
     diaChi: Optional[str] = None
+    DiaChi: Optional[str] = None
+    avatar: Optional[str] = None
+    Avatar: Optional[str] = None
+    matKhauCu: Optional[str] = None
+    MatKhauCu: Optional[str] = None
+    matKhauMoi: Optional[str] = None
+    MatKhauMoi: Optional[str] = None
     matKhau: Optional[str] = None
 
-@app.put("/api/nguoi-dung/{user_identifier}")
-def update_user_profile(user_identifier: str, req: UpdateUserRequest):
+@app.get("/api/nguoi-dung/{user_identifier}")
+def get_user_profile(
+    user_identifier: str,
+    current_user: Dict[str, Any] = Depends(get_current_user),
+):
     conn = get_db_connection()
-    cursor = conn.cursor()
-
-    if user_identifier.isdigit():
-        cursor.execute("SELECT MANGUOIDUNG FROM NGUOI_DUNG WHERE MANGUOIDUNG = ?", (int(user_identifier),))
-    else:
-        cursor.execute("SELECT MANGUOIDUNG FROM NGUOI_DUNG WHERE LOWER(TAIKHOAN) = LOWER(?)", (user_identifier.strip(),))
-
-    row = cursor.fetchone()
-    if not row:
+    try:
+        cursor = conn.cursor()
+        if user_identifier.isdigit():
+            cursor.execute("""
+                SELECT MANGUOIDUNG, TAIKHOAN, HOTEN, EMAIL, DIACHI, SODIENTHOAI, AVATAR, VAITRO, TRANGTHAITAIKHOAN, NGAYDANGKY
+                FROM NGUOI_DUNG WHERE MANGUOIDUNG = ?
+            """, (int(user_identifier),))
+        else:
+            cursor.execute("""
+                SELECT MANGUOIDUNG, TAIKHOAN, HOTEN, EMAIL, DIACHI, SODIENTHOAI, AVATAR, VAITRO, TRANGTHAITAIKHOAN, NGAYDANGKY
+                FROM NGUOI_DUNG WHERE LOWER(TAIKHOAN) = LOWER(?)
+            """, (user_identifier.strip(),))
+        row = cursor.fetchone()
+        if not row:
+            raise HTTPException(status_code=404, detail="Không tìm thấy người dùng trong CSDL!")
+        uid = row[0]
+        if current_user.get("role") != "ADMIN" and current_user.get("sub") != uid:
+            raise HTTPException(status_code=403, detail="Bạn không có quyền xem hồ sơ của người dùng khác!")
+        return {
+            "id": row[0],
+            "username": row[1],
+            "fullName": row[2] or row[1],
+            "email": row[3] or "",
+            "address": row[4] or "",
+            "phone": row[5] or "",
+            "soDienThoai": row[5] or "",
+            "avatar": row[6] or "",
+            "role": "ADMIN" if str(row[7] or "").strip().lower() == "admin" else "USER",
+            "status": row[8],
+            "ngayDangKy": str(row[9] or "")[:19],
+        }
+    finally:
         conn.close()
-        raise HTTPException(status_code=404, detail="Không tìm thấy người dùng trong CSDL!")
 
-    uid = row[0]
-    if req.hoTen is not None:
-        cursor.execute("UPDATE NGUOI_DUNG SET HOTEN = ? WHERE MANGUOIDUNG = ?", (req.hoTen, uid))
-    if req.email is not None:
-        cursor.execute("UPDATE NGUOI_DUNG SET EMAIL = ? WHERE MANGUOIDUNG = ?", (req.email, uid))
-    if req.diaChi is not None:
-        cursor.execute("UPDATE NGUOI_DUNG SET DIACHI = ? WHERE MANGUOIDUNG = ?", (req.diaChi, uid))
-    if req.matKhau is not None and req.matKhau.strip():
-        cursor.execute("UPDATE NGUOI_DUNG SET MATKHAU = ? WHERE MANGUOIDUNG = ?", (req.matKhau.strip(), uid))
+@app.put("/api/nguoi-dung/{user_identifier}")
+def update_user_profile(
+    user_identifier: str,
+    req: UpdateUserRequest,
+    current_user: Dict[str, Any] = Depends(get_current_user),
+):
+    conn = get_db_connection()
+    try:
+        cursor = conn.cursor()
 
-    conn.commit()
-    conn.close()
-    return {"message": "Cập nhật thông tin thành công!", "id": uid}
+        if user_identifier.isdigit():
+            cursor.execute("SELECT MANGUOIDUNG, MATKHAU FROM NGUOI_DUNG WHERE MANGUOIDUNG = ?", (int(user_identifier),))
+        else:
+            cursor.execute("SELECT MANGUOIDUNG, MATKHAU FROM NGUOI_DUNG WHERE LOWER(TAIKHOAN) = LOWER(?)", (user_identifier.strip(),))
+
+        row = cursor.fetchone()
+        if not row:
+            raise HTTPException(status_code=404, detail="Không tìm thấy người dùng trong CSDL!")
+
+        uid, stored_pw = row[0], row[1]
+        is_admin = current_user.get("role") == "ADMIN"
+        if not is_admin and current_user.get("sub") != uid:
+            raise HTTPException(status_code=403, detail="Bạn không có quyền chỉnh sửa tài khoản của người khác!")
+
+        ho_ten = req.HoTen if req.HoTen is not None else req.hoTen
+        email = req.Email if req.Email is not None else req.email
+        so_dien_thoai = req.SoDienThoai if req.SoDienThoai is not None else req.soDienThoai
+        dia_chi = req.DiaChi if req.DiaChi is not None else req.diaChi
+        avatar = req.Avatar if req.Avatar is not None else req.avatar
+        mat_khau_cu = req.MatKhauCu if req.MatKhauCu is not None else req.matKhauCu
+        mat_khau_moi = req.MatKhauMoi if req.MatKhauMoi is not None else (req.matKhauMoi if req.matKhauMoi is not None else req.matKhau)
+
+        if mat_khau_moi is not None and mat_khau_moi.strip():
+            if len(mat_khau_moi.strip()) < 4:
+                raise HTTPException(status_code=400, detail="Mật khẩu mới phải có ít nhất 4 ký tự!")
+            if not is_admin:
+                if not mat_khau_cu or not verify_password(mat_khau_cu, stored_pw):
+                    raise HTTPException(status_code=400, detail="Mật khẩu cũ không chính xác!")
+            cursor.execute("UPDATE NGUOI_DUNG SET MATKHAU = ? WHERE MANGUOIDUNG = ?", (hash_password(mat_khau_moi.strip()), uid))
+
+        if ho_ten is not None:
+            cursor.execute("UPDATE NGUOI_DUNG SET HOTEN = ? WHERE MANGUOIDUNG = ?", (ho_ten, uid))
+        if email is not None:
+            cursor.execute("UPDATE NGUOI_DUNG SET EMAIL = ? WHERE MANGUOIDUNG = ?", (email, uid))
+        if so_dien_thoai is not None:
+            cursor.execute("UPDATE NGUOI_DUNG SET SODIENTHOAI = ? WHERE MANGUOIDUNG = ?", (so_dien_thoai, uid))
+        if dia_chi is not None:
+            cursor.execute("UPDATE NGUOI_DUNG SET DIACHI = ? WHERE MANGUOIDUNG = ?", (dia_chi, uid))
+        if avatar is not None:
+            cursor.execute("UPDATE NGUOI_DUNG SET AVATAR = ? WHERE MANGUOIDUNG = ?", (avatar, uid))
+
+        conn.commit()
+        cursor.execute(
+            "SELECT HOTEN, EMAIL, DIACHI, SODIENTHOAI, AVATAR FROM NGUOI_DUNG WHERE MANGUOIDUNG = ?",
+            (uid,),
+        )
+        u_row = cursor.fetchone()
+        return {
+            "message": "Cập nhật thông tin thành công!",
+            "id": uid,
+            "fullName": u_row[0] if u_row else "",
+            "email": u_row[1] if u_row else "",
+            "address": u_row[2] if u_row else "",
+            "phone": u_row[3] if u_row else "",
+            "soDienThoai": u_row[3] if u_row else "",
+            "avatar": u_row[4] if u_row else "",
+        }
+    finally:
+        conn.close()
+
+class AddressCreateRequest(BaseModel):
+    TenNguoiNhan: Optional[str] = None
+    tenNguoiNhan: Optional[str] = None
+    SdtNguoiNhan: Optional[str] = None
+    sdtNguoiNhan: Optional[str] = None
+    SoDienThoai: Optional[str] = None
+    soDienThoai: Optional[str] = None
+    DiaChiChiTiet: Optional[str] = None
+    diaChiChiTiet: Optional[str] = None
+    DiaChi: Optional[str] = None
+    diaChi: Optional[str] = None
+    DatMacDinh: Optional[bool] = False
+    datMacDinh: Optional[bool] = None
+
+@app.get("/api/nguoi-dung/{user_id}/dia-chi")
+def get_user_addresses(
+    user_id: int,
+    current_user: Dict[str, Any] = Depends(get_current_user),
+):
+    if current_user.get("role") != "ADMIN" and current_user.get("sub") != user_id:
+        raise HTTPException(status_code=403, detail="Bạn không có quyền xem sổ địa chỉ của người khác!")
+    return query_db("""
+        SELECT MADIACHI, MANGUOIDUNG, TENNGUOINHAN, SDTNGUOINHAN, DIACHICHITIET, DATMACDINH
+        FROM DIA_CHI_NGUOI_DUNG
+        WHERE MANGUOIDUNG = ?
+        ORDER BY DATMACDINH DESC, MADIACHI DESC
+    """, (user_id,))
+
+@app.post("/api/nguoi-dung/{user_id}/dia-chi")
+def create_user_address(
+    user_id: int,
+    req: AddressCreateRequest,
+    current_user: Dict[str, Any] = Depends(get_current_user),
+):
+    if current_user.get("role") != "ADMIN" and current_user.get("sub") != user_id:
+        raise HTTPException(status_code=403, detail="Bạn không có quyền thêm địa chỉ cho người khác!")
+
+    ten = (req.TenNguoiNhan or req.tenNguoiNhan or "").strip()
+    sdt = (req.SdtNguoiNhan or req.sdtNguoiNhan or req.SoDienThoai or req.soDienThoai or "").strip()
+    dia_chi = (req.DiaChiChiTiet or req.diaChiChiTiet or req.DiaChi or req.diaChi or "").strip()
+    mac_dinh = bool(req.datMacDinh if req.datMacDinh is not None else req.DatMacDinh)
+
+    if not dia_chi:
+        raise HTTPException(status_code=400, detail="Vui lòng nhập địa chỉ chi tiết!")
+
+    conn = get_db_connection()
+    try:
+        cursor = conn.cursor()
+        if mac_dinh:
+            cursor.execute("UPDATE DIA_CHI_NGUOI_DUNG SET DATMACDINH = 0 WHERE MANGUOIDUNG = ?", (user_id,))
+        cursor.execute("SELECT ISNULL(MAX(MADIACHI), 0) + 1 FROM DIA_CHI_NGUOI_DUNG")
+        next_id = cursor.fetchone()[0]
+        cursor.execute("""
+            INSERT INTO DIA_CHI_NGUOI_DUNG (MADIACHI, MANGUOIDUNG, TENNGUOINHAN, DIACHICHITIET, DATMACDINH, SDTNGUOINHAN)
+            VALUES (?, ?, ?, ?, ?, ?)
+        """, (next_id, user_id, ten, dia_chi, 1 if mac_dinh else 0, sdt))
+        conn.commit()
+        return {
+            "message": "Đã thêm địa chỉ giao hàng thành công!",
+            "MaDiaChi": next_id,
+            "MaNguoiDung": user_id,
+            "TenNguoiNhan": ten,
+            "SdtNguoiNhan": sdt,
+            "DiaChiChiTiet": dia_chi,
+            "DatMacDinh": mac_dinh,
+        }
+    finally:
+        conn.close()
+
+@app.delete("/api/nguoi-dung/{user_id}/dia-chi/{ma_dia_chi}")
+def delete_user_address_by_path(
+    user_id: int,
+    ma_dia_chi: int,
+    current_user: Dict[str, Any] = Depends(get_current_user),
+):
+    if current_user.get("role") != "ADMIN" and current_user.get("sub") != user_id:
+        raise HTTPException(status_code=403, detail="Bạn không có quyền xóa địa chỉ của người khác!")
+    conn = get_db_connection()
+    try:
+        cursor = conn.cursor()
+        cursor.execute(
+            "DELETE FROM DIA_CHI_NGUOI_DUNG WHERE MADIACHI = ? AND MANGUOIDUNG = ?",
+            (ma_dia_chi, user_id),
+        )
+        if cursor.rowcount == 0:
+            raise HTTPException(status_code=404, detail="Không tìm thấy địa chỉ cần xóa!")
+        conn.commit()
+        return {"message": "Đã xóa địa chỉ thành công!", "MaDiaChi": ma_dia_chi}
+    finally:
+        conn.close()
+
+@app.delete("/api/nguoi-dung/{user_id}/dia-chi")
+def delete_user_address_by_query(
+    user_id: int,
+    ma_dia_chi: int = Query(...),
+    current_user: Dict[str, Any] = Depends(get_current_user),
+):
+    return delete_user_address_by_path(user_id=user_id, ma_dia_chi=ma_dia_chi, current_user=current_user)
 
 # =====================================================================
 # 5. TẢI TRỰC TIẾP ANDROID APK & PHỤC VỤ GIAO DIỆN WEB TRÊN CÙNG TUNNEL

@@ -1,24 +1,73 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
 import { INITIAL_REVIEWS } from '../data/mockData';
 import { getPlantImage, handleImgError } from '../utils/plantAssets';
+import { apiFetch } from '../config';
+
+function mapApiReview(r) {
+  return {
+    id: r.MaDanhGia ?? r.MADANHGIA ?? r.id ?? Date.now() + Math.random(),
+    productId: r.MaSanPham ?? r.MASANPHAM ?? r.productId,
+    userName: r.NguoiDanhGia || r.NGUOIDANHGIA || r.TenNguoiDanhGia || r.userName || 'Khách hàng thân thiết',
+    rating: Math.min(5, Math.max(1, Number(r.SoSao ?? r.SOSAO ?? r.rating ?? 5))),
+    date: r.NgayDanhGia || r.NGAYDANHGIA || r.date || '',
+    comment: r.NoiDungBinhLuan || r.NOIDUNGBINHLUAN || r.comment || '',
+    verified: Boolean(r.MaDonHang || r.MADONHANG || r.verified)
+  };
+}
 
 export default function ProductDetailPage({ product, onBack, onCheckoutNow, onOpenAuth }) {
   const [selectedImg, setSelectedImg] = useState(product?.image);
   const [qty, setQty] = useState(1);
-  const [reviews, setReviews] = useState(INITIAL_REVIEWS);
+  const [reviews, setReviews] = useState([]);
+  const [avgRating, setAvgRating] = useState(5.0);
+  const [isLoadingReviews, setIsLoadingReviews] = useState(false);
+  const [isSubmittingReview, setIsSubmittingReview] = useState(false);
   const [newReviewText, setNewReviewText] = useState('');
   const [newRating, setNewRating] = useState(5);
 
   const { addToCart, showToast } = useCart();
   const { user, isAuthenticated } = useAuth();
 
+  const fetchReviews = useCallback(async (productId) => {
+    if (!productId) return;
+    setIsLoadingReviews(true);
+    try {
+      const res = await apiFetch(`/api/san-pham/${productId}/danh-gia`);
+      if (res.ok) {
+        const data = await res.json();
+        const list = Array.isArray(data?.danh_sach)
+          ? data.danh_sach.map(mapApiReview)
+          : Array.isArray(data)
+          ? data.map(mapApiReview)
+          : [];
+        setReviews(list);
+        if (typeof data?.diem_trung_binh === 'number') {
+          setAvgRating(data.diem_trung_binh);
+        } else if (list.length > 0) {
+          const sum = list.reduce((s, item) => s + item.rating, 0);
+          setAvgRating(Math.round((sum / list.length) * 10) / 10);
+        } else {
+          setAvgRating(5.0);
+        }
+      } else {
+        setReviews(INITIAL_REVIEWS.filter((r) => !r.productId || r.productId === productId));
+      }
+    } catch (_) {
+      setReviews(INITIAL_REVIEWS.filter((r) => !r.productId || r.productId === productId));
+    } finally {
+      setIsLoadingReviews(false);
+    }
+  }, []);
+
   useEffect(() => {
     if (product) {
       setSelectedImg(product.image);
+      setQty(1);
+      fetchReviews(product.id);
     }
-  }, [product]);
+  }, [product, fetchReviews]);
 
   if (!product) return null;
 
@@ -42,7 +91,7 @@ export default function ProductDetailPage({ product, onBack, onCheckoutNow, onOp
     }
   };
 
-  const handleAddReview = (e) => {
+  const handleAddReview = async (e) => {
     e.preventDefault();
     if (!isAuthenticated) {
       showToast('⚠️ Vui lòng đăng nhập để gửi nhận xét và đánh giá sản phẩm!');
@@ -50,21 +99,40 @@ export default function ProductDetailPage({ product, onBack, onCheckoutNow, onOp
       return;
     }
 
-    if (!newReviewText.trim()) return;
+    const comment = newReviewText.trim();
+    if (!comment) {
+      showToast('⚠️ Vui lòng nhập nội dung đánh giá!');
+      return;
+    }
 
-    const rev = {
-      id: Date.now(),
-      productId: product.id,
-      userName: user.fullName || user.username,
-      rating: newRating,
-      date: new Date().toLocaleDateString('vi-VN'),
-      comment: newReviewText,
-      verified: true
-    };
-
-    setReviews([rev, ...reviews]);
-    setNewReviewText('');
-    showToast('⭐ Cảm ơn bạn đã đóng góp đánh giá sản phẩm!');
+    const rating = Math.min(5, Math.max(1, Number(newRating) || 5));
+    setIsSubmittingReview(true);
+    try {
+      const res = await apiFetch('/api/danh-gia', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          MaSanPham: Number(product.id),
+          SoSao: rating,
+          NoiDungBinhLuan: comment,
+          TenNguoiDanhGia: user?.fullName || user?.username || 'Khách hàng',
+          MaNguoiDung: user?.id ? Number(user.id) : null
+        })
+      });
+      const data = await res.json().catch(() => ({}));
+      if (res.ok) {
+        setNewReviewText('');
+        setNewRating(5);
+        showToast('⭐ Cảm ơn bạn đã gửi đánh giá sản phẩm lên hệ thống!');
+        await fetchReviews(product.id);
+      } else {
+        showToast(`❌ ${data.detail || 'Không thể gửi đánh giá lúc này!'}`);
+      }
+    } catch (_) {
+      showToast('❌ Lỗi kết nối máy chủ khi gửi đánh giá!');
+    } finally {
+      setIsSubmittingReview(false);
+    }
   };
 
   return (
@@ -298,37 +366,65 @@ export default function ProductDetailPage({ product, onBack, onCheckoutNow, onOp
 
       {/* Đánh giá sản phẩm theo CDM: DANH_GIA_SAN_PHAM */}
       <section className="card bg-white p-6 sm:p-8 rounded-3xl border border-emerald-900/10 space-y-6">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-wrap items-center justify-between gap-2">
           <div>
             <h3 className="text-lg font-bold text-[#132a1e]">Đánh giá từ khách mua</h3>
             <p className="text-xs text-[#132a1e]/50">Yêu cầu đăng nhập tài khoản trước khi viết nhận xét</p>
           </div>
-          <span className="badge h-auto py-1 px-3 text-xs font-bold text-[#064e3b] bg-emerald-50 border border-emerald-200 rounded-full">
-            {reviews.length} đánh giá
-          </span>
+          <div className="flex items-center gap-2">
+            <span className="badge h-auto py-1 px-3 text-xs font-bold text-amber-800 bg-amber-50 border border-amber-200 rounded-full flex items-center gap-1">
+              <span className="material-symbols-outlined text-sm text-amber-500">star</span>
+              <span>{avgRating.toFixed(1)} / 5.0</span>
+            </span>
+            <span className="badge h-auto py-1 px-3 text-xs font-bold text-[#064e3b] bg-emerald-50 border border-emerald-200 rounded-full">
+              {reviews.length} đánh giá
+            </span>
+          </div>
         </div>
 
         {/* Danh sách review */}
         <div className="space-y-3">
-          {reviews.map((r) => (
-            <div key={r.id} className="p-4 rounded-2xl bg-[#fafaf7] border border-emerald-900/8 space-y-1 text-xs">
-              <div className="flex items-center justify-between">
-                <span className="font-bold text-[#132a1e]">{r.userName}</span>
-                <span className="text-[#132a1e]/45 text-[11px]">{r.date}</span>
-              </div>
-              <div className="flex items-center text-amber-500">
-                {[...Array(r.rating)].map((_, i) => (
-                  <span key={i} className="material-symbols-outlined text-sm">star</span>
-                ))}
-              </div>
-              <p className="text-[#132a1e]/80 mt-1">{r.comment}</p>
+          {isLoadingReviews ? (
+            <div className="py-6 text-center text-xs text-gray-400 font-semibold">Đang tải đánh giá sản phẩm...</div>
+          ) : reviews.length === 0 ? (
+            <div className="p-5 rounded-2xl bg-[#fafaf7] border border-dashed border-emerald-900/15 text-center text-xs text-[#132a1e]/60">
+              Chưa có đánh giá nào cho chậu cây này. Hãy là người đầu tiên chia sẻ cảm nhận!
             </div>
-          ))}
+          ) : (
+            reviews.map((r) => (
+              <div key={r.id} className="p-4 rounded-2xl bg-[#fafaf7] border border-emerald-900/8 space-y-1 text-xs">
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-2">
+                    <span className="font-bold text-[#132a1e]">{r.userName}</span>
+                    {r.verified && (
+                      <span className="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-bold">
+                        Đã mua hàng
+                      </span>
+                    )}
+                  </div>
+                  <span className="text-[#132a1e]/45 text-[11px]">{r.date}</span>
+                </div>
+                <div className="flex items-center text-amber-500">
+                  {[1, 2, 3, 4, 5].map((star) => (
+                    <span
+                      key={star}
+                      className={`material-symbols-outlined text-sm ${
+                        star <= r.rating ? 'text-amber-500' : 'text-gray-300'
+                      }`}
+                    >
+                      star
+                    </span>
+                  ))}
+                </div>
+                <p className="text-[#132a1e]/80 mt-1">{r.comment}</p>
+              </div>
+            ))
+          )}
         </div>
 
         {/* Form viết đánh giá mới */}
         <form onSubmit={handleAddReview} className="pt-4 border-t border-emerald-900/10 space-y-3 text-xs">
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between flex-wrap gap-2">
             <h4 className="font-bold text-[#132a1e]">Gửi đánh giá của bạn cho cây này:</h4>
             {!isAuthenticated && (
               <span className="text-xs text-amber-700 font-bold flex items-center gap-1">
@@ -337,17 +433,24 @@ export default function ProductDetailPage({ product, onBack, onCheckoutNow, onOp
               </span>
             )}
           </div>
-          <div className="flex items-center gap-2">
-            <span className="text-[#132a1e]/60">Số sao:</span>
-            <select
-              value={newRating}
-              onChange={(e) => setNewRating(Number(e.target.value))}
-              className="select select-xs h-8 px-2.5 rounded-lg border border-emerald-900/15 bg-white font-semibold text-[#132a1e]"
-            >
-              <option value="5">⭐⭐⭐⭐⭐ 5 Sao</option>
-              <option value="4">⭐⭐⭐⭐ 4 Sao</option>
-              <option value="3">⭐⭐⭐ 3 Sao</option>
-            </select>
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="text-[#132a1e]/60 font-semibold">Chọn số sao (1–5):</span>
+            <div className="flex items-center gap-1">
+              {[1, 2, 3, 4, 5].map((star) => (
+                <button
+                  key={star}
+                  type="button"
+                  onClick={() => setNewRating(star)}
+                  className={`p-1 rounded-lg transition-transform hover:scale-110 cursor-pointer ${
+                    star <= newRating ? 'text-amber-500' : 'text-gray-300'
+                  }`}
+                  title={`${star} sao`}
+                >
+                  <span className="material-symbols-outlined text-xl">star</span>
+                </button>
+              ))}
+            </div>
+            <span className="text-xs font-bold text-amber-700">{newRating} / 5 sao</span>
           </div>
           <textarea
             rows="2"
@@ -362,9 +465,10 @@ export default function ProductDetailPage({ product, onBack, onCheckoutNow, onOp
           ></textarea>
           <button
             type="submit"
-            className="btn btn-primary btn-sm h-10 px-5 rounded-xl font-bold text-xs"
+            disabled={isSubmittingReview}
+            className="btn btn-primary btn-sm h-10 px-5 rounded-xl font-bold text-xs disabled:opacity-60"
           >
-            Đăng nhận xét
+            {isSubmittingReview ? 'Đang gửi đánh giá...' : 'Đăng nhận xét'}
           </button>
         </form>
       </section>
