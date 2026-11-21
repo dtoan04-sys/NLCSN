@@ -1,11 +1,15 @@
 import os
 import sys
 import json
+import zipfile
+import tempfile
+from pathlib import Path
 import numpy as np
-from PIL import Image
+from PIL import Image, ImageOps
 
 # Đảm bảo in tiếng Việt không lỗi font console
-sys.stdout.reconfigure(encoding='utf-8')
+if hasattr(sys.stdout, 'reconfigure'):
+    sys.stdout.reconfigure(encoding='utf-8')
 
 MODEL_PATH = r"E:\dowload\ai-service\model\best_model.keras"
 CLASS_NAMES_PATH = r"E:\dowload\ai-service\model\class_names.json"
@@ -28,7 +32,41 @@ print("[*] Đang khởi động mô hình AI (TensorFlow / Keras)...")
 import tensorflow as tf
 from tensorflow import keras
 
-model = keras.models.load_model(MODEL_PATH)
+
+def load_keras_compat(model_path: str):
+    try:
+        return keras.models.load_model(model_path, compile=False)
+    except TypeError:
+        fd, tmp_name = tempfile.mkstemp(suffix=".keras")
+        os.close(fd)
+        tmp_path = Path(tmp_name)
+        try:
+            with zipfile.ZipFile(model_path, "r") as zin, zipfile.ZipFile(
+                tmp_path, "w", compression=zipfile.ZIP_DEFLATED
+            ) as zout:
+                for item in zin.infolist():
+                    data = zin.read(item.filename)
+                    if item.filename == "config.json":
+                        cfg = json.loads(data.decode("utf-8"))
+
+                        def _strip(obj):
+                            if isinstance(obj, dict):
+                                obj.pop("quantization_config", None)
+                                for v in obj.values():
+                                    _strip(v)
+                            elif isinstance(obj, list):
+                                for v in obj:
+                                    _strip(v)
+
+                        _strip(cfg)
+                        data = json.dumps(cfg).encode("utf-8")
+                    zout.writestr(item, data)
+            return keras.models.load_model(str(tmp_path), compile=False)
+        finally:
+            tmp_path.unlink(missing_ok=True)
+
+
+model = load_keras_compat(MODEL_PATH)
 print("[✓] Nạp mô hình thành công!\n")
 
 def predict_image(img_path):
@@ -37,16 +75,22 @@ def predict_image(img_path):
         return
 
     print(f"--- Đang phân tích ảnh: {os.path.basename(img_path)} ---")
-    
-    # Tiền xử lý ảnh theo chuẩn MobileNetV2 (224x224, scale [-1, 1])
-    img = Image.open(img_path).convert('RGB')
-    img = img.resize((224, 224))
+
+    # Chuẩn hóa EXIF + nền trong suốt RGBA/WebP; truyền thẳng [0, 255] vì model đã tích hợp tầng Rescaling
+    img = Image.open(img_path)
+    img = ImageOps.exif_transpose(img)
+    if img.mode in ("RGBA", "LA") or (img.mode == "P" and "transparency" in img.info):
+        rgba = img.convert("RGBA")
+        bg = Image.new("RGBA", rgba.size, (255, 255, 255, 255))
+        img = Image.alpha_composite(bg, rgba).convert("RGB")
+    else:
+        img = img.convert("RGB")
+    img = img.resize((224, 224), Image.Resampling.BILINEAR)
     img_arr = np.array(img, dtype=np.float32)
-    img_arr = (img_arr / 127.5) - 1.0
     img_tensor = np.expand_dims(img_arr, axis=0)
 
     # Dự đoán
-    preds = model.predict(img_tensor, verbose=0)[0]
+    preds = model(img_tensor, training=False).numpy()[0]
     
     # Tính Entropy đo độ bất định
     eps = 1e-12

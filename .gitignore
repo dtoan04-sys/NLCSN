@@ -38,3 +38,11 @@ ai-service/model/efficientnet_b0_30k.keras
 frontend-kieng-la/android/app/build/
 frontend-kieng-la/android/.gradle/
 frontend-kieng-la/dist/
+
+# Heavy test media, raw datasets & large PDFs
+anh test/
+bo_sung_thuc_te/
+06_Mo_Hinh_AI_Colab_Moi/clip_frames/
+06_Mo_Hinh_AI_Colab_Moi/school_plants_dataset/
+06_Mo_Hinh_AI_Colab_Moi/best_model_school_finetuned.keras
+bao_tham_khao/*.pdf
