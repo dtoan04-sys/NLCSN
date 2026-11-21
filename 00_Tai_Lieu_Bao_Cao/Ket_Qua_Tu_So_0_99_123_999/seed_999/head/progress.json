@@ -1,0 +1,21 @@
+{
+  "phase": "head",
+  "max_epochs": 50,
+  "init_lr": 0.001,
+  "min_lr": 1e-05,
+  "lr_factor": 0.5,
+  "lr_patience": 3,
+  "es_patience": 7,
+  "min_delta": 0.0001,
+  "current_lr": 1e-05,
+  "next_epoch": 46,
+  "best_val_loss": 1.759702444076538,
+  "ref_val_loss": 1.759702444076538,
+  "best_val_acc": 0.6516311168670654,
+  "best_epoch": 39,
+  "wait_es": 7,
+  "wait_lr": 7,
+  "lr_reductions": 7,
+  "stopped": true,
+  "stop_reason": "early_stopping_saturated"
+}

@@ -1,0 +1,3 @@
+﻿model_key,Mô hình,Tham số (M),File .keras (MB),Latency T4 (ms),Epoch tốt nhất / Dừng,Top-1 Mới (%),Top-3 Mới (%),Precision Mới (%),Recall Mới (%),F1 Mới (%),Top-1 Mẫu (%),Chênh lệch Top-1 vs Mẫu,Chênh lệch F1 vs Mẫu
+mobilenet_v2,MobileNetV2 (Đề tài đề xuất),2.37,9.62,5.04,45/53,80.51,91.27,81.56,80.51,80.36,70.39,10.12,10.15
+efficientnet_b0,EfficientNetB0 (Transfer Learning),4.16,16.69,9.61,40/48,84.47,93.89,85.08,84.47,84.36,76.87,7.6,7.89

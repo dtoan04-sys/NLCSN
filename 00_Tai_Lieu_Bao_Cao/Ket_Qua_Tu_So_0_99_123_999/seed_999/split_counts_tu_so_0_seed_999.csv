@@ -1,0 +1,91 @@
+﻿label,train_base,train_real,val_base,val_real,test_base,test_real,total_unique
+African Violet (Saintpaulia ionantha),269,0,33,0,35,0,337
+Aloe Vera,212,0,26,0,27,0,265
+Anthurium (Anthurium andraeanum),362,7,45,2,46,2,464
+Areca Palm (Dypsis lutescens),150,0,18,0,20,0,188
+Arrowhead Plant (Syngonium podophyllum),199,0,24,0,26,0,249
+Asparagus Fern (Asparagus setaceus),156,25,19,3,21,3,227
+Baby Rubber Plant (Peperomia obtusifolia),216,0,27,0,28,0,271
+Baby Tears (Soleirolia soleirolii),197,0,24,0,26,0,247
+Bird of Paradise (Strelitzia reginae),178,0,22,0,23,0,223
+Birds Nest Fern (Asplenium nidus),252,0,31,0,32,0,315
+Black Velvet Alocasia (Alocasia reginula),158,0,19,0,21,0,198
+Blushing Bromeliad (Neoregelia carolinae),176,0,22,0,22,0,220
+Boston Fern (Nephrolepis exaltata),268,0,33,0,35,0,336
+Calla Lily (Zantedeschia aethiopica),200,0,25,0,25,0,250
+Cast Iron Plant (Aspidistra elatior),228,0,28,0,29,0,285
+China Doll Plant (Radermachera sinica),169,0,21,0,22,0,212
+Chinese Evergreen Siam (Aglaonema commutatum),218,0,27,0,28,0,273
+Chinese Hibiscus (Hibiscus rosa-sinensis),220,0,27,0,28,0,275
+Chinese Money Plant (Pilea peperomioides),304,0,38,0,38,0,380
+Christmas Cactus (Schlumbergera bridgesii),267,0,33,0,34,0,334
+Chrysanthemum,181,0,22,0,24,0,227
+Coleus (Coleus scutellarioides),196,0,24,0,26,0,246
+Coralberry (Ardisia crenata),174,0,21,0,23,0,218
+Corn Plant (Dracaena fragrans),198,3,24,0,26,0,251
+Creeping Fig (Ficus pumila),196,0,24,0,25,0,245
+Crown of Thorns (Euphorbia milii),216,0,27,0,28,0,271
+Ctenanthe,272,0,34,0,34,0,340
+Daffodils (Narcissus spp.),336,0,42,0,43,0,421
+Dragon Tail (Epipremnum pinnatum),192,0,24,0,24,0,240
+Dumb Cane (Dieffenbachia spp.),432,0,54,0,54,0,540
+English Ivy (Hedera helix),206,0,25,0,27,0,258
+Fan Palm - Lady Palm (Rhapis excelsa),196,0,24,0,26,0,246
+Fiddle Leaf Fig (Ficus lyrata),202,0,25,0,26,0,253
+French Hydrangea (Hydrangea macrophylla),210,0,26,0,27,0,263
+Garden Croton (Codiaeum variegatum),220,0,27,0,29,0,276
+Giant Taro (Alocasia macrorrhizos),196,0,24,0,25,0,245
+Ginseng Ficus (Ficus microcarpa),200,0,25,0,26,0,251
+Gold Dust Dracaena (Dracaena surculosa),176,0,22,0,23,0,221
+Hairy Philodendron (Philodendron squamiferum),216,0,27,0,27,0,270
+Heart of Jesus (Caladium bicolor),214,0,26,0,28,0,268
+Heartleaf Philodendron (Philodendron cordatum),200,0,25,0,26,0,251
+Hyacinth (Hyacinthus orientalis),254,0,31,0,33,0,318
+Indian Azalea (Rhododendron simsii),216,0,27,0,27,0,270
+Iron Cross begonia (Begonia masoniana),228,0,28,0,29,0,285
+Jade plant (Crassula ovata),282,0,35,0,36,0,353
+Kalanchoe,116,0,14,0,16,0,146
+Lily of the valley (Convallaria majalis),328,0,41,0,42,0,411
+Madagascar Dragon Tree (Dracaena marginata),211,0,26,0,27,0,264
+Mexican Snowball (Echeveria elegans),204,0,25,0,27,0,256
+Money Tree (Pachira aquatica),285,0,35,0,37,0,357
+Monstera Deliciosa (Monstera deliciosa),435,0,54,0,55,0,544
+Moses in the Cradle (Tradescantia spathacea),192,13,24,3,25,4,261
+Nerve Plant (Fittonia albivenis),197,0,24,0,26,0,247
+Night-scented Lily (Alocasia odora),193,0,24,0,25,0,242
+Orchid,208,0,26,0,26,0,260
+Parlor Palm (Chamaedorea elegans),262,0,32,0,34,0,328
+Parrot Flower (Heliconia psittacorum),208,0,26,0,27,0,261
+Peace lily,304,0,38,0,39,0,381
+Peppermint (Mentha piperita),217,0,27,0,28,0,272
+Poinsettia (Euphorbia pulcherrima),258,0,32,0,33,0,323
+Polka Dot Plant (Hypoestes phyllostachya),272,0,34,0,34,0,340
+Ponytail Palm (Beaucarnea recurvata),175,0,21,0,23,0,219
+Prayer Plant (Maranta leuconeura),318,0,39,0,41,0,398
+Rabbit Foot Fern (Davallia fejeensis),180,0,22,0,23,0,225
+Raindrop Peperomia (Peperomia polybotrya),142,0,17,0,19,0,178
+Rattlesnake Plant (Calathea lancifolia),252,0,31,0,32,0,315
+Red-leaf Philodendron (Philodendron erubescens),218,0,27,0,28,0,273
+Rose-painted Calathea (Calathea roseopicta),164,0,20,0,22,0,206
+Round-leaf Calathea (Calathea orbifolia),171,0,21,0,22,0,214
+Rubber Plant (Ficus elastica),232,0,29,0,30,0,291
+Sago Palm (Cycas revoluta),160,0,20,0,20,0,200
+Schefflera,260,0,32,0,33,0,325
+Silver Pothos (Scindapsus pictus),175,0,21,0,23,0,219
+Snake plant (Sanseviera),312,2,39,0,40,0,393
+Song of India (Dracaena reflexa),190,41,23,5,25,6,290
+Spider Plant (Chlorophytum comosum),215,39,26,5,28,4,317
+Staghorn Fern (Platycerium bifurcatum),198,0,24,0,26,0,248
+String of Pearls (Senecio rowleyanus),210,0,26,0,27,0,263
+Swiss Cheese Vine (Monstera adansonii),222,0,27,0,29,0,278
+Tree Philodendron (Philodendron bipinnatifidum),229,0,28,0,30,0,287
+Tulip,271,0,33,0,35,0,339
+Venus Flytrap,180,0,22,0,24,0,226
+Watermelon Peperomia (Peperomia argyreia),185,0,23,0,24,0,232
+Weeping Fig (Ficus benjamina),199,36,24,4,26,5,294
+White Bird of Paradise (Strelitzia nicolai),219,0,27,0,28,0,274
+Yew Plum Pine (Podocarpus macrophyllus),207,0,25,0,27,0,259
+Yucca,62,0,7,0,9,0,78
+ZZ Plant (Zamioculcas zamiifolia),348,0,43,0,45,0,436
+Zebra Haworthia (Haworthiopsis attenuata),212,0,26,0,27,0,265
+Zebra Plant (Aphelandra squarrosa),171,0,21,0,22,0,214
