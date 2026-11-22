@@ -39,17 +39,18 @@ export default function ProductsPage({
         if (isMounted && Array.isArray(data) && data.length > 0) {
           const mapped = data.map((sp, idx) => {
             const pId = sp.MaSanPham ?? sp.masanpham ?? sp.MASANPHAM ?? (idx + 1);
-            const sId = sp.MaLoaiCay ?? sp.maloaicay ?? sp.MALOAICAY ?? pId;
+            const rawSid = sp.MaLoaiCay ?? sp.maloaicay ?? sp.MALOAICAY ?? pId;
+            const sId = Number(rawSid) || pId;
             const tenThuongGoi = sp.TenThuongGoi || sp.tenthuonggoi || sp.TENTHUONGGOI || '';
             const tenKhoaHoc = sp.TenKhoaHoc || sp.tenkhoahoc || sp.TENKHOAHOC || '';
             const tenSanPham = sp.TenSanPham || sp.tensanpham || sp.TENSANPHAM || tenThuongGoi || `Chậu Kiểng Lá #${pId}`;
-            const rawImgUrl = sp.UrlAnh || sp.urlanh || sp.URLANH || `/plants/${sId}.jpg`;
+            const rawImgUrl = sp.UrlAnh || sp.urlanh || sp.URLANH || '';
             const giaBan = Number(sp.GiaBan ?? sp.giaban ?? sp.GIABAN ?? 150000);
             const tonKho = sp.SoLuongTonKho ?? sp.soluongtonkho ?? sp.SOLUONGTONKHO ?? 8;
             const kichThuoc = sp.KichThuocCay || sp.kichthuoccay || sp.KICHTHUOCCAY || 'Cao 35-50cm, chậu gốm Ø18cm';
             const tinhTrang = sp.TinhTrangCay || sp.tinhtrangcay || sp.TINHTRANGCAY || 'Lá xanh mướt, rễ khỏe đã thuần khí hậu';
 
-            const fallback = PRODUCTS.find((p) => p.id === pId) || PRODUCTS[idx % PRODUCTS.length] || {};
+            const fallback = PRODUCTS.find((p) => p.speciesId === sId) || {};
             const speciesTitle = tenThuongGoi
               ? `${tenThuongGoi} (${tenKhoaHoc || 'Thực vật học'})`
               : fallback.speciesName || 'Kiểng lá';
@@ -64,21 +65,22 @@ export default function ProductsPage({
               `/plants/angles/${validSid}_detail.jpg`
             ];
             const dbGallery =
-              sp.DanhSachAnh && sp.DanhSachAnh.length > 1
-                ? sp.DanhSachAnh.map((img) =>
-                    getPlantImage(sId, `${tenThuongGoi} ${tenKhoaHoc} ${tenSanPham}`, img.UrlAnh || img.urlanh || img.url)
-                  )
+              Array.isArray(sp.DanhSachAnh) && sp.DanhSachAnh.length > 1
+                ? sp.DanhSachAnh
+                    .map((img) =>
+                      getPlantImage(sId, `${tenThuongGoi} ${tenKhoaHoc} ${tenSanPham}`, img?.UrlAnh || img?.urlanh || img?.url || '')
+                    )
+                    .filter(Boolean)
                 : defaultAngles;
 
             return {
-              ...fallback,
               id: pId,
               speciesId: sId,
               speciesName: speciesTitle,
               name: tenSanPham,
               category: cat,
               price: giaBan,
-              originalPrice: Math.round(giaBan * 1.18),
+              originalPrice: null,
               stock: tonKho,
               size: kichThuoc,
               leafCondition: tinhTrang,
@@ -88,7 +90,7 @@ export default function ProductsPage({
               rating: fallback.rating || 4.9,
               reviewCount: fallback.reviewCount || (12 + (idx % 25)),
               image: validImg,
-              gallery: dbGallery,
+              gallery: dbGallery.length > 1 ? dbGallery : defaultAngles,
               desc: `Chậu cây ${tenSanPham} thuộc loài ${speciesTitle}. Tình trạng thực tế: ${tinhTrang}.`
             };
           });
@@ -353,13 +355,13 @@ function ProductCard({ product: p, onSelectProduct, onAddToCart }) {
         </div>
 
         <div className="pt-3 flex items-center justify-between border-t border-emerald-900/8 mt-4">
-          <div>
+          <div className="flex items-center gap-1.5 flex-wrap">
             <span className="font-black text-base text-[#064e3b]">
               {p.price.toLocaleString('vi-VN')} ₫
             </span>
-            {p.originalPrice && (
-              <span className="text-[11px] text-[#132a1e]/40 line-through block">
-                {p.originalPrice.toLocaleString('vi-VN')} ₫
+            {p.originalPrice > p.price && (
+              <span className="px-1.5 py-0.5 rounded-md bg-rose-50 text-rose-600 border border-rose-200 text-[10px] font-bold">
+                -{Math.round(((p.originalPrice - p.price) / p.originalPrice) * 100)}%
               </span>
             )}
           </div>

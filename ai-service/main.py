@@ -1989,17 +1989,34 @@ def update_user_status(ma_nguoi_dung: int, req: UpdateUserStatusRequest, _admin:
     conn.close()
     return {"message": f"Đã chuyển trạng thái tài khoản thành {req.trangThai}", "MaNguoiDung": ma_nguoi_dung, "TrangThaiMoi": req.trangThai}
 
+ALLOWED_USER_ROLES = {"Admin", "KhachHang"}
+
+def _normalize_allowed_role(raw_role: Optional[str]) -> str:
+    val = (raw_role or "").strip()
+    if val.lower() == "admin":
+        return "Admin"
+    if val.lower() in ("khachhang", "user", "khach"):
+        return "KhachHang"
+    raise HTTPException(
+        status_code=400,
+        detail="Hệ thống chỉ hỗ trợ 2 vai trò chuẩn: 'Admin' (Quản trị viên) và 'KhachHang' (Khách hàng)!",
+    )
+
 @app.put("/api/admin/nguoi-dung/{ma_nguoi_dung}/vai-tro")
 def update_user_role(ma_nguoi_dung: int, req: UpdateUserRoleRequest, _admin: Dict[str, Any] = Depends(require_admin)):
+    role_val = _normalize_allowed_role(req.vaiTro)
+    if int(_admin.get("sub", -1)) == int(ma_nguoi_dung) and role_val != "Admin":
+        raise HTTPException(status_code=400, detail="Không thể tự hạ quyền tài khoản Quản trị viên đang đăng nhập!")
     conn = get_db_connection()
     cursor = conn.cursor()
-    cursor.execute("UPDATE NGUOI_DUNG SET VAITRO = ? WHERE MANGUOIDUNG = ?", (req.vaiTro, ma_nguoi_dung))
+    cursor.execute("UPDATE NGUOI_DUNG SET VAITRO = ? WHERE MANGUOIDUNG = ?", (role_val, ma_nguoi_dung))
     conn.commit()
     conn.close()
-    return {"message": f"Đã đổi vai trò người dùng thành {req.vaiTro}", "MaNguoiDung": ma_nguoi_dung, "VaiTroMoi": req.vaiTro}
+    return {"message": f"Đã đổi vai trò người dùng thành {role_val}", "MaNguoiDung": ma_nguoi_dung, "VaiTroMoi": role_val}
 
 @app.post("/api/admin/nguoi-dung")
 def create_admin_user(req: CreateUserAdminRequest, _admin: Dict[str, Any] = Depends(require_admin)):
+    role_val = _normalize_allowed_role(req.vaiTro)
     conn = get_db_connection()
     cursor = conn.cursor()
     cursor.execute("SELECT MANGUOIDUNG FROM NGUOI_DUNG WHERE LOWER(TAIKHOAN) = LOWER(?)", (req.taiKhoan.strip(),))
@@ -2022,15 +2039,18 @@ def create_admin_user(req: CreateUserAdminRequest, _admin: Dict[str, Any] = Depe
         req.email.strip() if req.email else "",
         req.diaChi.strip() if req.diaChi else "",
         req.soDienThoai.strip() if req.soDienThoai else "",
-        req.vaiTro,
+        role_val,
         req.trangThaiTaiKhoan,
     ))
     conn.commit()
     conn.close()
-    return {"message": "Tạo tài khoản / nhân sự mới thành công!", "MaNguoiDung": next_id, "TaiKhoan": req.taiKhoan}
+    return {"message": "Tạo tài khoản mới thành công!", "MaNguoiDung": next_id, "TaiKhoan": req.taiKhoan, "VaiTro": role_val}
 
 @app.put("/api/admin/nguoi-dung/{ma_nguoi_dung}")
 def update_admin_user(ma_nguoi_dung: int, req: UpdateUserAdminRequest, _admin: Dict[str, Any] = Depends(require_admin)):
+    role_val = _normalize_allowed_role(req.vaiTro) if req.vaiTro is not None else None
+    if role_val is not None and int(_admin.get("sub", -1)) == int(ma_nguoi_dung) and role_val != "Admin":
+        raise HTTPException(status_code=400, detail="Không thể tự hạ quyền tài khoản Quản trị viên đang đăng nhập!")
     conn = get_db_connection()
     cursor = conn.cursor()
     cursor.execute("SELECT MANGUOIDUNG FROM NGUOI_DUNG WHERE MANGUOIDUNG = ?", (ma_nguoi_dung,))
@@ -2046,8 +2066,8 @@ def update_admin_user(ma_nguoi_dung: int, req: UpdateUserAdminRequest, _admin: D
         cursor.execute("UPDATE NGUOI_DUNG SET DIACHI = ? WHERE MANGUOIDUNG = ?", (req.diaChi, ma_nguoi_dung))
     if req.soDienThoai is not None:
         cursor.execute("UPDATE NGUOI_DUNG SET SODIENTHOAI = ? WHERE MANGUOIDUNG = ?", (req.soDienThoai, ma_nguoi_dung))
-    if req.vaiTro is not None:
-        cursor.execute("UPDATE NGUOI_DUNG SET VAITRO = ? WHERE MANGUOIDUNG = ?", (req.vaiTro, ma_nguoi_dung))
+    if role_val is not None:
+        cursor.execute("UPDATE NGUOI_DUNG SET VAITRO = ? WHERE MANGUOIDUNG = ?", (role_val, ma_nguoi_dung))
     if req.trangThaiTaiKhoan is not None:
         cursor.execute("UPDATE NGUOI_DUNG SET TRANGTHAITAIKHOAN = ? WHERE MANGUOIDUNG = ?", (req.trangThaiTaiKhoan, ma_nguoi_dung))
     if req.matKhau is not None and req.matKhau.strip():

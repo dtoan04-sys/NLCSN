@@ -63,7 +63,8 @@ export default function ProductDetailPage({ product, onBack, onCheckoutNow, onOp
 
   useEffect(() => {
     if (product) {
-      setSelectedImg(product.image);
+      const normalizedMain = getPlantImage(product.speciesId, product.speciesName, product.image);
+      setSelectedImg(normalizedMain);
       setQty(1);
       fetchReviews(product.id);
     }
@@ -153,17 +154,24 @@ export default function ProductDetailPage({ product, onBack, onCheckoutNow, onOp
         {(() => {
           const rawSid = Number(product.speciesId || 1);
           const validSid = rawSid >= 1 && rawSid <= 90 ? rawSid : 1;
-          const galleryList =
-            product.gallery && product.gallery.length > 1
+          const normalizedMainImg = getPlantImage(validSid, product.speciesName, product.image);
+          const normalizedGallery =
+            Array.isArray(product.gallery) && product.gallery.length > 1
               ? product.gallery
+                  .map((img) => getPlantImage(validSid, product.speciesName, img))
+                  .filter(Boolean)
+              : [];
+          const galleryList =
+            normalizedGallery.length > 1
+              ? normalizedGallery
               : [
-                  product.image,
+                  normalizedMainImg,
                   `/plants/angles/${validSid}_closeup.jpg`,
                   `/plants/angles/${validSid}_side.jpg`,
                   `/plants/angles/${validSid}_detail.jpg`
                 ];
           const angleLabels = ['Góc chính diện', 'Cận cảnh phiến lá', 'Góc nghiêng 3/4', 'Góc thân & chậu'];
-          const currentImg = selectedImg || galleryList[0] || product.image;
+          const currentImg = selectedImg || galleryList[0] || normalizedMainImg;
           const currentIdx = Math.max(0, galleryList.indexOf(currentImg));
 
           return (
@@ -254,9 +262,9 @@ export default function ProductDetailPage({ product, onBack, onCheckoutNow, onOp
             <span className="text-3xl sm:text-4xl font-black text-[#064e3b]">
               {product.price.toLocaleString('vi-VN')} ₫
             </span>
-            {product.originalPrice && (
-              <span className="text-sm text-[#132a1e]/40 line-through">
-                {product.originalPrice.toLocaleString('vi-VN')} ₫
+            {product.originalPrice > product.price && (
+              <span className="px-2 py-0.5 rounded-full bg-rose-50 text-rose-600 border border-rose-200 text-xs font-bold">
+                -{Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)}%
               </span>
             )}
             <span className="badge h-auto py-0.5 px-2.5 text-xs font-bold rounded-full bg-[#059669] text-white border-0">

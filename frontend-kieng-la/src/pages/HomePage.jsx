@@ -1,13 +1,14 @@
 import React, { useRef, useState, useEffect } from 'react';
 import { CATEGORIES, PRODUCTS, INITIAL_REVIEWS } from '../data/mockData';
 import { useCart } from '../context/CartContext';
-import { getPlantImage, getPlantCategory } from '../utils/plantAssets';
+import { getPlantImage, getPlantCategory, handleImgError } from '../utils/plantAssets';
 import { apiFetch } from '../config';
 
 export default function HomePage({ onOpenAiModal, onSelectProduct, onNavigate, onSelectCategory }) {
   const carouselRef = useRef(null);
   const { addToCart } = useCart();
   const [liveProducts, setLiveProducts] = useState(PRODUCTS);
+  const [totalProducts, setTotalProducts] = useState(PRODUCTS.length);
 
   useEffect(() => {
     let mounted = true;
@@ -15,30 +16,54 @@ export default function HomePage({ onOpenAiModal, onSelectProduct, onNavigate, o
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
         if (!mounted || !Array.isArray(data) || data.length === 0) return;
+        setTotalProducts(data.length);
         const mapped = data.slice(0, 8).map((sp, idx) => {
           const pId = sp.MaSanPham ?? sp.masanpham ?? sp.MASANPHAM ?? (idx + 1);
-          const sId = sp.MaLoaiCay ?? sp.maloaicay ?? sp.MALOAICAY ?? pId;
+          const rawSid = sp.MaLoaiCay ?? sp.maloaicay ?? sp.MALOAICAY ?? pId;
+          const sId = Number(rawSid) || pId;
+          const validSid = sId >= 1 && sId <= 90 ? sId : 1;
           const tenThuongGoi = sp.TenThuongGoi || sp.tenthuonggoi || sp.TENTHUONGGOI || '';
           const tenKhoaHoc = sp.TenKhoaHoc || sp.tenkhoahoc || sp.TENKHOAHOC || '';
           const tenSanPham = sp.TenSanPham || sp.tensanpham || sp.TENSANPHAM || tenThuongGoi || `Chậu Kiểng Lá #${pId}`;
-          const rawImgUrl = sp.UrlAnh || sp.urlanh || sp.URLANH || `/plants/${sId}.jpg`;
+          const rawImgUrl = sp.UrlAnh || sp.urlanh || sp.URLANH || '';
           const giaBan = Number(sp.GiaBan ?? sp.giaban ?? sp.GIABAN ?? 150000);
           const tonKho = Number(sp.SoLuongTonKho ?? sp.soluongtonkho ?? sp.SOLUONGTONKHO ?? 0);
-          const fallback = PRODUCTS.find((p) => p.id === pId) || PRODUCTS[idx % PRODUCTS.length] || {};
+          const kichThuoc = sp.KichThuocCay || sp.kichthuoccay || sp.KICHTHUOCCAY || 'Cao 35-50cm, chậu gốm Ø18cm';
+          const tinhTrang = sp.TinhTrangCay || sp.tinhtrangcay || sp.TINHTRANGCAY || 'Lá xanh mướt, rễ khỏe đã thuần khí hậu';
+          const fallback = PRODUCTS.find((p) => p.speciesId === sId) || {};
           const cat = getPlantCategory(sId, `${tenThuongGoi} ${tenKhoaHoc} ${tenSanPham}`);
           const validImg = getPlantImage(sId, `${tenThuongGoi} ${tenKhoaHoc} ${tenSanPham}`, rawImgUrl);
           const speciesTitle = tenThuongGoi ? `${tenThuongGoi} (${tenKhoaHoc || 'Thực vật học'})` : fallback.speciesName || 'Kiểng lá';
+          const defaultAngles = [
+            validImg,
+            `/plants/angles/${validSid}_closeup.jpg`,
+            `/plants/angles/${validSid}_side.jpg`,
+            `/plants/angles/${validSid}_detail.jpg`
+          ];
+          const dbGallery =
+            Array.isArray(sp.DanhSachAnh) && sp.DanhSachAnh.length > 1
+              ? sp.DanhSachAnh
+                  .map((img) => getPlantImage(sId, `${tenThuongGoi} ${tenKhoaHoc} ${tenSanPham}`, img?.UrlAnh || img?.urlanh || img?.url || ''))
+                  .filter(Boolean)
+              : defaultAngles;
+
           return {
-            ...fallback,
             id: pId,
             speciesId: sId,
             speciesName: speciesTitle,
             name: tenSanPham,
             category: cat,
             price: giaBan,
-            originalPrice: Math.round(giaBan * 1.18),
+            originalPrice: null,
             stock: tonKho,
+            size: kichThuoc,
+            leafCondition: tinhTrang,
+            healthStatus: fallback.healthStatus || 'Đã thuần dưỡng khí hậu, kháng sâu bệnh tốt',
+            rating: fallback.rating || 4.9,
+            reviewCount: fallback.reviewCount || (12 + (idx % 25)),
             image: validImg,
+            gallery: dbGallery.length > 1 ? dbGallery : defaultAngles,
+            desc: `Chậu cây ${tenSanPham} thuộc loài ${speciesTitle}. Tình trạng thực tế: ${tinhTrang}.`,
             tag: cat === 'dot-bien' ? 'Đột biến / Quý hiếm' : cat === 'loc-khong-khi' ? 'Lọc khí sạch' : cat === 'phong-thuy' ? 'Hút tài lộc' : 'Bán chạy'
           };
         });
@@ -54,6 +79,7 @@ export default function HomePage({ onOpenAiModal, onSelectProduct, onNavigate, o
   const heroBanners = [
     {
       id: 'b1',
+      speciesId: liveProducts[0]?.speciesId,
       badge: 'Cá Thể Tinh Hoa #MB-9902',
       tag: 'Đột Biến Cẩm Thạch',
       title: liveProducts[0]?.name || 'Monstera Deliciosa Albo',
@@ -64,6 +90,7 @@ export default function HomePage({ onOpenAiModal, onSelectProduct, onNavigate, o
     },
     {
       id: 'b2',
+      speciesId: liveProducts[1]?.speciesId || liveProducts[0]?.speciesId,
       badge: 'AI Vision • 90 Loài Kiểng Lá',
       tag: 'Chẩn Đoán & Tách Đa Cây',
       title: 'Quét Camera Nhận Diện Ngay',
@@ -74,6 +101,7 @@ export default function HomePage({ onOpenAiModal, onSelectProduct, onNavigate, o
     },
     {
       id: 'b3',
+      speciesId: liveProducts[2]?.speciesId || liveProducts[0]?.speciesId,
       badge: 'Bộ Sưu Tập Thanh Lọc Khí',
       tag: 'Bán Chạy Nhất Tuần',
       title: liveProducts[2]?.name || 'Lưỡi Hổ & Trầu Bà Phong Thủy',
@@ -84,6 +112,7 @@ export default function HomePage({ onOpenAiModal, onSelectProduct, onNavigate, o
     },
     {
       id: 'b4',
+      speciesId: liveProducts[3]?.speciesId || liveProducts[0]?.speciesId,
       badge: 'Ưu Đãi Vườn Kiểng Lá',
       tag: 'Giao Nhanh Nội Ô',
       title: liveProducts[3]?.name || 'Vườn Kiểng Lá Nhiệt Đới',
@@ -179,6 +208,7 @@ export default function HomePage({ onOpenAiModal, onSelectProduct, onNavigate, o
                           alt={slide.title}
                           className="w-full h-full object-cover"
                           src={slide.image}
+                          onError={(e) => handleImgError(e, getPlantImage(slide.speciesId, slide.title))}
                         />
                         <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-black/10 to-transparent pointer-events-none"></div>
                         <span className="badge absolute top-3 left-3 h-auto py-1 px-3 bg-[#064e3b]/85 backdrop-blur-md text-[#fafaf7] rounded-full text-xs font-semibold border border-white/15">
@@ -325,7 +355,7 @@ export default function HomePage({ onOpenAiModal, onSelectProduct, onNavigate, o
               onClick={() => onNavigate('products')}
               className="btn btn-ghost btn-sm text-xs font-bold text-[#064e3b] hover:bg-emerald-900/8 rounded-xl gap-1 shrink-0"
             >
-              <span>Xem tất cả ({PRODUCTS.length} chậu)</span>
+              <span>Xem tất cả ({totalProducts} chậu)</span>
               <span className="material-symbols-outlined text-sm">arrow_forward</span>
             </button>
           </div>
@@ -344,6 +374,7 @@ export default function HomePage({ onOpenAiModal, onSelectProduct, onNavigate, o
                     alt={p.name}
                     className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                     src={p.image}
+                    onError={(e) => handleImgError(e, getPlantImage(p.speciesId, p.speciesName))}
                   />
                   <span className="badge absolute top-3 left-3 h-auto py-1 px-2.5 bg-white/90 backdrop-blur-sm text-[#064e3b] border border-emerald-900/15 text-[11px] font-bold rounded-lg shadow-2xs">
                     {p.tag}

@@ -6,8 +6,7 @@
 
 import { getApiBaseUrl } from '../config';
 
-export const DEFAULT_PLANT_IMAGE =
-  'https://images.unsplash.com/photo-1614594975525-e45190c55d0b?auto=format&fit=crop&w=800&q=80';
+export const DEFAULT_PLANT_IMAGE = '/plants/default.jpg';
 
 // Kho ảnh thực vật học độ nét cao theo nhóm thực vật từ Unsplash
 const BOTANICAL_COLLECTIONS = {
@@ -101,34 +100,61 @@ const SPECIES_IMAGE_MAP = {
  * Lấy URL ảnh sản phẩm hợp lệ, giải quyết triệt để đường dẫn mẫu giả lập
  */
 export function getPlantImage(speciesId, speciesName = '', rawUrl = '') {
-  // 1. Ưu tiên ảnh nội bộ thực tế trong /plants/1.jpg .. /plants/90.jpg hoặc /uploads/...
-  if (rawUrl && rawUrl.startsWith('/uploads/')) {
-    return `${getApiBaseUrl()}${rawUrl}`;
-  }
-  if (rawUrl && rawUrl.startsWith('/plants/')) {
-    return rawUrl;
-  }
+  const sId = Number(speciesId);
+  const url = typeof rawUrl === 'string' ? rawUrl.trim() : '';
 
-  // 2. Nếu là link http/https hợp lệ (bỏ qua link giả lập aida-public bị lỗi 404)
-  if (rawUrl && (rawUrl.startsWith('http://') || rawUrl.startsWith('https://'))) {
-    if (!rawUrl.includes('lh3.googleusercontent.com/aida-public/')) {
-      return rawUrl;
+  // 1. Ưu tiên ảnh upload từ Backend (/uploads/... hoặc URL localhost/127.0.0.1 trỏ tới /uploads/...)
+  if (url) {
+    if (url.startsWith('/uploads/')) {
+      return `${getApiBaseUrl()}${url}`;
+    }
+    if (url.startsWith('uploads/')) {
+      return `${getApiBaseUrl()}/${url}`;
+    }
+    const localUploadMatch = url.match(/^https?:\/\/(?:localhost|127\.0\.0\.1)(?::\d+)?(\/uploads\/.+)$/i);
+    if (localUploadMatch) {
+      return `${getApiBaseUrl()}${localUploadMatch[1]}`;
+    }
+
+    // 2. Ảnh nội bộ trong /plants/ (xác thực ID nằm trong 1..90 để tránh /plants/undefined.jpg hoặc ngoài dải)
+    const normalizedPlantUrl = url.startsWith('plants/') ? `/${url}` : url;
+    if (normalizedPlantUrl.startsWith('/plants/')) {
+      if (normalizedPlantUrl === '/plants/default.jpg') {
+        return normalizedPlantUrl;
+      }
+      const mainMatch = normalizedPlantUrl.match(/^\/plants\/(\d+)\.jpg$/i);
+      if (mainMatch) {
+        const imgId = Number(mainMatch[1]);
+        if (imgId >= 1 && imgId <= 90) return `/plants/${imgId}.jpg`;
+      } else {
+        const angleMatch = normalizedPlantUrl.match(/^\/plants\/angles\/(\d+)_(closeup|side|detail)\.jpg$/i);
+        if (angleMatch) {
+          const imgId = Number(angleMatch[1]);
+          if (imgId >= 1 && imgId <= 90) return `/plants/angles/${imgId}_${angleMatch[2].toLowerCase()}.jpg`;
+        }
+      }
+    }
+
+    // 3. Link http/https hợp lệ (bỏ qua link giả lập aida-public bị lỗi 404)
+    if (url.startsWith('http://') || url.startsWith('https://')) {
+      if (!url.includes('lh3.googleusercontent.com/aida-public/')) {
+        return url;
+      }
     }
   }
 
-  // 3. Nếu có ID loài từ 1..90, lấy trực tiếp ảnh thật của loài đó trong /plants/{sId}.jpg
-  const sId = Number(speciesId);
+  // 4. Nếu có ID loài từ 1..90, lấy trực tiếp ảnh thật của loài đó trong /plants/{sId}.jpg
   if (sId >= 1 && sId <= 90) {
     return `/plants/${sId}.jpg`;
   }
 
-  // 4. Fallback nếu ảnh local lỗi hoặc ngoài dải ID 1..90
+  // 5. Fallback nếu ảnh local lỗi hoặc ngoài dải ID 1..90
   if (SPECIES_IMAGE_MAP[sId]) {
     return SPECIES_IMAGE_MAP[sId];
   }
 
   // Phân tích theo tên loài để cấp ảnh đúng chi họ thực vật
-  const name = speciesName.toLowerCase();
+  const name = String(speciesName || '').toLowerCase();
   if (name.includes('nha đam') || name.includes('aloe') || name.includes('xương rồng') || name.includes('sen đá')) {
     return BOTANICAL_COLLECTIONS.succulent[(sId || 0) % BOTANICAL_COLLECTIONS.succulent.length];
   }
@@ -166,7 +192,7 @@ export function getPlantImage(speciesId, speciesName = '', rawUrl = '') {
  * Phân bổ thông minh 90 loài vào 5 danh mục bán hàng e-commerce
  */
 export function getPlantCategory(speciesId, speciesName = '', defaultCat = 'all') {
-  const name = speciesName.toLowerCase();
+  const name = String(speciesName || '').toLowerCase();
   const id = Number(speciesId);
 
   // 1. Đột biến cẩm thạch (Variegated / Hiếm)
@@ -230,9 +256,20 @@ export function getPlantCategory(speciesId, speciesName = '', defaultCat = 'all'
 }
 
 /**
- * Xử lý sự kiện lỗi ảnh onerror an toàn
+ * Xử lý sự kiện lỗi ảnh onerror an toàn (fallback 2 tầng: ảnh loài local -> /plants/default.jpg)
  */
 export function handleImgError(e, fallbackSrc = DEFAULT_PLANT_IMAGE) {
-  e.currentTarget.onerror = null;
-  e.currentTarget.src = fallbackSrc;
+  const img = e.currentTarget;
+  const currentAttr = img.getAttribute('src') || '';
+  const nextSrc = fallbackSrc && fallbackSrc !== currentAttr ? fallbackSrc : DEFAULT_PLANT_IMAGE;
+
+  if (nextSrc === DEFAULT_PLANT_IMAGE || currentAttr === DEFAULT_PLANT_IMAGE) {
+    img.onerror = null;
+  } else {
+    img.onerror = () => {
+      img.onerror = null;
+      img.src = DEFAULT_PLANT_IMAGE;
+    };
+  }
+  img.src = nextSrc;
 }

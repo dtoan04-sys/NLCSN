@@ -690,7 +690,7 @@ export default function AdminDashboardPage({ onBackToStore, onSelectProduct }) {
         body: JSON.stringify(newUser)
       });
       if (res.ok) {
-        showToast('🎉 Đã tạo tài khoản nhân sự / người dùng mới thành công!');
+        showToast('🎉 Đã tạo tài khoản người dùng mới thành công!');
         setIsAddUserModalOpen(false);
         setNewUser({
           taiKhoan: '',
@@ -879,7 +879,7 @@ export default function AdminDashboardPage({ onBackToStore, onSelectProduct }) {
               }`}
             >
               <span className="material-symbols-outlined text-lg">manage_accounts</span>
-              <span>Tài khoản &amp; Nhân sự</span>
+              <span>Tài khoản &amp; Phân quyền</span>
               <span className="ml-auto bg-blue-400/20 text-blue-300 px-2 py-0.5 rounded-full text-[10px] font-bold">
                 {users.length}
               </span>
@@ -970,7 +970,7 @@ export default function AdminDashboardPage({ onBackToStore, onSelectProduct }) {
                 {activeTab === 'overview' && 'Bảng Điều Khiển & Chỉ Số KPI'}
                 {activeTab === 'products' && 'Quản Lý Danh Mục Chậu Cây'}
                 {activeTab === 'orders' && 'Quản Lý Đơn Hàng & Vận Chuyển'}
-                {activeTab === 'users' && 'Quản Lý Tài Khoản, Phân Quyền & Nhân Sự'}
+                {activeTab === 'users' && 'Quản Lý Tài Khoản & Phân Quyền (Admin / Khách hàng)'}
                 {activeTab === 'ai_logs' && 'Nhật Ký Giám Định AI (v2.0-TuSo0)'}
                 {activeTab === 'species' && 'Tri Thức 90 Loài Thực Vật Học'}
                 {activeTab === 'vouchers' && 'Quản Lý Mã Giảm Giá & Khuyến Mãi'}
@@ -2073,7 +2073,6 @@ export default function AdminDashboardPage({ onBackToStore, onSelectProduct }) {
                   >
                     <option value="all">Tất cả vai trò</option>
                     <option value="Admin">Admin (Quản trị)</option>
-                    <option value="NhanVien">Nhân viên kho / Bán hàng</option>
                     <option value="KhachHang">Khách hàng</option>
                   </select>
 
@@ -2094,7 +2093,7 @@ export default function AdminDashboardPage({ onBackToStore, onSelectProduct }) {
                   className="flex items-center justify-center gap-2 px-5 py-2.5 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition-all shadow-md shadow-emerald-700/20 active:scale-95 whitespace-nowrap"
                 >
                   <span className="material-symbols-outlined text-base">person_add</span>
-                  <span>Thêm tài khoản / nhân sự mới</span>
+                  <span>Thêm tài khoản mới</span>
                 </button>
               </div>
 
@@ -2151,13 +2150,10 @@ export default function AdminDashboardPage({ onBackToStore, onSelectProduct }) {
                                   className={`px-2.5 py-1 rounded-xl text-[11px] font-bold border transition-all ${
                                     role === 'Admin'
                                       ? 'bg-purple-50 text-purple-800 border-purple-200'
-                                      : role === 'NhanVien'
-                                      ? 'bg-blue-50 text-blue-800 border-blue-200'
                                       : 'bg-gray-100 text-gray-700 border-gray-200'
                                   }`}
                                 >
                                   <option value="Admin">Admin (Quản trị)</option>
-                                  <option value="NhanVien">Nhân viên</option>
                                   <option value="KhachHang">Khách hàng</option>
                                 </select>
                               </td>
@@ -2911,7 +2907,7 @@ export default function AdminDashboardPage({ onBackToStore, onSelectProduct }) {
                 <input
                   type="text"
                   required
-                  placeholder="Ví dụ: nhanvien_kho, hoanganh..."
+                  placeholder="Ví dụ: quantri_vuon, hoanganh..."
                   value={newUser.taiKhoan}
                   onChange={(e) => setNewUser({ ...newUser, taiKhoan: e.target.value })}
                   className="w-full p-2.5 rounded-xl border border-gray-200 text-gray-900 focus:outline-emerald-600"
@@ -2973,7 +2969,6 @@ export default function AdminDashboardPage({ onBackToStore, onSelectProduct }) {
                     className="w-full p-2.5 rounded-xl border border-gray-200 text-gray-900 focus:outline-emerald-600"
                   >
                     <option value="KhachHang">Khách hàng</option>
-                    <option value="NhanVien">Nhân viên kho</option>
                     <option value="Admin">Admin (Quản trị)</option>
                   </select>
                 </div>
@@ -3080,7 +3075,6 @@ export default function AdminDashboardPage({ onBackToStore, onSelectProduct }) {
                     className="w-full p-2.5 rounded-xl border border-gray-200 text-gray-900 focus:outline-emerald-600"
                   >
                     <option value="KhachHang">Khách hàng</option>
-                    <option value="NhanVien">Nhân viên</option>
                     <option value="Admin">Admin (Quản trị)</option>
                   </select>
                 </div>
