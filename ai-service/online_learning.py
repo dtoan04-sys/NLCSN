@@ -961,17 +961,19 @@ def run_online_incremental_update(
             val_loss_after = float(eval_after[0])
             val_acc_after = float(eval_after[1])
             quality_gate_passed = bool(
-                force_save
-                or (val_acc_after >= val_acc_before - 0.02 and val_loss_after <= val_loss_before * 1.10)
+                (val_acc_after >= val_acc_before - 0.02 and val_loss_after <= val_loss_before * 1.10)
                 or (val_acc_after > val_acc_before)
             )
         else:
             val_loss_after = None
             val_acc_after = None
-            quality_gate_passed = bool(force_save)
+            quality_gate_passed = False
+
+        saved_by_force = bool(force_save and not quality_gate_passed)
+        should_save = bool(quality_gate_passed or saved_by_force)
 
         saved_path_str = None
-        if quality_gate_passed:
+        if should_save:
             MODEL_DIR.mkdir(parents=True, exist_ok=True)
             model.save(str(ONLINE_MODEL_PATH))
             saved_path_str = str(ONLINE_MODEL_PATH)
@@ -982,7 +984,11 @@ def run_online_incremental_update(
                     print(f"[OnlineLearning] Warning hot-reloading model: {reload_err}")
 
         res = {
-            "status": "completed" if quality_gate_passed else "rejected_by_quality_gate",
+            "status": (
+                "completed"
+                if quality_gate_passed
+                else ("completed_forced" if saved_by_force else "rejected_by_quality_gate")
+            ),
             "started_at": started_at,
             "finished_at": datetime.now().isoformat(),
             "base_model": str(base_model_path.name),
@@ -998,16 +1004,21 @@ def run_online_incremental_update(
             "val_loss_after": round(val_loss_after, 4) if val_loss_after is not None else None,
             "has_independent_val": has_independent_val,
             "quality_gate_passed": quality_gate_passed,
+            "saved_by_force": saved_by_force,
             "saved_model_path": saved_path_str,
-            "trained_raw_count": int(raw_cnt) if quality_gate_passed else int(prev_status.get("trained_raw_count") or 0),
+            "trained_raw_count": int(raw_cnt) if should_save else int(prev_status.get("trained_raw_count") or 0),
             "message": (
-                (
-                    f"Đã cập nhật model Online thành công! Val Acc: {val_acc_before*100:.2f}% -> {val_acc_after*100:.2f}%."
-                    if has_independent_val
-                    else "Đã cập nhật model Online (force_save, chưa đủ nhóm ảnh gốc cho Validation độc lập)."
-                )
+                f"Đã cập nhật model Online thành công! Val Acc: {val_acc_before*100:.2f}% -> {val_acc_after*100:.2f}%."
                 if quality_gate_passed
-                else f"Quality Gate từ chối bản cập nhật (Val Acc: {val_acc_before*100:.2f}% -> {val_acc_after*100:.2f}%). Giữ nguyên model hiện tại."
+                else (
+                    "Đã ép lưu model Online (saved_by_force=True; chưa vượt qua Quality Gate độc lập)."
+                    if saved_by_force
+                    else (
+                        f"Quality Gate từ chối bản cập nhật (Val Acc: {val_acc_before*100:.2f}% -> {val_acc_after*100:.2f}%). Giữ nguyên model hiện tại."
+                        if has_independent_val
+                        else "Chưa đủ tập Validation độc lập để đánh giá Quality Gate."
+                    )
+                )
             ),
         }
         _save_status_file(res)

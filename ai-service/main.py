@@ -203,8 +203,11 @@ def _load_or_create_auth_secret() -> bytes:
     generated = secrets.token_hex(32)
     try:
         secret_file.write_text(generated, encoding="utf-8")
-    except Exception:
-        pass
+    except Exception as exc:
+        raise RuntimeError(
+            f"Không thể lưu AUTH_SECRET_KEY vào {secret_file}: {exc}. "
+            "Hãy cấu hình biến môi trường AUTH_SECRET_KEY (>= 32 ký tự)."
+        ) from exc
     return generated.encode("utf-8")
 
 
@@ -688,12 +691,17 @@ def load_ai_resources():
     try:
         conn = get_db_connection()
         cur = conn.cursor()
-        # Đảm bảo trên SQL Server cho phép khách vãng lai quét ảnh (MANGUOIDUNG NULL)
+        # Đảm bảo trên SQL Server cho phép khách vãng lai quét ảnh & đặt hàng (NULL)
         if not hasattr(conn, "_conn"):
-            try:
-                cur.execute("ALTER TABLE TIM_ANH ALTER COLUMN MANGUOIDUNG INT NULL")
-            except Exception:
-                pass
+            for alter_sql in (
+                "ALTER TABLE TIM_ANH ALTER COLUMN MANGUOIDUNG INT NULL",
+                "ALTER TABLE DON_HANG ALTER COLUMN MANGUOIDUNG INT NULL",
+                "ALTER TABLE DON_HANG ALTER COLUMN MAGIOHANG INT NULL",
+            ):
+                try:
+                    cur.execute(alter_sql)
+                except Exception:
+                    pass
         cur.execute("SELECT 1 FROM DANH_MUC WHERE MADANHMUC = 51")
         if not cur.fetchone():
             cur.execute(
