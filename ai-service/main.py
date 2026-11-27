@@ -2564,10 +2564,23 @@ def create_customer_order(
             raise HTTPException(status_code=400, detail="Số lượng mua mỗi sản phẩm phải lớn hơn 0!")
         qty_by_product[int(item.MaSanPham)] += int(item.SoLuongMua)
 
-    ma_nguoi_dung = req.MaNguoiDung if req.MaNguoiDung is not None else (current_user["sub"] if current_user else None)
+    # Ưu tiên lấy MaNguoiDung từ token đã xác thực (chống giả mạo ID tài khoản khác)
+    ma_nguoi_dung = int(current_user["sub"]) if current_user else req.MaNguoiDung
 
     conn = get_db_connection()
     cursor = conn.cursor()
+
+    # Bật transaction rõ ràng để rollback() thực sự hoàn tác được trên cả SQL Server & SQLite
+    in_explicit_tx = False
+    try:
+        if hasattr(conn, "_conn"):
+            conn._conn.execute("BEGIN")
+            in_explicit_tx = True
+        else:
+            conn.autocommit = False
+            in_explicit_tx = True
+    except Exception:
+        in_explicit_tx = False
 
     try:
         # 1. Tính lại đơn giá & kiểm tra tồn kho trực tiếp từ DB (không tin giá client gửi)
@@ -2628,7 +2641,8 @@ def create_customer_order(
             if cursor.rowcount == 0:
                 raise HTTPException(status_code=400, detail="Mã giảm giá đã hết lượt sử dụng!")
 
-        phi_van_chuyen = max(0.0, float(req.PhiVanChuyen if req.PhiVanChuyen is not None else 30000.0))
+        # Tính phí vận chuyển hoàn toàn tại Backend (miễn phí đơn >= 500.000đ, mặc định 30.000đ)
+        phi_van_chuyen = 0.0 if tam_tinh >= 500000.0 else 30000.0
         tong_tien = round(max(0.0, tam_tinh - so_tien_giam + phi_van_chuyen), 2)
 
         # 3. Trừ tồn kho an toàn (kiểm tra lại điều kiện SOLUONGTONKHO >= qty)
@@ -2695,7 +2709,12 @@ def create_customer_order(
         conn.close()
 
 @app.get("/api/nguoi-dung/{ma_nguoi_dung}/don-hang")
-def get_user_orders(ma_nguoi_dung: int):
+def get_user_orders(
+    ma_nguoi_dung: int,
+    current_user: Dict[str, Any] = Depends(get_current_user),
+):
+    if int(current_user["sub"]) != int(ma_nguoi_dung) and str(current_user.get("role", "")).upper() != "ADMIN":
+        raise HTTPException(status_code=403, detail="Bạn không có quyền xem đơn hàng của tài khoản khác!")
     conn = get_db_connection()
     cursor = conn.cursor()
     cursor.execute("""

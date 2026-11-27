@@ -855,12 +855,15 @@ def run_online_incremental_update(
         model = _load_keras_compat(tf, base_model_path)
         input_shape = tuple(model.input_shape[1:3]) if model.input_shape and len(model.input_shape) >= 3 else IMG_SIZE
 
-        x_list, y_list, w_list = [], [], []
+        x_list, y_list, w_list, grp_list = [], [], [], []
         for p, y_val, w_val in zip(all_paths, all_labels, all_weights):
             try:
                 x_list.append(_load_image_tensor(p, target_size=input_shape))
                 y_list.append(y_val)
                 w_list.append(w_val)
+                # Group raw image and all its augmented variants (_aug_flip/_aug_rot/_aug_bright) together
+                base_stem = re.sub(r"_aug_(?:flip|rot|bright)$", "", p.stem)
+                grp_list.append(f"{p.parent.name}::{base_stem}")
             except Exception:
                 continue
 
@@ -880,17 +883,41 @@ def run_online_incremental_update(
         y_data = np.array(y_list, dtype=np.int32)
         w_data = np.array(w_list, dtype=np.float32)
 
-        rng = np.random.default_rng(42)
-        perm = rng.permutation(len(x_data))
-        x_data, y_data, w_data = x_data[perm], y_data[perm], w_data[perm]
+        # Group-based Train/Validation split by original source image to prevent augmentation leakage
+        unique_groups = sorted(set(grp_list))
+        if len(unique_groups) < 5 and not force_save:
+            res = {
+                **prev_status,
+                "status": "skipped",
+                "started_at": started_at,
+                "finished_at": datetime.now().isoformat(),
+                "samples_used": int(len(x_data)),
+                "unique_source_groups": len(unique_groups),
+                "quality_gate_passed": False,
+                "message": (
+                    f"Chưa đủ ảnh gốc độc lập để tách tập Validation chống rò rỉ dữ liệu "
+                    f"(hiện có {len(unique_groups)} nhóm ảnh gốc, cần tối thiểu 5)."
+                ),
+            }
+            _save_status_file(res)
+            return res
 
-        if len(x_data) >= 12:
-            val_n = max(3, int(round(len(x_data) * 0.2)))
-            x_val, y_val, w_val = x_data[:val_n], y_data[:val_n], w_data[:val_n]
-            x_train, y_train, w_train = x_data[val_n:], y_data[val_n:], w_data[val_n:]
-        else:
-            x_train, y_train, w_train = x_data, y_data, w_data
-            x_val, y_val, w_val = x_data, y_data, w_data
+        rng = np.random.default_rng(42)
+        shuffled_groups = list(unique_groups)
+        rng.shuffle(shuffled_groups)
+        val_group_n = max(1, int(round(len(shuffled_groups) * 0.2)))
+        val_groups = set(shuffled_groups[:val_group_n])
+
+        train_idx = [i for i, g in enumerate(grp_list) if g not in val_groups]
+        val_idx = [i for i, g in enumerate(grp_list) if g in val_groups]
+        if not train_idx or not val_idx:
+            # Fallback only when force_save=True and unique_groups == 1
+            train_idx = list(range(len(x_data)))
+            val_idx = list(range(len(x_data)))
+
+        rng.shuffle(train_idx)
+        x_train, y_train, w_train = x_data[train_idx], y_data[train_idx], w_data[train_idx]
+        x_val, y_val, w_val = x_data[val_idx], y_data[val_idx], w_data[val_idx]
 
         # Freeze backbone; unfreeze only the final classification head / last few layers (keep BN frozen)
         for layer in model.layers:

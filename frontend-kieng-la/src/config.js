@@ -209,6 +209,8 @@ export async function apiFetch(path, options = {}) {
     } catch (_) {}
   }
 
+  const method = String(restOptions.method || 'GET').toUpperCase();
+  const isSafeRetryMethod = method === 'GET' || method === 'HEAD';
   let lastErr = null;
   let lastRetryableRes = null;
 
@@ -237,7 +239,7 @@ export async function apiFetch(path, options = {}) {
 
       if (RETRYABLE_STATUSES.has(res.status)) {
         lastRetryableRes = res;
-        if (i < candidates.length - 1) {
+        if (isSafeRetryMethod && i < candidates.length - 1) {
           continue;
         }
         return res;
@@ -252,7 +254,7 @@ export async function apiFetch(path, options = {}) {
       clearTimeout(timer);
       if (externalSignal) externalSignal.removeEventListener('abort', onExternalAbort);
       lastErr = err;
-      if (externalSignal?.aborted) {
+      if (externalSignal?.aborted || !isSafeRetryMethod) {
         throw err;
       }
     }
