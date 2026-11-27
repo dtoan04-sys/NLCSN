@@ -42,7 +42,7 @@ IF OBJECT_ID(N'dbo.THOI_DIEM', N'U') IS NOT NULL THROW 51001, N'Bang THOI_DIEM d
 
 CREATE TABLE [dbo].[TIM_ANH] (
     [MATIMKIEM] int NOT NULL,
-    [MANGUOIDUNG] int NOT NULL,
+    [MANGUOIDUNG] int NULL,
     [HINHANHURL] nvarchar(255) NULL,
     [THOIGIAN] datetime NULL,
     [NENTANG] nvarchar(20) NULL,
