@@ -556,8 +556,8 @@ def entropy_weighted_pool(prob_matrix: np.ndarray, tta_batch: Optional[np.ndarra
 
 def calibrate_predictions(raw_preds: np.ndarray) -> np.ndarray:
     """
-    Chuẩn hóa phân phối xác suất Ensemble Từ số 0 (giữ nguyên xác suất gốc T=1.0,
-    không phóng đại nhiệt độ T=0.35 để bảo toàn độ chính xác 96.88% và khả năng tách cây lạ OOD).
+    Chuẩn hóa phân phối xác suất Ensemble (giữ nguyên xác suất gốc T=1.0,
+    không chia logits để bảo toàn khả năng tách cây lạ OOD).
     """
     preds = np.clip(np.asarray(raw_preds, dtype=np.float32), 1e-9, 1.0)
     total = float(np.sum(preds))
@@ -669,6 +669,12 @@ def load_ai_resources():
     try:
         conn = get_db_connection()
         cur = conn.cursor()
+        # Đảm bảo trên SQL Server cho phép khách vãng lai quét ảnh (MANGUOIDUNG NULL)
+        if not hasattr(conn, "_conn"):
+            try:
+                cur.execute("ALTER TABLE TIM_ANH ALTER COLUMN MANGUOIDUNG INT NULL")
+            except Exception:
+                pass
         cur.execute("SELECT 1 FROM DANH_MUC WHERE MADANHMUC = 51")
         if not cur.fetchone():
             cur.execute(
@@ -854,7 +860,7 @@ async def nhan_dien_cay(
     # =====================================================================
     # PHÂN LỚP "LỚP KHÁC / NGOÀI KHO DỮ LIỆU" (CLASS #91 - OUT-OF-DISTRIBUTION)
     # 1. Độ tin cậy Top-1 < 55% (CONFIDENCE_THRESHOLD)
-    # 2. Hoặc độ phân tán Normalized Entropy > 0.45 (mô hình không chắc chắn, xác suất bị dàn trải)
+    # 2. Hoặc độ phân tán Normalized Entropy > 0.55 (mô hình không chắc chắn, xác suất bị dàn trải)
     # 3. Hoặc mô hình phân vân giữa 2 loài (Top1 < 65% & chênh lệch Top1 - Top2 < 15%)
     # 4. Hoặc mã loài không tồn tại trong bảng LOAI_CAY
     # =====================================================================
@@ -871,7 +877,7 @@ async def nhan_dien_cay(
     ma_tim_kiem = cursor.fetchone()[0]
 
     trang_thai_nhan_dien = N_STATUS = (
-        "Lớp khác (Ngoài kho dữ liệu)" if is_unknown_species else "Thành công"
+        "Lớp khác (OOD)" if is_unknown_species else "Thành công"
     )
     cursor.execute("""
         INSERT INTO TIM_ANH (MATIMKIEM, MANGUOIDUNG, HINHANHURL, THOIGIAN, NENTANG, PHIENBANMODEL, TRANGTHAINHANDIEN)

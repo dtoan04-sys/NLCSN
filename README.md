@@ -14,7 +14,7 @@ Phát triển ứng dụng Web & Mobile tích hợp Trí tuệ Nhân tạo Deep 
   - **MobileNetV2** (9,62 MB, fine-tune 50 tầng cuối): đạt **80,86 ± 0,31%** Top-1 qua 3 seeds (`99`, `123`, `999`) trên bộ 25.225 ảnh độc bản.
   - **EfficientNetB0**: đạt **84,47% Top-1** và **93,89% Top-3** tại seed `999`.
 - **Suy luận & Ngưỡng OOD:**
-  - **8-Crop Foliage ROI TTA** kết hợp Soft-Voting Ensemble và bộ lọc **OOD Lớp #91**: `conf < 0,55` hoặc `entropy > 0,55` (với Temperature Scaling `temp = 0,15`).
+  - **8-Crop Foliage ROI TTA** (Entropy-weighted TTA Pooling, `temp = 0,15`) kết hợp Soft-Voting Ensemble và bộ lọc **OOD Lớp #91**: `conf < 0,55` hoặc `entropy > 0,55`.
   - *Cấu hình chuẩn trong báo cáo:* Ensemble 4 model (`0,34 EfficientNetB0 + 3×0,22 MobileNetV2`).
   - *Cấu hình kiểm thử hiện tại trong `ai-service/main.py`:* chạy **thuần `MobileNetV2`** (`0,50 mobilenetv2_tu_so_0_seed_999.keras + 0,50 best_mobilenet_v2_aug48.keras`) để đồng nhất 100% kiến trúc `MobileNetV2` của đề tài (các trọng số `EfficientNetB0` vẫn được giữ sẵn trong `ai-service/model/`).
 
