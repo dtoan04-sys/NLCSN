@@ -28,6 +28,8 @@ uploads/*
 .DS_Store
 Thumbs.db
 *.log
+.auth_secret
+*/.auth_secret
 
 # Heavy training checkpoints & old backup models (keep only active 4-model ensemble)
 00_Tai_Lieu_Bao_Cao/Ket_Qua_Tu_So_0_99_123_999/**/*.keras

@@ -910,14 +910,18 @@ def run_online_incremental_update(
 
         train_idx = [i for i, g in enumerate(grp_list) if g not in val_groups]
         val_idx = [i for i, g in enumerate(grp_list) if g in val_groups]
-        if not train_idx or not val_idx:
-            # Fallback only when force_save=True and unique_groups == 1
+        has_independent_val = bool(train_idx and val_idx and set(train_idx).isdisjoint(val_idx))
+        if not train_idx:
             train_idx = list(range(len(x_data)))
-            val_idx = list(range(len(x_data)))
+            val_idx = []
+            has_independent_val = False
 
         rng.shuffle(train_idx)
         x_train, y_train, w_train = x_data[train_idx], y_data[train_idx], w_data[train_idx]
-        x_val, y_val, w_val = x_data[val_idx], y_data[val_idx], w_data[val_idx]
+        if has_independent_val:
+            x_val, y_val, w_val = x_data[val_idx], y_data[val_idx], w_data[val_idx]
+        else:
+            x_val = y_val = w_val = None
 
         # Freeze backbone; unfreeze only the final classification head / last few layers (keep BN frozen)
         for layer in model.layers:
@@ -934,30 +938,37 @@ def run_online_incremental_update(
             metrics=["accuracy"],
         )
 
-        eval_before = model.evaluate(x_val, y_val, sample_weight=w_val, batch_size=batch_size, verbose=0)
-        val_loss_before = float(eval_before[0])
-        val_acc_before = float(eval_before[1])
+        if has_independent_val:
+            eval_before = model.evaluate(x_val, y_val, sample_weight=w_val, batch_size=batch_size, verbose=0)
+            val_loss_before = float(eval_before[0])
+            val_acc_before = float(eval_before[1])
+        else:
+            val_loss_before = None
+            val_acc_before = None
 
         model.fit(
             x_train,
             y_train,
             sample_weight=w_train,
-            validation_data=(x_val, y_val, w_val),
+            validation_data=(x_val, y_val, w_val) if has_independent_val else None,
             epochs=max(1, int(epochs)),
             batch_size=min(max(1, int(batch_size)), len(x_train)),
             verbose=0,
         )
 
-        eval_after = model.evaluate(x_val, y_val, sample_weight=w_val, batch_size=batch_size, verbose=0)
-        val_loss_after = float(eval_after[0])
-        val_acc_after = float(eval_after[1])
-
-        # Quality Gate: reject update if validation accuracy drops > 2% without loss improvement
-        quality_gate_passed = bool(
-            force_save
-            or (val_acc_after >= val_acc_before - 0.02 and val_loss_after <= val_loss_before * 1.10)
-            or (val_acc_after > val_acc_before)
-        )
+        if has_independent_val:
+            eval_after = model.evaluate(x_val, y_val, sample_weight=w_val, batch_size=batch_size, verbose=0)
+            val_loss_after = float(eval_after[0])
+            val_acc_after = float(eval_after[1])
+            quality_gate_passed = bool(
+                force_save
+                or (val_acc_after >= val_acc_before - 0.02 and val_loss_after <= val_loss_before * 1.10)
+                or (val_acc_after > val_acc_before)
+            )
+        else:
+            val_loss_after = None
+            val_acc_after = None
+            quality_gate_passed = bool(force_save)
 
         saved_path_str = None
         if quality_gate_passed:
@@ -981,15 +992,20 @@ def run_online_incremental_update(
             "replay_samples_used": int(len(rp_paths)),
             "epochs": int(epochs),
             "lr": float(lr),
-            "val_acc_before": round(val_acc_before * 100.0, 2),
-            "val_acc_after": round(val_acc_after * 100.0, 2),
-            "val_loss_before": round(val_loss_before, 4),
-            "val_loss_after": round(val_loss_after, 4),
+            "val_acc_before": round(val_acc_before * 100.0, 2) if val_acc_before is not None else None,
+            "val_acc_after": round(val_acc_after * 100.0, 2) if val_acc_after is not None else None,
+            "val_loss_before": round(val_loss_before, 4) if val_loss_before is not None else None,
+            "val_loss_after": round(val_loss_after, 4) if val_loss_after is not None else None,
+            "has_independent_val": has_independent_val,
             "quality_gate_passed": quality_gate_passed,
             "saved_model_path": saved_path_str,
             "trained_raw_count": int(raw_cnt) if quality_gate_passed else int(prev_status.get("trained_raw_count") or 0),
             "message": (
-                f"Đã cập nhật model Online thành công! Val Acc: {val_acc_before*100:.2f}% -> {val_acc_after*100:.2f}%."
+                (
+                    f"Đã cập nhật model Online thành công! Val Acc: {val_acc_before*100:.2f}% -> {val_acc_after*100:.2f}%."
+                    if has_independent_val
+                    else "Đã cập nhật model Online (force_save, chưa đủ nhóm ảnh gốc cho Validation độc lập)."
+                )
                 if quality_gate_passed
                 else f"Quality Gate từ chối bản cập nhật (Val Acc: {val_acc_before*100:.2f}% -> {val_acc_after*100:.2f}%). Giữ nguyên model hiện tại."
             ),

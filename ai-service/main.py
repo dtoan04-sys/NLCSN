@@ -189,7 +189,26 @@ def query_db(sql: str, params: tuple = (), fetch_one=False, commit=False):
 # =====================================================================
 # 1B. BẢO MẬT: PBKDF2-HMAC-SHA256, BEARER TOKEN HMAC-SHA256 & MIGRATION
 # =====================================================================
-AUTH_SECRET_KEY = os.getenv("AUTH_SECRET_KEY", "florabotanic-kieng-la-hmac-secret-2026").encode("utf-8")
+def _load_or_create_auth_secret() -> bytes:
+    env_secret = (os.getenv("AUTH_SECRET_KEY") or "").strip()
+    if env_secret:
+        if len(env_secret) < 32:
+            raise RuntimeError("AUTH_SECRET_KEY phải dài tối thiểu 32 ký tự!")
+        return env_secret.encode("utf-8")
+    secret_file = Path(__file__).resolve().parent / ".auth_secret"
+    if secret_file.exists():
+        stored = secret_file.read_text(encoding="utf-8").strip()
+        if len(stored) >= 32:
+            return stored.encode("utf-8")
+    generated = secrets.token_hex(32)
+    try:
+        secret_file.write_text(generated, encoding="utf-8")
+    except Exception:
+        pass
+    return generated.encode("utf-8")
+
+
+AUTH_SECRET_KEY = _load_or_create_auth_secret()
 TOKEN_TTL_SECONDS = 60 * 60 * 24 * 7  # 7 ngày
 PBKDF2_ITERATIONS = 120_000
 LOCKED_ACCOUNT_STATUSES = {"khoa", "bikhoa", "bi_khoa", "locked", "bịkhóa", "bị_khóa"}
@@ -2564,23 +2583,21 @@ def create_customer_order(
             raise HTTPException(status_code=400, detail="Số lượng mua mỗi sản phẩm phải lớn hơn 0!")
         qty_by_product[int(item.MaSanPham)] += int(item.SoLuongMua)
 
-    # Ưu tiên lấy MaNguoiDung từ token đã xác thực (chống giả mạo ID tài khoản khác)
-    ma_nguoi_dung = int(current_user["sub"]) if current_user else req.MaNguoiDung
+    # Chỉ lấy MaNguoiDung từ token đã xác thực; khách vãng lai lưu None (tuyệt đối không tin ID client gửi)
+    ma_nguoi_dung = int(current_user["sub"]) if current_user else None
 
     conn = get_db_connection()
     cursor = conn.cursor()
 
-    # Bật transaction rõ ràng để rollback() thực sự hoàn tác được trên cả SQL Server & SQLite
-    in_explicit_tx = False
+    # Bắt buộc mở transaction tường minh; nếu khởi tạo thất bại phải dừng ngay để bảo toàn dữ liệu
     try:
         if hasattr(conn, "_conn"):
             conn._conn.execute("BEGIN")
-            in_explicit_tx = True
         else:
             conn.autocommit = False
-            in_explicit_tx = True
-    except Exception:
-        in_explicit_tx = False
+    except Exception as tx_err:
+        conn.close()
+        raise HTTPException(status_code=500, detail=f"Không thể khởi tạo transaction đặt hàng an toàn: {tx_err}")
 
     try:
         # 1. Tính lại đơn giá & kiểm tra tồn kho trực tiếp từ DB (không tin giá client gửi)
