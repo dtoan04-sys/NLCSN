@@ -1,0 +1,91 @@
+﻿original_label,is_priority_48,train_before,val_fixed,test_fixed,total_before
+African Violet (Saintpaulia ionantha),False,269,34,34,337
+Aloe Vera,False,212,26,27,265
+Anthurium (Anthurium andraeanum),False,362,45,46,453
+Areca Palm (Dypsis lutescens),True,150,19,19,188
+Arrowhead Plant (Syngonium podophyllum),True,199,25,25,249
+Asparagus Fern (Asparagus setaceus),True,156,20,20,196
+Baby Rubber Plant (Peperomia obtusifolia),True,216,27,28,271
+Baby Tears (Soleirolia soleirolii),False,178,22,23,223
+Bird of Paradise (Strelitzia reginae),True,178,22,23,223
+Birds Nest Fern (Asplenium nidus),False,249,31,32,312
+Black Velvet Alocasia (Alocasia reginula),True,158,20,20,198
+Blushing Bromeliad (Neoregelia carolinae),True,176,22,22,220
+Boston Fern (Nephrolepis exaltata),False,268,34,34,336
+Calla Lily (Zantedeschia aethiopica),False,200,25,25,250
+Cast Iron Plant (Aspidistra elatior),True,228,28,29,285
+China Doll Plant (Radermachera sinica),True,169,21,22,212
+Chinese Evergreen Siam (Aglaonema commutatum),True,218,27,28,273
+Chinese Hibiscus (Hibiscus rosa-sinensis),False,200,25,26,251
+Chinese Money Plant (Pilea peperomioides),False,304,38,38,380
+Christmas Cactus (Schlumbergera bridgesii),False,267,33,34,334
+Chrysanthemum,False,181,23,23,227
+Coleus (Coleus scutellarioides),True,196,25,25,246
+Coralberry (Ardisia crenata),True,174,22,22,218
+Corn Plant (Dracaena fragrans),True,198,25,25,248
+Creeping Fig (Ficus pumila),False,196,24,25,245
+Crown of Thorns (Euphorbia milii),True,216,27,28,271
+Ctenanthe,False,272,34,34,340
+Daffodils (Narcissus spp.),False,336,42,43,421
+Dragon Tail (Epipremnum pinnatum),True,192,24,24,240
+Dumb Cane (Dieffenbachia spp.),False,432,54,54,540
+English Ivy (Hedera helix),False,206,26,26,258
+Fan Palm - Lady Palm (Rhapis excelsa),True,196,25,25,246
+Fiddle Leaf Fig (Ficus lyrata),True,202,25,26,253
+French Hydrangea (Hydrangea macrophylla),False,210,26,27,263
+Garden Croton (Codiaeum variegatum),True,220,28,28,276
+Giant Taro (Alocasia macrorrhizos),True,196,24,25,245
+Ginseng Ficus (Ficus microcarpa),True,200,25,26,251
+Gold Dust Dracaena (Dracaena surculosa),True,176,22,23,221
+Hairy Philodendron (Philodendron squamiferum),True,216,27,27,270
+Heart of Jesus (Caladium bicolor),False,214,27,27,268
+Heartleaf Philodendron (Philodendron cordatum),False,200,25,26,251
+Hyacinth (Hyacinthus orientalis),False,254,32,32,318
+Indian Azalea (Rhododendron simsii),True,216,27,27,270
+Iron Cross begonia (Begonia masoniana),False,228,28,29,285
+Jade plant (Crassula ovata),False,282,35,36,353
+Kalanchoe,True,116,15,15,146
+Lily of the valley (Convallaria majalis),False,328,41,42,411
+Madagascar Dragon Tree (Dracaena marginata),False,211,26,27,264
+Mexican Snowball (Echeveria elegans),False,204,26,26,256
+Money Tree (Pachira aquatica),True,285,36,36,357
+Monstera Deliciosa (Monstera deliciosa),True,435,54,55,544
+Moses in the Cradle (Tradescantia spathacea),False,192,24,25,241
+Nerve Plant (Fittonia albivenis),False,197,25,25,247
+Night-scented Lily (Alocasia odora),False,193,24,25,242
+Orchid,False,208,26,26,260
+Parlor Palm (Chamaedorea elegans),False,262,33,33,328
+Parrot Flower (Heliconia psittacorum),True,208,26,27,261
+Peace lily,False,304,38,39,381
+Peppermint (Mentha piperita),True,217,27,28,272
+Poinsettia (Euphorbia pulcherrima),False,258,32,33,323
+Polka Dot Plant (Hypoestes phyllostachya),False,272,34,34,340
+Ponytail Palm (Beaucarnea recurvata),True,175,22,22,219
+Prayer Plant (Maranta leuconeura),False,318,40,40,398
+Rabbit Foot Fern (Davallia fejeensis),True,180,22,23,225
+Raindrop Peperomia (Peperomia polybotrya),True,142,18,18,178
+Rattlesnake Plant (Calathea lancifolia),False,252,31,32,315
+Red-leaf Philodendron (Philodendron erubescens),True,218,27,28,273
+Rose-painted Calathea (Calathea roseopicta),True,164,21,21,206
+Round-leaf Calathea (Calathea orbifolia),True,171,21,22,214
+Rubber Plant (Ficus elastica),True,232,29,30,291
+Sago Palm (Cycas revoluta),True,160,20,20,200
+Schefflera,True,260,32,33,325
+Silver Pothos (Scindapsus pictus),True,174,22,22,218
+Snake plant (Sanseviera),False,312,39,40,391
+Song of India (Dracaena reflexa),True,190,24,24,238
+Spider Plant (Chlorophytum comosum),True,215,27,27,269
+Staghorn Fern (Platycerium bifurcatum),True,198,25,25,248
+String of Pearls (Senecio rowleyanus),False,210,26,27,263
+Swiss Cheese Vine (Monstera adansonii),True,222,28,28,278
+Tree Philodendron (Philodendron bipinnatifidum),True,229,29,29,287
+Tulip,False,271,34,34,339
+Venus Flytrap,False,180,23,23,226
+Watermelon Peperomia (Peperomia argyreia),False,185,23,24,232
+Weeping Fig (Ficus benjamina),True,199,25,25,249
+White Bird of Paradise (Strelitzia nicolai),True,219,27,28,274
+Yew Plum Pine (Podocarpus macrophyllus),True,207,26,26,259
+Yucca,True,62,8,8,78
+ZZ Plant (Zamioculcas zamiifolia),False,348,44,44,436
+Zebra Haworthia (Haworthiopsis attenuata),False,212,26,27,265
+Zebra Plant (Aphelandra squarrosa),True,158,20,20,198

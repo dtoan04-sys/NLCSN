@@ -24,6 +24,8 @@ export default function AiVisionModal({ onClose, onSelectProduct, onFilterBySpec
   const [rawFile, setRawFile] = useState(null);
   const [lastScanId, setLastScanId] = useState(null);
   const [feedbackGiven, setFeedbackGiven] = useState(null);
+  const [showCorrectionPicker, setShowCorrectionPicker] = useState(false);
+  const [correctedSpeciesId, setCorrectedSpeciesId] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
   const [showServerConfig, setShowServerConfig] = useState(false);
   const [serverUrlInput, setServerUrlInput] = useState(() => getApiBaseUrl());
@@ -430,6 +432,8 @@ export default function AiVisionModal({ onClose, onSelectProduct, onFilterBySpec
     setSelectedMultiIndex(0);
     setRawFile(null);
     setFeedbackGiven(null);
+    setShowCorrectionPicker(false);
+    setCorrectedSpeciesId('');
     setErrorMsg('');
     startCamera(facingMode);
   };
@@ -447,6 +451,8 @@ export default function AiVisionModal({ onClose, onSelectProduct, onFilterBySpec
       setAiResult(null);
       setMultiResult(null);
       setFeedbackGiven(null);
+      setShowCorrectionPicker(false);
+      setCorrectedSpeciesId('');
       setErrorMsg('');
       setRawFile(file);
 
@@ -462,9 +468,45 @@ export default function AiVisionModal({ onClose, onSelectProduct, onFilterBySpec
     }
   };
 
-  const handleFeedback = (isCorrect) => {
-    if (!lastScanId) return;
-    submitFeedback(lastScanId, isCorrect, isCorrect ? 'Người dùng xác nhận đúng' : 'Báo cáo nhận diện sai');
+  const handleFeedback = async (isCorrect, customSpeciesId = null) => {
+    if (!isCorrect && customSpeciesId === null && !showCorrectionPicker) {
+      setShowCorrectionPicker(true);
+      return;
+    }
+
+    const parsedSpeciesId =
+      customSpeciesId !== null && customSpeciesId !== '' ? Number(customSpeciesId) : null;
+    const chosenSpecies = parsedSpeciesId
+      ? SPECIES_LIST.find((sp) => Number(sp.id) === parsedSpeciesId)
+      : null;
+    const noteText = isCorrect
+      ? 'Người dùng xác nhận đúng'
+      : chosenSpecies
+      ? `Báo cáo sai - Loài đúng: ${chosenSpecies.vietnamese_name}`
+      : 'Báo cáo nhận diện sai';
+
+    if (lastScanId) {
+      submitFeedback(lastScanId, isCorrect, noteText);
+    }
+
+    if (aiResult?.matimkiem) {
+      try {
+        await apiFetch('/api/nhan-dien/phan-hoi', {
+          method: 'POST',
+          body: JSON.stringify({
+            ma_tim_kiem: Number(aiResult.matimkiem),
+            la_dung: Boolean(isCorrect),
+            ma_loai_dung: parsedSpeciesId,
+            ghi_chu: noteText,
+            ma_nguoi_dung: user?.id ? Number(user.id) : null
+          })
+        });
+      } catch (err) {
+        console.warn('Không gửi được phản hồi AI về server:', err);
+      }
+    }
+
+    setShowCorrectionPicker(false);
     setFeedbackGiven(isCorrect);
     if (window.AndroidNative?.vibrate) window.AndroidNative.vibrate(30);
   };
@@ -1166,30 +1208,63 @@ export default function AiVisionModal({ onClose, onSelectProduct, onFilterBySpec
                       </button>
                     </div>
 
-                    {/* Phản hồi đúng/sai */}
-                    <div className="mt-2.5 pt-2 border-t border-emerald-200/40 flex items-center justify-between">
-                      <span className="text-[11px] text-gray-600 font-medium">Kết quả AI chuẩn xác?</span>
-                      {feedbackGiven !== null ? (
-                        <span className="text-xs font-bold text-emerald-700 flex items-center gap-1">
-                          <span className="material-symbols-outlined text-sm">verified</span>
-                          {feedbackGiven ? 'Đã xác nhận Đúng!' : 'Đã ghi nhận góp ý!'}
-                        </span>
-                      ) : (
-                        <div className="flex gap-1.5">
-                          <button
-                            onClick={() => handleFeedback(true)}
-                            className="px-2.5 py-1 rounded-lg bg-white border border-emerald-300 hover:bg-emerald-100 text-emerald-800 text-xs font-semibold flex items-center gap-1"
-                          >
-                            <span className="material-symbols-outlined text-sm">thumb_up</span>
-                            Đúng
-                          </button>
-                          <button
-                            onClick={() => handleFeedback(false)}
-                            className="px-2.5 py-1 rounded-lg bg-white border border-gray-200 hover:bg-red-50 text-gray-600 text-xs font-semibold flex items-center gap-1"
-                          >
-                            <span className="material-symbols-outlined text-sm">thumb_down</span>
-                            Sai
-                          </button>
+                    {/* Phản hồi đúng/sai (Offline Active Learning) */}
+                    <div className="mt-2.5 pt-2 border-t border-emerald-200/40 space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="text-[11px] text-gray-600 font-medium">Kết quả AI chuẩn xác?</span>
+                        {feedbackGiven !== null ? (
+                          <span className="text-xs font-bold text-emerald-700 flex items-center gap-1">
+                            <span className="material-symbols-outlined text-sm">verified</span>
+                            {feedbackGiven ? 'Đã xác nhận Đúng (+1)!' : 'Đã gửi góp ý (-1) để cải thiện AI!'}
+                          </span>
+                        ) : (
+                          <div className="flex gap-1.5">
+                            <button
+                              type="button"
+                              onClick={() => handleFeedback(true)}
+                              className="px-2.5 py-1 rounded-lg bg-white border border-emerald-300 hover:bg-emerald-100 text-emerald-800 text-xs font-semibold flex items-center gap-1"
+                            >
+                              <span className="material-symbols-outlined text-sm">thumb_up</span>
+                              Đúng
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleFeedback(false)}
+                              className="px-2.5 py-1 rounded-lg bg-white border border-gray-200 hover:bg-red-50 text-gray-600 text-xs font-semibold flex items-center gap-1"
+                            >
+                              <span className="material-symbols-outlined text-sm">thumb_down</span>
+                              Sai
+                            </button>
+                          </div>
+                        )}
+                      </div>
+
+                      {showCorrectionPicker && feedbackGiven === null && (
+                        <div className="p-2.5 rounded-xl bg-amber-50/90 border border-amber-200 space-y-2">
+                          <p className="text-[11px] font-bold text-amber-900">
+                            Chọn tên loài cây đúng (nếu biết) để giúp AI học lại:
+                          </p>
+                          <div className="flex flex-col sm:flex-row gap-1.5">
+                            <select
+                              value={correctedSpeciesId}
+                              onChange={(e) => setCorrectedSpeciesId(e.target.value)}
+                              className="flex-1 px-2.5 py-1.5 rounded-lg border border-amber-300 bg-white text-xs text-gray-800"
+                            >
+                              <option value="">-- Chưa rõ / Ngoài danh mục --</option>
+                              {SPECIES_LIST.map((sp) => (
+                                <option key={sp.id} value={sp.id}>
+                                  {sp.vietnamese_name} ({sp.scientific_name})
+                                </option>
+                              ))}
+                            </select>
+                            <button
+                              type="button"
+                              onClick={() => handleFeedback(false, correctedSpeciesId)}
+                              className="px-3 py-1.5 rounded-lg bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold whitespace-nowrap"
+                            >
+                              Gửi góp ý
+                            </button>
+                          </div>
                         </div>
                       )}
                     </div>

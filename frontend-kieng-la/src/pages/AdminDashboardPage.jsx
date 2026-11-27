@@ -37,6 +37,12 @@ export default function AdminDashboardPage({ onBackToStore, onSelectProduct }) {
   const [orders, setOrders] = useState([]);
   const [users, setUsers] = useState([]);
   const [aiLogs, setAiLogs] = useState([]);
+  const [aiFeedback, setAiFeedback] = useState([]);
+  const [aiFeedbackStats, setAiFeedbackStats] = useState(null);
+  const [feedbackLabelOverrides, setFeedbackLabelOverrides] = useState({});
+  const [exportingDataset, setExportingDataset] = useState(false);
+  const [onlineLearningStatus, setOnlineLearningStatus] = useState(null);
+  const [triggeringOnlineLearning, setTriggeringOnlineLearning] = useState(false);
   const [speciesList, setSpeciesList] = useState([]);
   const [vouchers, setVouchers] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -170,11 +176,22 @@ export default function AdminDashboardPage({ onBackToStore, onSelectProduct }) {
         setUsers(data);
       }
 
-      // 5. AI Logs
+      // 5. AI Logs & Offline Feedback Queue
       const resLogs = await apiFetch('/api/admin/ai-logs');
       if (resLogs.ok) {
         const data = await resLogs.json();
         setAiLogs(data);
+      }
+      const resFeedback = await apiFetch('/api/admin/ai-feedback');
+      if (resFeedback.ok) {
+        const fbData = await resFeedback.json();
+        setAiFeedback(fbData.items || []);
+        setAiFeedbackStats(fbData.stats || null);
+      }
+      const resOnlineLearning = await apiFetch('/api/admin/online-learning/status');
+      if (resOnlineLearning.ok) {
+        const olData = await resOnlineLearning.json();
+        setOnlineLearningStatus(olData);
       }
 
       // 6. Loài cây
@@ -651,6 +668,93 @@ export default function AdminDashboardPage({ onBackToStore, onSelectProduct }) {
   };
 
   // Filtered AI logs (lọc OOD + tìm kiếm)
+  const handleReviewAiFeedback = async (maPhanHoi, trangThai, defaultSpeciesId) => {
+    const selectedId = feedbackLabelOverrides[maPhanHoi] ?? defaultSpeciesId ?? null;
+    try {
+      const res = await apiFetch(`/api/admin/ai-feedback/${maPhanHoi}/duyet`, {
+        method: 'PUT',
+        body: JSON.stringify({
+          trang_thai_duyet: trangThai,
+          ma_loai_dung: selectedId ? Number(selectedId) : null
+        })
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        alert(data.detail || 'Không thể cập nhật trạng thái duyệt!');
+        return;
+      }
+      const resFeedback = await apiFetch('/api/admin/ai-feedback');
+      if (resFeedback.ok) {
+        const fbData = await resFeedback.json();
+        setAiFeedback(fbData.items || []);
+        setAiFeedbackStats(fbData.stats || null);
+      }
+      const resOnlineLearning = await apiFetch('/api/admin/online-learning/status');
+      if (resOnlineLearning.ok) {
+        const olData = await resOnlineLearning.json();
+        setOnlineLearningStatus(olData);
+      }
+    } catch (err) {
+      alert('Lỗi kết nối server khi duyệt phản hồi!');
+    }
+  };
+
+  const handleExportFeedbackDataset = async () => {
+    setExportingDataset(true);
+    try {
+      const res = await apiFetch('/api/admin/ai-feedback/export-dataset', { method: 'POST' });
+      const data = await res.json();
+      if (!res.ok) {
+        alert(data.detail || 'Xuất dữ liệu thất bại!');
+        return;
+      }
+      alert(
+        `${data.message}\nThư mục: ${data.export_dir}\n(Đã xuất: ${data.exported_count}, Bỏ qua: ${data.skipped_count})`
+      );
+    } catch (err) {
+      alert('Lỗi kết nối server khi xuất dữ liệu!');
+    } finally {
+      setExportingDataset(false);
+    }
+  };
+
+  const handleRefreshOnlineLearningStatus = async () => {
+    try {
+      const res = await apiFetch('/api/admin/online-learning/status');
+      if (res.ok) {
+        const data = await res.json();
+        setOnlineLearningStatus(data);
+      }
+    } catch (err) {
+      console.log('Online learning status refresh notice:', err);
+    }
+  };
+
+  const handleTriggerOnlineLearning = async () => {
+    setTriggeringOnlineLearning(true);
+    try {
+      const res = await apiFetch('/api/admin/online-learning/trigger', {
+        method: 'POST',
+        body: JSON.stringify({})
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        alert(data.detail || 'Không thể kích hoạt Học Tăng Cường Online!');
+        return;
+      }
+      if (data.status) {
+        setOnlineLearningStatus(data.status);
+      } else {
+        await handleRefreshOnlineLearningStatus();
+      }
+      alert(data.message || 'Đã kích hoạt Học Tăng Cường Online ở luồng nền!');
+    } catch (err) {
+      alert('Lỗi kết nối server khi kích hoạt Học Tăng Cường Online!');
+    } finally {
+      setTriggeringOnlineLearning(false);
+    }
+  };
+
   const filteredAiLogs = useMemo(() => {
     const q = aiLogSearch.trim().toLowerCase();
     return aiLogs.filter((log) => {
@@ -1928,10 +2032,259 @@ export default function AdminDashboardPage({ onBackToStore, onSelectProduct }) {
           )}
 
           {/* ======================================================== */}
-          {/* TAB 4: GIÁM SÁT NHẬN DIỆN AI (AI LOGS) */}
+          {/* TAB 4: GIÁM SÁT NHẬN DIỆN AI (AI LOGS & OFFLINE RETRAIN) */}
           {/* ======================================================== */}
           {activeTab === 'ai_logs' && (
-            <div className="bg-white rounded-3xl border border-gray-200/80 shadow-xs p-6 space-y-5">
+            <div className="space-y-6">
+              {/* HỌC TĂNG CƯỜNG ONLINE CHO CÁC LOÀI THIẾU DỮ LIỆU / < 60% */}
+              <div className="bg-white rounded-3xl border border-indigo-200/80 shadow-xs p-5 space-y-4">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-gray-100">
+                  <div>
+                    <h3 className="font-extrabold text-sm text-gray-900 flex items-center gap-2">
+                      <span className="material-symbols-outlined text-indigo-700 text-lg">bolt</span>
+                      <span>Học Tăng Cường Online cho Các Loài Thiếu Dữ Liệu / &lt; 60%</span>
+                      {onlineLearningStatus?.is_running && (
+                        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-indigo-100 text-indigo-700 animate-pulse">
+                          Đang chạy nền...
+                        </span>
+                      )}
+                    </h3>
+                    <p className="text-xs text-gray-500 mt-0.5">
+                      Tự động bổ sung dữ liệu (Active Data Supplementation + Augmentation nhẹ) và fine-tune tăng cường ở luồng nền (lr=1e-5, Replay Buffer + Quality Gate).
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2 self-start sm:self-auto">
+                    <button
+                      type="button"
+                      onClick={handleRefreshOnlineLearningStatus}
+                      className="px-3 py-2 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-bold flex items-center gap-1 transition-all"
+                      title="Làm mới trạng thái Online Learning"
+                    >
+                      <span className="material-symbols-outlined text-sm">refresh</span>
+                      <span>Làm mới</span>
+                    </button>
+                    <button
+                      type="button"
+                      disabled={triggeringOnlineLearning || Boolean(onlineLearningStatus?.is_running)}
+                      onClick={handleTriggerOnlineLearning}
+                      className="px-4 py-2 rounded-xl bg-indigo-700 hover:bg-indigo-800 disabled:bg-gray-300 text-white text-xs font-bold flex items-center gap-1.5 transition-all"
+                    >
+                      <span className="material-symbols-outlined text-base">auto_awesome</span>
+                      <span>
+                        {triggeringOnlineLearning || onlineLearningStatus?.is_running
+                          ? 'Đang Chạy Học Online...'
+                          : 'Chạy Học Tăng Cường Online Ngay'}
+                      </span>
+                    </button>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
+                  <div className="p-3 rounded-2xl bg-rose-50 border border-rose-100">
+                    <span className="text-rose-800 block">Loài ưu tiên (&lt; 60% / thiếu ảnh)</span>
+                    <span className="text-lg font-extrabold text-rose-900">
+                      {onlineLearningStatus?.priority_species_count ?? '--'}
+                    </span>
+                  </div>
+                  <div className="p-3 rounded-2xl bg-indigo-50 border border-indigo-100">
+                    <span className="text-indigo-800 block">Mẫu Online Buffer</span>
+                    <span className="text-lg font-extrabold text-indigo-900">
+                      {onlineLearningStatus?.total_buffered_samples ?? 0}
+                    </span>
+                    <span className="text-[10px] text-indigo-700 block">
+                      Gốc mới: {onlineLearningStatus?.new_samples_since_last_train ?? 0}/{onlineLearningStatus?.auto_trigger_threshold ?? 10}
+                    </span>
+                  </div>
+                  <div className="p-3 rounded-2xl bg-emerald-50 border border-emerald-100">
+                    <span className="text-emerald-800 block">Đợt chạy gần nhất</span>
+                    <span className="text-sm font-extrabold text-emerald-900 block mt-0.5">
+                      {onlineLearningStatus?.last_run?.status === 'completed'
+                        ? 'Đạt Quality Gate'
+                        : onlineLearningStatus?.last_run?.status === 'rejected_by_quality_gate'
+                          ? 'Giữ model cũ'
+                          : onlineLearningStatus?.last_run?.status === 'running'
+                            ? 'Đang huấn luyện...'
+                            : onlineLearningStatus?.last_run?.status === 'skipped'
+                              ? 'Bỏ qua (chưa đủ mẫu)'
+                              : 'Chưa chạy'}
+                    </span>
+                    <span className="text-[10px] text-emerald-700 block">
+                      {onlineLearningStatus?.last_run?.val_acc_before != null && onlineLearningStatus?.last_run?.val_acc_after != null
+                        ? `Val Acc: ${onlineLearningStatus.last_run.val_acc_before}% → ${onlineLearningStatus.last_run.val_acc_after}%`
+                        : 'Chưa có chỉ số Val Acc'}
+                    </span>
+                  </div>
+                  <div className="p-3 rounded-2xl bg-gray-50 border border-gray-100">
+                    <span className="text-gray-600 block">Model Online</span>
+                    <span className="text-sm font-extrabold text-gray-900 block mt-0.5">
+                      {onlineLearningStatus?.online_model_exists ? 'best_model_online.keras' : 'Đang dùng model gốc'}
+                    </span>
+                    <span className="text-[10px] text-gray-500 block truncate" title={onlineLearningStatus?.last_run?.message || ''}>
+                      {onlineLearningStatus?.last_run?.samples_used
+                        ? `${onlineLearningStatus.last_run.samples_used} mẫu (Replay: ${onlineLearningStatus.last_run.replay_samples_used || 0})`
+                        : 'Sẵn sàng tích lũy mẫu'}
+                    </span>
+                  </div>
+                </div>
+
+                {onlineLearningStatus?.priority_species?.length > 0 && (
+                  <div className="flex flex-wrap gap-1.5 pt-1">
+                    {onlineLearningStatus.priority_species.slice(0, 8).map((sp, idx) => (
+                      <span
+                        key={`${sp.ma_loai_cay || sp.original_label}-${idx}`}
+                        className="px-2.5 py-1 rounded-full text-[11px] font-semibold bg-gray-100 text-gray-700 border border-gray-200"
+                        title={sp.reason || ''}
+                      >
+                        {sp.vietnamese_name || sp.original_label}
+                        {sp.recall_pct != null ? ` (${sp.recall_pct}%)` : ''}
+                        {' • '}
+                        <strong className="text-indigo-700">{sp.buffered_count || 0}</strong> ảnh
+                      </span>
+                    ))}
+                    {onlineLearningStatus.priority_species.length > 8 && (
+                      <span className="px-2.5 py-1 rounded-full text-[11px] font-semibold bg-indigo-50 text-indigo-700">
+                        +{onlineLearningStatus.priority_species.length - 8} loài ưu tiên khác
+                      </span>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {/* HÀNG ĐỢI PHẢN HỒI & HUẤN LUYỆN LẠI OFFLINE */}
+              <div className="bg-white rounded-3xl border border-emerald-200/80 shadow-xs p-6 space-y-4">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-gray-100">
+                  <div>
+                    <h3 className="font-extrabold text-sm text-gray-900 flex items-center gap-2">
+                      <span className="material-symbols-outlined text-emerald-700 text-lg">model_training</span>
+                      <span>Hàng Đợi Phản Hồi &amp; Huấn Luyện Lại Offline (Human-in-the-Loop)</span>
+                    </h3>
+                    <p className="text-xs text-gray-500 mt-0.5">
+                      Thu thập phản hồi Đúng (+1) / Sai (-1) từ người dùng, kiểm duyệt nhãn chuẩn và xuất lô dữ liệu để fine-tune lại mô hình Offline.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    disabled={exportingDataset || !(aiFeedbackStats?.da_duyet > 0)}
+                    onClick={handleExportFeedbackDataset}
+                    className="px-4 py-2 rounded-xl bg-emerald-700 hover:bg-emerald-800 disabled:bg-gray-300 text-white text-xs font-bold flex items-center gap-1.5 self-start sm:self-auto transition-all"
+                  >
+                    <span className="material-symbols-outlined text-base">dataset</span>
+                    <span>
+                      {exportingDataset
+                        ? 'Đang xuất dữ liệu...'
+                        : `Xuất Tập Train Offline (${aiFeedbackStats?.da_duyet || 0} ảnh)`}
+                    </span>
+                  </button>
+                </div>
+
+                {aiFeedbackStats && (
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
+                    <div className="p-3 rounded-2xl bg-gray-50 border border-gray-100">
+                      <span className="text-gray-500 block">Tổng phản hồi</span>
+                      <span className="text-lg font-extrabold text-gray-900">{aiFeedbackStats.total}</span>
+                    </div>
+                    <div className="p-3 rounded-2xl bg-amber-50 border border-amber-100">
+                      <span className="text-amber-800 block">Chờ duyệt</span>
+                      <span className="text-lg font-extrabold text-amber-900">{aiFeedbackStats.cho_duyet}</span>
+                    </div>
+                    <div className="p-3 rounded-2xl bg-emerald-50 border border-emerald-100">
+                      <span className="text-emerald-800 block">Đã duyệt (Sẵn sàng train)</span>
+                      <span className="text-lg font-extrabold text-emerald-900">{aiFeedbackStats.da_duyet}</span>
+                    </div>
+                    <div className="p-3 rounded-2xl bg-blue-50 border border-blue-100">
+                      <span className="text-blue-800 block">Tỷ lệ AI đúng (User chấm)</span>
+                      <span className="text-lg font-extrabold text-blue-900">{aiFeedbackStats.ty_le_dung}%</span>
+                    </div>
+                  </div>
+                )}
+
+                {aiFeedback.length > 0 ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    {aiFeedback.map((fb) => {
+                      const maPh = fb.MaPhanHoi || fb.MAPHANHOI;
+                      const isCorrect = Number(fb.LaDung ?? fb.LADUNG ?? 0) === 1;
+                      const status = fb.TrangThaiDuyet || fb.TRANGTHAIDUYET || 'ChoDuyet';
+                      const predName = fb.TenLoaiDuDoan || `Loài #${fb.MaLoaiDuDoan || '?'}`;
+                      const trueId = fb.MaLoaiDung ?? fb.MALOAIDUNG ?? fb.MaLoaiDuDoan ?? '';
+                      const imgUrl = fb.HinhAnhUrl ? `${getApiBaseUrl()}${fb.HinhAnhUrl}` : '/plants/1.jpg';
+
+                      return (
+                        <div key={maPh} className="p-3.5 rounded-2xl border border-gray-200 bg-gray-50/70 flex gap-3 items-start">
+                          <img
+                            src={imgUrl}
+                            alt={predName}
+                            className="w-16 h-16 rounded-xl object-cover border border-gray-200 shrink-0"
+                            onError={(e) => {
+                              e.target.onerror = null;
+                              e.target.src = '/plants/1.jpg';
+                            }}
+                          />
+                          <div className="flex-1 min-w-0 space-y-1.5 text-xs">
+                            <div className="flex items-center justify-between gap-2">
+                              <span className={`px-2 py-0.5 rounded-full font-bold text-[11px] ${isCorrect ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'}`}>
+                                {isCorrect ? 'Đúng (+1)' : 'Sai (-1)'}
+                              </span>
+                              <span className={`px-2 py-0.5 rounded-full font-bold text-[11px] ${
+                                status === 'DaDuyet'
+                                  ? 'bg-emerald-600 text-white'
+                                  : status === 'TuChoi'
+                                  ? 'bg-gray-400 text-white'
+                                  : 'bg-amber-100 text-amber-800'
+                              }`}>
+                                {status === 'DaDuyet' ? 'Đã duyệt' : status === 'TuChoi' ? 'Từ chối' : 'Chờ duyệt'}
+                              </span>
+                            </div>
+                            <p className="text-gray-800 font-bold truncate">AI đoán: {predName}</p>
+                            {fb.GhiChu && <p className="text-[11px] text-gray-500 truncate">{fb.GhiChu}</p>}
+                            <div className="flex flex-col sm:flex-row gap-1.5 pt-1">
+                              <select
+                                value={feedbackLabelOverrides[maPh] ?? trueId}
+                                onChange={(e) =>
+                                  setFeedbackLabelOverrides((prev) => ({ ...prev, [maPh]: e.target.value }))
+                                }
+                                className="flex-1 px-2 py-1 rounded-lg border border-gray-300 bg-white text-[11px] text-gray-800"
+                              >
+                                <option value="">-- Chọn nhãn chuẩn --</option>
+                                {speciesList.map((sp) => {
+                                  const spId = sp.MaLoaiCay || sp.MALOAICAY || sp.id;
+                                  const spName = sp.TenThuongGoi || sp.TENTHUONGGOI || sp.name;
+                                  return (
+                                    <option key={spId} value={spId}>
+                                      {spName}
+                                    </option>
+                                  );
+                                })}
+                              </select>
+                              <div className="flex gap-1">
+                                <button
+                                  type="button"
+                                  onClick={() => handleReviewAiFeedback(maPh, 'DaDuyet', trueId)}
+                                  className="px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-bold"
+                                >
+                                  Duyệt
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => handleReviewAiFeedback(maPh, 'TuChoi', trueId)}
+                                  className="px-2.5 py-1 rounded-lg bg-gray-200 hover:bg-gray-300 text-gray-700 text-[11px] font-bold"
+                                >
+                                  Bỏ
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <p className="text-xs text-gray-400 text-center py-4">
+                    Chưa có phản hồi Đúng/Sai nào từ người dùng.
+                  </p>
+                )}
+              </div>
+
+              <div className="bg-white rounded-3xl border border-gray-200/80 shadow-xs p-6 space-y-5">
               {/* Header Info */}
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-gray-100">
                 <div>
@@ -2041,6 +2394,7 @@ export default function AdminDashboardPage({ onBackToStore, onSelectProduct }) {
                   </p>
                 )}
               </div>
+            </div>
             </div>
           )}
 

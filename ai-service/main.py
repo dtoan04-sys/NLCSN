@@ -10,11 +10,13 @@ import hashlib
 import secrets
 import shutil
 import tempfile
+import threading
 import zipfile
 from collections import defaultdict
 from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Optional, List, Dict, Any
+import online_learning
 import numpy as np
 try:
     import pyodbc
@@ -123,7 +125,13 @@ KEY_MAP = {
     "sodienthoai": "SoDienThoai", "diachi": "DiaChi", "avatar": "Avatar",
     "madiachi": "MaDiaChi", "tennguoinhan": "TenNguoiNhan",
     "diachichitiet": "DiaChiChiTiet", "datmacdinh": "DatMacDinh",
-    "sdtnguoinhan": "SdtNguoiNhan", "nguoidanhgia": "NguoiDanhGia"
+    "sdtnguoinhan": "SdtNguoiNhan", "nguoidanhgia": "NguoiDanhGia",
+    "maphanhoi": "MaPhanHoi", "matimkiem": "MaTimKiem", "maloaidudoan": "MaLoaiDuDoan",
+    "maloaidung": "MaLoaiDung", "ladung": "LaDung", "reward": "Reward",
+    "ghichu": "GhiChu", "trangthaiduyet": "TrangThaiDuyet",
+    "thoigiantao": "ThoiGianTao", "thoigianduyet": "ThoiGianDuyet",
+    "tenloaidudoan": "TenLoaiDuDoan", "tenloaidung": "TenLoaiDung",
+    "hinhanhurl": "HinhAnhUrl", "xacsuatchinhxac": "XacSuatChinhXac"
 }
 
 def normalize_row(cols, row):
@@ -400,6 +408,26 @@ ensemble_models = []
 class_mapping = {}
 yolo_detector = None
 yolo_load_attempted = False
+_MODEL_RELOAD_LOCK = threading.Lock()
+
+
+def hot_reload_online_model(model_path: str):
+    """Hot-reload model/best_model_online.keras vào ensemble_models sau khi pass Quality Gate."""
+    global model, ensemble_models
+    if os.getenv("SKIP_AI_LOAD", "0") == "1" or tf is None or not os.path.exists(model_path):
+        return
+    with _MODEL_RELOAD_LOCK:
+        try:
+            loaded_m = load_keras_compat(model_path)
+            if loaded_m.output_shape[-1] == 90:
+                updated = [item for item in ensemble_models if item[2] != "Online-Incremental-Model"]
+                updated.append((loaded_m, 0.30, "Online-Incremental-Model"))
+                ensemble_models = updated
+                if model is None:
+                    model = loaded_m
+                print(f"[AI][OnlineLearning] Hot-reloaded online model: {model_path}")
+        except Exception as e:
+            print(f"[AI][OnlineLearning] Warning hot-reloading {model_path}: {e}")
 
 def get_yolo_detector():
     """Tải lười (lazy-load) và cache mô hình YOLOv8n nếu có sẵn trên đĩa."""
@@ -577,10 +605,8 @@ def load_ai_resources():
     ensemble_models = []
     if os.getenv("SKIP_AI_LOAD", "0") != "1" and tf is not None:
         candidate_models = [
-            (os.path.join("model", "efficientnet_b0_tu_so_0.keras"), 0.34, "EfficientNetB0-TuSo0-84.5"),
-            (os.path.join("model", "mobilenetv2_tu_so_0_seed_99.keras"), 0.22, "MobileNetV2-TuSo0-Seed99"),
-            (os.path.join("model", "mobilenetv2_tu_so_0_seed_123.keras"), 0.22, "MobileNetV2-TuSo0-Seed123"),
-            (os.path.join("model", "mobilenetv2_tu_so_0_seed_999.keras"), 0.22, "MobileNetV2-TuSo0-Seed999"),
+            (os.path.join("model", "mobilenetv2_tu_so_0_seed_999.keras"), 0.50, "MobileNetV2-TuSo0-Seed999-80.5"),
+            (os.path.join("model", "best_mobilenet_v2_aug48.keras"), 0.50, "MobileNetV2-Aug48-79.2"),
         ]
         for m_path, m_weight, m_name in candidate_models:
             if os.path.exists(m_path):
@@ -603,6 +629,10 @@ def load_ai_resources():
                     print(f"[AI] Loaded fallback model: {MODEL_PATH}")
             except Exception as e:
                 print(f"[AI] Warning loading fallback {MODEL_PATH}: {e}")
+
+        online_m_path = os.path.join("model", "best_model_online.keras")
+        if os.path.exists(online_m_path):
+            hot_reload_online_model(online_m_path)
 
     labels_vi_path = os.path.join("model", "labels_vi.json")
     class_names_path = os.path.join("model", "class_names.json")
@@ -968,6 +998,23 @@ async def nhan_dien_cay(
 
     conn.commit()
     conn.close()
+
+    # Active Data Supplementation: tự động ghi nhận mẫu tin cậy cao cho các loài ưu tiên thiếu dữ liệu / < 60%
+    if not is_unknown_species and top1_prob >= 0.80:
+        try:
+            is_prio, _ = online_learning.is_priority_species(
+                ma_loai_cay=top1_ma_loai, original_label=top1_en
+            )
+            if is_prio:
+                online_learning.record_online_sample(
+                    image_path=filepath,
+                    ma_loai_cay=top1_ma_loai,
+                    original_label=top1_en,
+                    reward=1,
+                    is_priority=True,
+                )
+        except Exception as ol_err:
+            print(f"[OnlineLearning] Notice recording scan sample: {ol_err}")
 
     return {
         "loai_du_doan": "Lớp khác (Chưa có trong kho dữ liệu)" if is_unknown_species else top1_vi,
@@ -3575,6 +3622,423 @@ def delete_user_address_by_query(
     current_user: Dict[str, Any] = Depends(get_current_user),
 ):
     return delete_user_address_by_path(user_id=user_id, ma_dia_chi=ma_dia_chi, current_user=current_user)
+
+# =====================================================================
+# 4B. OFFLINE REINFORCEMENT / ACTIVE LEARNING (PHẢN HỒI & HUẤN LUYỆN LẠI)
+# =====================================================================
+class AiFeedbackRequest(BaseModel):
+    ma_tim_kiem: int
+    la_dung: bool
+    ma_loai_dung: Optional[int] = None
+    ghi_chu: Optional[str] = None
+    ma_nguoi_dung: Optional[int] = None
+
+
+class ReviewAiFeedbackRequest(BaseModel):
+    trang_thai_duyet: str  # "DaDuyet" | "TuChoi" | "ChoDuyet"
+    ma_loai_dung: Optional[int] = None
+    ghi_chu: Optional[str] = None
+
+
+def ensure_feedback_table(conn):
+    """Tạo bảng PHAN_HOI_NHAN_DIEN nếu chưa tồn tại (hỗ trợ cả SQL Server & SQLite)."""
+    cursor = conn.cursor()
+    is_sqlite = hasattr(conn, "_conn")
+    if is_sqlite:
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS PHAN_HOI_NHAN_DIEN (
+                MAPHANHOI INTEGER PRIMARY KEY,
+                MATIMKIEM INTEGER NOT NULL,
+                MANGUOIDUNG INTEGER NULL,
+                MALOAIDUDOAN INTEGER NULL,
+                MALOAIDUNG INTEGER NULL,
+                LADUNG INTEGER NOT NULL,
+                REWARD INTEGER NOT NULL,
+                GHICHU TEXT NULL,
+                TRANGTHAIDUYET TEXT NOT NULL DEFAULT 'ChoDuyet',
+                THOIGIANTAO TEXT DEFAULT (datetime('now', 'localtime')),
+                THOIGIANDUYET TEXT NULL
+            )
+        """)
+    else:
+        cursor.execute("""
+            IF OBJECT_ID('PHAN_HOI_NHAN_DIEN', 'U') IS NULL
+            CREATE TABLE PHAN_HOI_NHAN_DIEN (
+                MAPHANHOI INT PRIMARY KEY,
+                MATIMKIEM INT NOT NULL,
+                MANGUOIDUNG INT NULL,
+                MALOAIDUDOAN INT NULL,
+                MALOAIDUNG INT NULL,
+                LADUNG INT NOT NULL,
+                REWARD INT NOT NULL,
+                GHICHU NVARCHAR(500) NULL,
+                TRANGTHAIDUYET NVARCHAR(50) NOT NULL DEFAULT N'ChoDuyet',
+                THOIGIANTAO DATETIME DEFAULT GETDATE(),
+                THOIGIANDUYET DATETIME NULL
+            )
+        """)
+
+
+@app.post("/api/nhan-dien/phan-hoi")
+def submit_ai_feedback(req: AiFeedbackRequest):
+    conn = get_db_connection()
+    try:
+        ensure_feedback_table(conn)
+        cursor = conn.cursor()
+
+        cursor.execute("SELECT MATIMKIEM, MANGUOIDUNG, HINHANHURL FROM TIM_ANH WHERE MATIMKIEM = ?", (req.ma_tim_kiem,))
+        tim_row = cursor.fetchone()
+        if not tim_row:
+            raise HTTPException(status_code=404, detail="Không tìm thấy lượt nhận diện này!")
+
+        hinh_anh_url = tim_row[2] if len(tim_row) > 2 else None
+
+        cursor.execute(
+            "SELECT TOP 1 MALOAICAY FROM KET_QUA_NHAN_DIEN WHERE MATIMKIEM = ? AND THUHANG = 1",
+            (req.ma_tim_kiem,),
+        )
+        kq_row = cursor.fetchone()
+        ma_loai_du_doan = int(kq_row[0]) if kq_row and kq_row[0] is not None else None
+
+        la_dung_int = 1 if req.la_dung else 0
+        reward = 1 if req.la_dung else -1
+        ma_loai_dung = req.ma_loai_dung if req.ma_loai_dung is not None else (ma_loai_du_doan if req.la_dung else None)
+        user_id = req.ma_nguoi_dung if req.ma_nguoi_dung is not None else tim_row[1]
+        ghi_chu = (req.ghi_chu or "").strip()[:500] or None
+
+        cursor.execute("SELECT MAPHANHOI FROM PHAN_HOI_NHAN_DIEN WHERE MATIMKIEM = ?", (req.ma_tim_kiem,))
+        existing = cursor.fetchone()
+        if existing:
+            ma_phan_hoi = int(existing[0])
+            cursor.execute(
+                """
+                UPDATE PHAN_HOI_NHAN_DIEN
+                SET MANGUOIDUNG = ?, MALOAIDUDOAN = ?, MALOAIDUNG = ?, LADUNG = ?, REWARD = ?,
+                    GHICHU = ?, TRANGTHAIDUYET = N'ChoDuyet', THOIGIANTAO = GETDATE(), THOIGIANDUYET = NULL
+                WHERE MAPHANHOI = ?
+                """,
+                (user_id, ma_loai_du_doan, ma_loai_dung, la_dung_int, reward, ghi_chu, ma_phan_hoi),
+            )
+        else:
+            cursor.execute("SELECT ISNULL(MAX(MAPHANHOI), 0) + 1 FROM PHAN_HOI_NHAN_DIEN")
+            ma_phan_hoi = int(cursor.fetchone()[0])
+            cursor.execute(
+                """
+                INSERT INTO PHAN_HOI_NHAN_DIEN
+                    (MAPHANHOI, MATIMKIEM, MANGUOIDUNG, MALOAIDUDOAN, MALOAIDUNG, LADUNG, REWARD, GHICHU, TRANGTHAIDUYET, THOIGIANTAO)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, N'ChoDuyet', GETDATE())
+                """,
+                (ma_phan_hoi, req.ma_tim_kiem, user_id, ma_loai_du_doan, ma_loai_dung, la_dung_int, reward, ghi_chu),
+            )
+
+        conn.commit()
+
+        # Tự động nạp vào online_buffer nếu thuộc nhóm loài ưu tiên thiếu dữ liệu / < 60%
+        online_sample_result = None
+        if ma_loai_dung is not None and hinh_anh_url:
+            try:
+                rel_name = os.path.basename(str(hinh_anh_url).split("?")[0])
+                src_path = os.path.join(UPLOAD_DIR, rel_name)
+                if os.path.exists(src_path):
+                    orig_label = None
+                    for info in class_mapping.values():
+                        if info.get("MaLoaiCay") == int(ma_loai_dung):
+                            orig_label = info.get("original_label")
+                            break
+                    is_prio, _ = online_learning.is_priority_species(
+                        ma_loai_cay=int(ma_loai_dung), original_label=orig_label
+                    )
+                    if is_prio:
+                        online_sample_result = online_learning.record_online_sample(
+                            image_path=src_path,
+                            ma_loai_cay=int(ma_loai_dung),
+                            original_label=orig_label,
+                            reward=reward,
+                            is_priority=True,
+                        )
+            except Exception as ol_err:
+                print(f"[OnlineLearning] Notice recording feedback sample: {ol_err}")
+
+        return {
+            "message": "Đã ghi nhận phản hồi để đưa vào hàng đợi kiểm duyệt huấn luyện lại (Offline)!",
+            "MaPhanHoi": ma_phan_hoi,
+            "MaTimKiem": req.ma_tim_kiem,
+            "LaDung": req.la_dung,
+            "Reward": reward,
+            "TrangThaiDuyet": "ChoDuyet",
+            "OnlineLearning": online_sample_result,
+        }
+    finally:
+        conn.close()
+
+
+@app.get("/api/admin/ai-feedback")
+def get_admin_ai_feedback(_admin: Dict[str, Any] = Depends(require_admin)):
+    conn = get_db_connection()
+    try:
+        ensure_feedback_table(conn)
+        cursor = conn.cursor()
+        cursor.execute("""
+            SELECT TOP 200
+                ph.MAPHANHOI, ph.MATIMKIEM, ph.MANGUOIDUNG, ph.MALOAIDUDOAN, ph.MALOAIDUNG,
+                ph.LADUNG, ph.REWARD, ph.GHICHU, ph.TRANGTHAIDUYET, ph.THOIGIANTAO, ph.THOIGIANDUYET,
+                ta.HINHANHURL, ta.TRANGTHAINHANDIEN,
+                lc_dd.TENTHUONGGOI AS TENLOAIDUDOAN,
+                lc_dung.TENTHUONGGOI AS TENLOAIDUNG,
+                kq.XACSUATCHINHXAC
+            FROM PHAN_HOI_NHAN_DIEN ph
+            LEFT JOIN TIM_ANH ta ON ph.MATIMKIEM = ta.MATIMKIEM
+            LEFT JOIN LOAI_CAY lc_dd ON ph.MALOAIDUDOAN = lc_dd.MALOAICAY
+            LEFT JOIN LOAI_CAY lc_dung ON ph.MALOAIDUNG = lc_dung.MALOAICAY
+            LEFT JOIN KET_QUA_NHAN_DIEN kq ON ph.MATIMKIEM = kq.MATIMKIEM AND kq.THUHANG = 1
+            ORDER BY ph.MAPHANHOI DESC
+        """)
+        cols = [c[0] for c in cursor.description]
+        rows = [normalize_row(cols, r) for r in cursor.fetchall()]
+
+        total = len(rows)
+        cho_duyet = sum(1 for r in rows if r.get("TrangThaiDuyet") == "ChoDuyet")
+        da_duyet = sum(1 for r in rows if r.get("TrangThaiDuyet") == "DaDuyet")
+        tu_choi = sum(1 for r in rows if r.get("TrangThaiDuyet") == "TuChoi")
+        tong_dung = sum(1 for r in rows if int(r.get("LaDung") or 0) == 1)
+        tong_sai = total - tong_dung
+
+        return {
+            "stats": {
+                "total": total,
+                "cho_duyet": cho_duyet,
+                "da_duyet": da_duyet,
+                "tu_choi": tu_choi,
+                "tong_dung": tong_dung,
+                "tong_sai": tong_sai,
+                "ty_le_dung": round((tong_dung / total) * 100, 1) if total > 0 else 0.0,
+            },
+            "items": rows,
+        }
+    finally:
+        conn.close()
+
+
+@app.put("/api/admin/ai-feedback/{ma_phan_hoi}/duyet")
+def review_ai_feedback(
+    ma_phan_hoi: int,
+    req: ReviewAiFeedbackRequest,
+    _admin: Dict[str, Any] = Depends(require_admin),
+):
+    if req.trang_thai_duyet not in ("DaDuyet", "TuChoi", "ChoDuyet"):
+        raise HTTPException(status_code=400, detail="Trạng thái duyệt không hợp lệ!")
+
+    conn = get_db_connection()
+    try:
+        ensure_feedback_table(conn)
+        cursor = conn.cursor()
+        cursor.execute(
+            """
+            SELECT ph.MAPHANHOI, ph.MALOAIDUNG, ph.REWARD, ta.HINHANHURL
+            FROM PHAN_HOI_NHAN_DIEN ph
+            LEFT JOIN TIM_ANH ta ON ph.MATIMKIEM = ta.MATIMKIEM
+            WHERE ph.MAPHANHOI = ?
+            """,
+            (ma_phan_hoi,),
+        )
+        row = cursor.fetchone()
+        if not row:
+            raise HTTPException(status_code=404, detail="Không tìm thấy phản hồi!")
+
+        final_species_id = req.ma_loai_dung if req.ma_loai_dung is not None else row[1]
+        feedback_reward = int(row[2]) if len(row) > 2 and row[2] is not None else 1
+        feedback_img_url = row[3] if len(row) > 3 else None
+        if req.trang_thai_duyet == "DaDuyet" and final_species_id is None:
+            raise HTTPException(
+                status_code=400,
+                detail="Cần chọn loài cây đúng (MaLoaiDung) trước khi duyệt đưa vào tập huấn luyện!",
+            )
+
+        cursor.execute(
+            """
+            UPDATE PHAN_HOI_NHAN_DIEN
+            SET TRANGTHAIDUYET = ?,
+                MALOAIDUNG = COALESCE(?, MALOAIDUNG),
+                GHICHU = COALESCE(?, GHICHU),
+                THOIGIANDUYET = GETDATE()
+            WHERE MAPHANHOI = ?
+            """,
+            (req.trang_thai_duyet, final_species_id, req.ghi_chu, ma_phan_hoi),
+        )
+        conn.commit()
+
+        online_sample_result = None
+        if req.trang_thai_duyet == "DaDuyet" and final_species_id is not None and feedback_img_url:
+            try:
+                rel_name = os.path.basename(str(feedback_img_url).split("?")[0])
+                src_path = os.path.join(UPLOAD_DIR, rel_name)
+                if os.path.exists(src_path):
+                    orig_label = None
+                    for info in class_mapping.values():
+                        if info.get("MaLoaiCay") == int(final_species_id):
+                            orig_label = info.get("original_label")
+                            break
+                    is_prio, _ = online_learning.is_priority_species(
+                        ma_loai_cay=int(final_species_id), original_label=orig_label
+                    )
+                    online_sample_result = online_learning.record_online_sample(
+                        image_path=src_path,
+                        ma_loai_cay=int(final_species_id),
+                        original_label=orig_label,
+                        reward=feedback_reward,
+                        is_priority=is_prio,
+                    )
+            except Exception as ol_err:
+                print(f"[OnlineLearning] Notice recording approved sample: {ol_err}")
+
+        return {
+            "message": "Đã cập nhật trạng thái duyệt phản hồi!",
+            "MaPhanHoi": ma_phan_hoi,
+            "TrangThaiDuyet": req.trang_thai_duyet,
+            "MaLoaiDung": final_species_id,
+            "OnlineLearning": online_sample_result,
+        }
+    finally:
+        conn.close()
+
+
+@app.post("/api/admin/ai-feedback/export-dataset")
+def export_approved_feedback_dataset(_admin: Dict[str, Any] = Depends(require_admin)):
+    """Xuất các ảnh đã được Admin duyệt sang thư mục dataset_pipeline/feedback_retrain để huấn luyện Offline."""
+    conn = get_db_connection()
+    try:
+        ensure_feedback_table(conn)
+        cursor = conn.cursor()
+        cursor.execute("""
+            SELECT ph.MAPHANHOI, ph.MATIMKIEM, ph.MALOAIDUDOAN, ph.MALOAIDUNG, ph.REWARD, ta.HINHANHURL
+            FROM PHAN_HOI_NHAN_DIEN ph
+            JOIN TIM_ANH ta ON ph.MATIMKIEM = ta.MATIMKIEM
+            WHERE ph.TRANGTHAIDUYET = N'DaDuyet' AND ph.MALOAIDUNG IS NOT NULL
+        """)
+        rows = cursor.fetchall()
+    finally:
+        conn.close()
+
+    ma_to_label = {}
+    for info in class_mapping.values():
+        ma_id = info.get("MaLoaiCay")
+        orig = info.get("original_label")
+        if ma_id is not None and orig:
+            ma_to_label[int(ma_id)] = orig
+
+    export_root = os.path.join(os.path.dirname(os.path.abspath(__file__)), "dataset_pipeline", "feedback_retrain")
+    os.makedirs(export_root, exist_ok=True)
+
+    exported = []
+    skipped = 0
+    for ma_ph, ma_tk, ma_dd, ma_dung, reward, img_url in rows:
+        if not img_url:
+            skipped += 1
+            continue
+        rel_name = os.path.basename(str(img_url).split("?")[0])
+        src_path = os.path.join(UPLOAD_DIR, rel_name)
+        if not os.path.exists(src_path):
+            skipped += 1
+            continue
+
+        folder_label = ma_to_label.get(int(ma_dung), f"class_{int(ma_dung)}")
+        safe_folder = "".join(c if c.isalnum() or c in (" ", "-", "_") else "_" for c in folder_label).strip()
+        dst_dir = os.path.join(export_root, safe_folder)
+        os.makedirs(dst_dir, exist_ok=True)
+        dst_path = os.path.join(dst_dir, f"fb_{ma_ph}_{rel_name}")
+        shutil.copy2(src_path, dst_path)
+        exported.append({
+            "ma_phan_hoi": int(ma_ph),
+            "ma_tim_kiem": int(ma_tk),
+            "ma_loai_du_doan": int(ma_dd) if ma_dd is not None else None,
+            "ma_loai_dung": int(ma_dung),
+            "label": safe_folder,
+            "reward": int(reward),
+            "file_path": dst_path,
+        })
+
+    manifest_path = os.path.join(export_root, "manifest.json")
+    with open(manifest_path, "w", encoding="utf-8") as mf:
+        json.dump(
+            {
+                "exported_at": datetime.now().isoformat(),
+                "exported_count": len(exported),
+                "skipped_count": skipped,
+                "items": exported,
+            },
+            mf,
+            ensure_ascii=False,
+            indent=2,
+        )
+
+    return {
+        "message": f"Đã xuất {len(exported)} ảnh chuẩn sang tập huấn luyện Offline!",
+        "exported_count": len(exported),
+        "skipped_count": skipped,
+        "export_dir": export_root,
+        "manifest_path": manifest_path,
+    }
+
+
+# =====================================================================
+# 4C. ONLINE REINFORCEMENT / ACTIVE DATA SUPPLEMENTATION & INCREMENTAL LEARNING
+# =====================================================================
+class OnlineLearningTriggerRequest(BaseModel):
+    epochs: int = 3
+    batch_size: int = 8
+    lr: float = 1e-5
+    replay_per_class: int = 2
+    force_save: bool = False
+
+
+@app.get("/api/admin/online-learning/status")
+def get_admin_online_learning_status(_admin: Dict[str, Any] = Depends(require_admin)):
+    """Trả về danh sách loài ưu tiên thiếu dữ liệu / < 60%, số mẫu online_buffer và kết quả đợt học Online gần nhất."""
+    return online_learning.get_online_learning_status()
+
+
+@app.post("/api/admin/online-learning/trigger")
+def trigger_admin_online_learning(
+    req: Optional[OnlineLearningTriggerRequest] = None,
+    _admin: Dict[str, Any] = Depends(require_admin),
+):
+    """Kích hoạt học tăng cường Online trong luồng nền (không chặn FastAPI inference) và hot-reload model nếu đạt Quality Gate."""
+    status_now = online_learning.get_online_learning_status()
+    if status_now.get("is_running"):
+        return {
+            "started": False,
+            "message": "Một phiên học tăng cường Online đang chạy ở nền. Vui lòng chờ hoàn tất!",
+            "status": status_now,
+        }
+
+    params = req or OnlineLearningTriggerRequest()
+
+    def _bg_worker():
+        online_learning.run_online_incremental_update(
+            epochs=params.epochs,
+            batch_size=params.batch_size,
+            lr=params.lr,
+            replay_per_class=params.replay_per_class,
+            force_save=params.force_save,
+            on_model_saved=hot_reload_online_model,
+        )
+
+    worker = threading.Thread(target=_bg_worker, name="online-learning-worker", daemon=True)
+    worker.start()
+
+    return {
+        "started": True,
+        "message": "Đã kích hoạt Học Tăng Cường Online ở luồng nền (lr=1e-5, Quality-Gated). Inference vẫn hoạt động bình thường!",
+        "params": {
+            "epochs": params.epochs,
+            "batch_size": params.batch_size,
+            "lr": params.lr,
+            "replay_per_class": params.replay_per_class,
+            "force_save": params.force_save,
+        },
+        "status": online_learning.get_online_learning_status(),
+    }
+
 
 # =====================================================================
 # 5. TẢI TRỰC TIẾP ANDROID APK & PHỤC VỤ GIAO DIỆN WEB TRÊN CÙNG TUNNEL

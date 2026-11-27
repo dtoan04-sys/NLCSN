@@ -1,0 +1,28 @@
+[
+  {
+    "Mo_Hinh": "mobilenet_v2",
+    "Thoi_Gian_Train_Phut": 57.29,
+    "So_Anh_Test": 2534,
+    "Top1_Acc_%": 79.16,
+    "Top3_Acc_%": 90.77,
+    "Weighted_Precision_%": 80.42,
+    "Weighted_Recall_%": 79.16,
+    "Weighted_F1_%": 79.28,
+    "Macro_F1_%": 78.02,
+    "So_Loai_F1_Duoi_60": 11,
+    "So_Loai_Recall_Duoi_60": 12
+  },
+  {
+    "Mo_Hinh": "efficientnet_b0",
+    "Thoi_Gian_Train_Phut": 93.86,
+    "So_Anh_Test": 2534,
+    "Top1_Acc_%": 81.69,
+    "Top3_Acc_%": 92.78,
+    "Weighted_Precision_%": 81.88,
+    "Weighted_Recall_%": 81.69,
+    "Weighted_F1_%": 81.57,
+    "Macro_F1_%": 80.25,
+    "So_Loai_F1_Duoi_60": 5,
+    "So_Loai_Recall_Duoi_60": 6
+  }
+]
