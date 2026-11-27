@@ -82,6 +82,23 @@ class SecurityAndOrdersTests(unittest.TestCase):
         conn.close()
         self.assertIsNone(saved_uid)
 
+    def test_two_consecutive_guest_orders_succeed(self):
+        """Ensure multiple guest orders (MANGUOIDUNG=NULL, MAGIOHANG=NULL) do not conflict."""
+        order_ids = []
+        for idx in range(2):
+            res = self.client.post(
+                "/api/don-hang",
+                json={
+                    "DiaChiNhanHang": f"Guest Order #{idx + 1}",
+                    "SdtNhanHang": "0901234567",
+                    "PhuongThucThanhToan": "COD",
+                    "Items": [{"MaSanPham": 1, "SoLuongMua": 1}],
+                },
+            )
+            self.assertEqual(res.status_code, 200, res.text)
+            order_ids.append(res.json()["MaDonHang"])
+        self.assertEqual(len(set(order_ids)), 2)
+
     def test_order_rollback_preserves_stock_on_failure(self):
         conn = self.main.get_db_connection()
         stock_before = conn.cursor().execute(

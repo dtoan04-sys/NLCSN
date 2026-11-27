@@ -691,17 +691,38 @@ def load_ai_resources():
     try:
         conn = get_db_connection()
         cur = conn.cursor()
-        # Đảm bảo trên SQL Server cho phép khách vãng lai quét ảnh & đặt hàng (NULL)
+        # Migration tường minh trên SQL Server (không nuốt lỗi):
+        # 1) Cho phép NULL ở TIM_ANH.MANGUOIDUNG, DON_HANG.MANGUOIDUNG, DON_HANG.MAGIOHANG (khách vãng lai)
+        # 2) Chuyển UQ_TAOTU trên DON_HANG(MAGIOHANG) từ UNIQUE constraint sang Filtered Unique Index (WHERE MAGIOHANG IS NOT NULL)
         if not hasattr(conn, "_conn"):
-            for alter_sql in (
-                "ALTER TABLE TIM_ANH ALTER COLUMN MANGUOIDUNG INT NULL",
-                "ALTER TABLE DON_HANG ALTER COLUMN MANGUOIDUNG INT NULL",
-                "ALTER TABLE DON_HANG ALTER COLUMN MAGIOHANG INT NULL",
-            ):
-                try:
-                    cur.execute(alter_sql)
-                except Exception:
-                    pass
+            try:
+                cur.execute("""
+                    IF EXISTS (SELECT 1 FROM sys.key_constraints WHERE name = 'UQ_TAOTU' AND parent_object_id = OBJECT_ID('dbo.DON_HANG'))
+                        ALTER TABLE dbo.DON_HANG DROP CONSTRAINT UQ_TAOTU;
+                """)
+                for tbl_name, col_name in (
+                    ("TIM_ANH", "MANGUOIDUNG"),
+                    ("DON_HANG", "MANGUOIDUNG"),
+                    ("DON_HANG", "MAGIOHANG"),
+                ):
+                    cur.execute(
+                        """
+                        SELECT is_nullable FROM sys.columns
+                        WHERE object_id = OBJECT_ID(?) AND name = ?
+                        """,
+                        (f"dbo.{tbl_name}", col_name),
+                    )
+                    col_row = cur.fetchone()
+                    if col_row and int(col_row[0]) == 0:
+                        cur.execute(f"ALTER TABLE dbo.{tbl_name} ALTER COLUMN {col_name} INT NULL")
+                cur.execute("""
+                    IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'UQ_TAOTU' AND object_id = OBJECT_ID('dbo.DON_HANG'))
+                        CREATE UNIQUE NONCLUSTERED INDEX UQ_TAOTU ON dbo.DON_HANG (MAGIOHANG) WHERE MAGIOHANG IS NOT NULL;
+                """)
+                conn.commit()
+            except Exception as mig_err:
+                print(f"[DB][ERROR] Lỗi đồng bộ schema SQL Server (guest NULL / UQ_TAOTU filtered index): {mig_err}")
+                raise
         cur.execute("SELECT 1 FROM DANH_MUC WHERE MADANHMUC = 51")
         if not cur.fetchone():
             cur.execute(
