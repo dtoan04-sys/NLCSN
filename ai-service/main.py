@@ -626,9 +626,9 @@ def load_ai_resources():
     ensure_db_schema()
     ensemble_models = []
     if os.getenv("SKIP_AI_LOAD", "0") != "1" and tf is not None:
+        # Triển khai chính thức mô hình MobileNetV2-TuSo0-Seed999 (kèm tùy chọn hot-reload best_model_online.keras)
         candidate_models = [
-            (os.path.join("model", "mobilenetv2_tu_so_0_seed_999.keras"), 0.50, "MobileNetV2-TuSo0-Seed999-80.5"),
-            (os.path.join("model", "best_mobilenet_v2_aug48.keras"), 0.50, "MobileNetV2-Aug48-79.2"),
+            (os.path.join("model", "mobilenetv2_tu_so_0_seed_999.keras"), 1.0, "MobileNetV2-TuSo0-Seed999-80.5"),
         ]
         for m_path, m_weight, m_name in candidate_models:
             if os.path.exists(m_path):
@@ -862,7 +862,7 @@ async def nhan_dien_cay(
     with Image.open(filepath) as raw_img:
         tta_batch = extract_multi_scale_tta_batch(raw_img, input_shape=input_shape)
 
-    # Suy luận kết hợp đa mô hình (Soft-Voting Ensemble: MobileNetV2 + EfficientNetB0) + Multi-Crop TTA
+    # Suy luận mô hình MobileNetV2-TuSo0-Seed999 (kèm Online-Incremental-Model nếu có) + 8-Crop Multi-Scale TTA
     if ensemble_models:
         combined_probs = np.zeros(90, dtype=np.float32)
         total_w = 0.0
@@ -1098,7 +1098,7 @@ async def nhan_dien_cay(
 # =====================================================================
 # 2B. NHẬN DIỆN ĐA CÂY TRÊN 1 KHUNG HÌNH (MULTI-PLANT DETECTION & NMS)
 # Tách vùng đa tín hiệu: Signal A (YOLOv8n) + Signal B (OpenCV HSV/LAB Foliage)
-# + Signal C (Fallback multi-scale windows khi <2 vùng lá), sau đó suy luận Ensemble 4 model
+# + Signal C (Fallback multi-scale windows khi <2 vùng lá), sau đó suy luận MobileNetV2-TuSo0-Seed999
 # =====================================================================
 def _calc_box_iou(b1, b2) -> float:
     x1 = max(b1[0], b2[0])
@@ -1147,7 +1147,7 @@ def propose_plant_regions(orig_im: Image.Image) -> List[Dict[str, Any]]:
     - Signal A: YOLOv8n (COCO 58=potted plant, 75=vase mở rộng lên trên, hoặc box có mật độ lá cao)
     - Signal B: Phân đoạn vùng lá OpenCV (HSV + LAB cho lá xanh, lá đốm vàng, lá đỏ/tím) + hình thái học + contours
     - Signal C: Cửa sổ đa tỷ lệ dự phòng (chỉ kích hoạt khi Signal A + B < 2 vùng tách biệt)
-    Trả về danh sách ứng viên đã khử trùng lặp IoU trước khi chạy Ensemble 4 model.
+    Trả về danh sách ứng viên đã khử trùng lặp IoU trước khi chạy phân loại MobileNetV2-TuSo0-Seed999.
     """
     w, h = orig_im.size
     img_area = max(1, w * h)
@@ -1311,7 +1311,7 @@ def propose_plant_regions(orig_im: Image.Image) -> List[Dict[str, Any]]:
 
 def classify_multi_plant_regions(orig_im: Image.Image, max_plants: int = 6) -> List[Dict[str, Any]]:
     """
-    Chạy pipeline tách vùng đa tín hiệu + Ensemble 4 model ([0, 255], RGB, BILINEAR)
+    Chạy pipeline tách vùng đa tín hiệu + MobileNetV2-TuSo0-Seed999 ([0, 255], RGB, BILINEAR)
     + PRIOR_CALIB + lọc confidence/entropy + Smart NMS/gộp loài trùng lặp.
     """
     if model is None and not ensemble_models:

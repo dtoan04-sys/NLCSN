@@ -3,7 +3,7 @@ import { Capacitor } from '@capacitor/core';
 // URL Cloud Backend (Hugging Face Spaces / Render / Cloudflare Tunnel) & IP LAN mặc định
 export const ENV_API_URL = (import.meta.env.VITE_API_BASE_URL || '').trim().replace(/\/+$/, '');
 export const DEFAULT_TUNNEL_URL = ENV_API_URL || 'https://cooler-terminals-vote-players.trycloudflare.com';
-export const DEFAULT_LAN_URL = 'http://192.168.1.23:8000';
+export const DEFAULT_LAN_URL = 'http://192.168.1.21:8000';
 export const CUSTOM_API_STORAGE_KEY = 'florabotanic_custom_api_url';
 export const TOKEN_STORAGE_KEY = 'florabotanic_token';
 export const DEFAULT_API_TIMEOUT_MS = 15000;
@@ -63,7 +63,12 @@ export function getApiBaseUrl() {
     }
   }
 
-  // Trên Android APK hoặc HTTPS từ xa (Vercel / Netlify): ưu tiên DEFAULT_TUNNEL_URL
+  // Trên Android APK: ưu tiên DEFAULT_LAN_URL (khớp với thứ tự ưu tiên trong getApiCandidates)
+  if (Capacitor.isNativePlatform()) {
+    return DEFAULT_LAN_URL;
+  }
+
+  // Trên HTTPS từ xa (Vercel / Netlify): ưu tiên DEFAULT_TUNNEL_URL
   return DEFAULT_TUNNEL_URL;
 }
 
@@ -94,9 +99,10 @@ export function getApiCandidates() {
   if (ENV_API_URL) pushUnique(ENV_API_URL);
 
   if (Capacitor.isNativePlatform()) {
-    // Trên Android APK: Custom URL hợp lệ -> DEFAULT_TUNNEL_URL (4G/Wi-Fi) -> DEFAULT_LAN_URL
-    pushUnique(DEFAULT_TUNNEL_URL);
+    // Trên Android APK: Custom URL hợp lệ -> ENV_API_URL -> DEFAULT_LAN_URL (Wi-Fi LAN) -> 127.0.0.1:8000 (USB adb reverse) -> DEFAULT_TUNNEL_URL
     pushUnique(DEFAULT_LAN_URL);
+    pushUnique('http://127.0.0.1:8000');
+    pushUnique(DEFAULT_TUNNEL_URL);
   } else {
     pushUnique(getApiBaseUrl());
     pushUnique(DEFAULT_TUNNEL_URL);

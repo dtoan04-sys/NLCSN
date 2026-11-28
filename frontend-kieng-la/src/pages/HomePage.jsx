@@ -464,12 +464,12 @@ export default function HomePage({ onOpenAiModal, onSelectProduct, onNavigate, o
             <div className="card p-6 rounded-3xl bg-white/10 border border-white/15 backdrop-blur-md max-w-md w-full space-y-4 shadow-2xl">
               <div className="flex items-center justify-between pb-3 border-b border-white/15 text-xs text-emerald-100/80">
                 <span className="font-bold text-emerald-300">Kiến trúc AI Vision</span>
-                <span>v2.0-TuSo0 (EffNetB0 + 3×MNV2)</span>
+                <span>MobileNetV2 (v2.0-TuSo0)</span>
               </div>
               <div className="space-y-3 text-xs">
                 <div className="p-3.5 rounded-2xl bg-white/10 flex items-center justify-between">
-                  <span>Thời gian inference trung bình:</span>
-                  <span className="font-mono text-emerald-300 font-bold">&lt; 0.5s / ảnh</span>
+                  <span>Cơ chế suy luận triển khai:</span>
+                  <span className="font-mono text-emerald-300 font-bold">8-Crop ROI TTA + OOD #91</span>
                 </div>
                 <div className="p-3.5 rounded-2xl bg-white/10 flex items-center justify-between">
                   <span>Định dạng đầu vào:</span>

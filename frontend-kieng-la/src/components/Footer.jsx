@@ -103,7 +103,7 @@ export default function Footer({ onNavigate }) {
           </h3>
 
           <p className="text-xs text-slate-600 leading-relaxed">
-            Hệ sinh thái AI v2.0-TuSo0 (EfficientNetB0 + 3-Seed MobileNetV2) nhận dạng nhanh 90 loài kiểng lá, kết nối CSDL SQL Server và tư vấn cây trồng vượng khí, tài lộc theo mệnh gia chủ.
+            Hệ sinh thái AI MobileNetV2 (v2.0-TuSo0) nhận dạng nhanh 90 loài kiểng lá, kết nối CSDL quan hệ chuẩn hóa và tư vấn cây trồng vượng khí, tài lộc theo mệnh gia chủ.
           </p>
 
           <div className="pt-2">

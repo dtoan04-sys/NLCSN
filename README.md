@@ -14,16 +14,16 @@ Phát triển ứng dụng Web & Mobile tích hợp Trí tuệ Nhân tạo Deep 
   - **MobileNetV2** (9,62 MB, fine-tune 50 tầng cuối): đạt **80,86 ± 0,31%** Top-1 qua 3 seeds (`99`, `123`, `999`) trên bộ 25.225 ảnh độc bản.
   - **EfficientNetB0**: đạt **84,47% Top-1** và **93,89% Top-3** tại seed `999`.
 - **Suy luận & Ngưỡng OOD:**
-  - **8-Crop Foliage ROI TTA** (Entropy-weighted TTA Pooling, `temp = 0,15`) kết hợp Soft-Voting Ensemble và bộ lọc **OOD Lớp #91**: `conf < 0,55` hoặc `entropy > 0,55`.
-  - *Cấu hình chuẩn trong báo cáo:* Ensemble 4 model (`0,34 EfficientNetB0 + 3×0,22 MobileNetV2`).
-  - *Cấu hình kiểm thử hiện tại trong `ai-service/main.py`:* chạy **thuần `MobileNetV2`** (`0,50 mobilenetv2_tu_so_0_seed_999.keras + 0,50 best_mobilenet_v2_aug48.keras`) để đồng nhất 100% kiến trúc `MobileNetV2` của đề tài (các trọng số `EfficientNetB0` vẫn được giữ sẵn trong `ai-service/model/`).
+  - **8-Crop Foliage ROI TTA** (Entropy-weighted TTA Pooling, `temp = 0,15`) kết hợp bộ lọc **OOD Lớp #91**: `conf < 0,55` hoặc `entropy > 0,55` và phát hiện đa cây **YOLOv8n**.
+  - *Cấu hình thực nghiệm chuẩn trong báo cáo:* Soft-Voting Ensemble 4 model (`0,34 EfficientNetB0 + 3×0,22 MobileNetV2`).
+  - *Cấu hình triển khai thực tế trong `ai-service/main.py`:* chạy **thuần `MobileNetV2-TuSo0-Seed999`** (`mobilenetv2_tu_so_0_seed_999.keras`, `9,62 MB`, huấn luyện trên bộ **25.225 ảnh độc bản** gồm 212 ảnh chụp thực tế) + **8-Crop Foliage ROI TTA** + **OOD Lớp #91** + **YOLOv8n** + **Online Active Learning hot-reload** (`best_model_online.keras`). Các trọng số thực nghiệm khác (`EfficientNetB0`, `aug48`) được lưu trong `ai-service/model/` phục vụ đối chứng ngoại tuyến, không trộn 50/50 vào luồng suy luận trực tiếp trên điện thoại.
 
 ---
 
 ## 🔄 1B. Tiến độ Nâng cấp & Mở rộng theo Góp ý GVHD *(Cập nhật trên GitHub — nằm ngoài bảng số liệu gốc trong báo cáo Word)*
 
-1. **Tăng cường dữ liệu chuyên sâu cho 48 loài yếu (`< 60%` / thiếu ảnh) — `aug48`:**
-   - Notebook Colab: `06_Mo_Hinh_AI_Colab_Moi/Train_Tang_Cuong_48_Loai_Duoi_60_Colab.ipynb`.
+1. **Thực nghiệm ngoại tuyến — Tăng cường dữ liệu chuyên sâu cho 48 loài yếu (`< 60%` / thiếu ảnh) (`aug48`):**
+   - Notebook Colab: `06_Mo_Hinh_AI_Colab_Moi/Train_Tang_Cuong_48_Loai_Duoi_60_Colab.ipynb` *(đánh giá ngoại tuyến, không trộn 50/50 vào runtime điện thoại do tập nền 25.013 ảnh web chưa có ảnh chụp điện thoại thực tế)*.
    - Tăng cường **chỉ trên tập Train** (`19.919 → 26.057` ảnh, sinh thêm `+6.138` biến thể xoay `±25°`, lật ngang, giảm/tăng sáng `0,70x–1,30x`, tương phản, zoom nhẹ); giữ nguyên 100% tập **Val (`2.492`)** và **Test độc lập (`2.534`)** chống rò rỉ dữ liệu.
    - **Kết quả đo thực tế trên Colab GPU T4:**
      - `MobileNetV2 (aug48)`: **79,16% Top-1**, **90,77% Top-3**, **79,28% Weighted F1** (**+8,77%** so với bản Mẫu `70,39%`; giảm số loài F1 `< 60%` từ `28 → 11`; `40/48` loài ưu tiên tăng F1 trung bình `+11,88%`).
@@ -43,7 +43,7 @@ Phát triển ứng dụng Web & Mobile tích hợp Trí tuệ Nhân tạo Deep 
 2. **Backend (Xử lý nghiệp vụ):**
    - FastAPI (Python), RESTful API, Uvicorn ASGI Server.
 3. **AI Vision Service (Dịch vụ trí tuệ nhân tạo):**
-   - Suy luận **Soft-Voting Ensemble** (hiện đang chạy thuần `MobileNetV2`: `TuSo0-Seed999 + Aug48`, có sẵn trọng số `EfficientNetB0` để bật lại Ensemble 4 model) kết hợp **8-Crop Foliage ROI TTA**, bộ lọc **OOD Lớp #91** (`conf < 0,55` hoặc `entropy > 0,55`) và module **Online/Offline Active Learning** (`online_learning.py`).
+   - Suy luận trực tiếp bằng **thuần `MobileNetV2-TuSo0-Seed999`** (`mobilenetv2_tu_so_0_seed_999.keras`, `9,62 MB`, huấn luyện trên bộ 25.225 ảnh; lưu sẵn trọng số thực nghiệm `EfficientNetB0` / `aug48` ngoại tuyến) kết hợp **8-Crop Foliage ROI TTA**, bộ lọc **OOD Lớp #91** (`conf < 0,55` hoặc `entropy > 0,55`), phát hiện đa cây **YOLOv8n** và module **Online/Offline Active Learning hot-reload** (`online_learning.py`, `best_model_online.keras`).
 4. **Cơ sở dữ liệu:**
    - **15 bảng chuẩn PDM** (thiết kế PowerDesigner / SQL Server) và **16 bảng ở tầng SQLite runtime** (bổ sung bảng lịch sử/phiên và 5 thuộc tính mở rộng của `LOAI_CAY` ở tầng ứng dụng).
 
@@ -61,7 +61,7 @@ NLCNHTTT/
 ├── 06_Mo_Hinh_AI_Colab_Moi/      # Notebooks huấn luyện Google Colab GPU T4
 ├── MAU BAO CAO/                  # Tài liệu báo cáo Niên luận (.docx)
 ├── frontend-kieng-la/            # Mã nguồn Web React & Capacitor Android
-├── ai-service/                   # Mã nguồn Backend FastAPI, SQLite runtime (16 bảng) & Trọng số Ensemble (MobileNetV2 + EfficientNetB0)
+├── ai-service/                   # Mã nguồn Backend FastAPI, SQLite runtime (16 bảng) & Trọng số AI (triển khai MobileNetV2-TuSo0-Seed999 + trọng số thực nghiệm)
 ├── CHAY_TOAN_BO_DO_AN.bat        # Script khởi động tự động toàn bộ hệ thống
 └── README.md
 ```

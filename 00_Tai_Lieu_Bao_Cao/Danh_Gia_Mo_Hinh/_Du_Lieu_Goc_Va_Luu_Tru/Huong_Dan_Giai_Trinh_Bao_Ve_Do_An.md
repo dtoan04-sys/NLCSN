@@ -1,137 +1,107 @@
-# 🎓 CẨM NANG BẢO VỆ ĐỒ ÁN & GIẢI TRÌNH PHẢN BIỆN TRƯỚC GIẢNG VIÊN HƯỚNG DẪN
+# 🎓 CẨM NANG BẢO VỆ ĐỒ ÁN & GIẢI TRÌNH PHẢN BIỆN TRƯỚC HỘI ĐỒNG / GVHD
+
 **Đề tài:** Hệ thống nhận diện 90 loài cây lá cảnh phục vụ quản lý & chăm sóc (*FloraBotanic AI*)  
-**Mô hình:** MobileNetV2 (Transfer Learning từ ImageNet + Fine-Tuning)  
-**Phân chia tập dữ liệu:** 80% Train (19.080 ảnh) – 10% Validation (2.365 ảnh) – 10% Test (2.405 ảnh)  
-**Hạt giống ngẫu nhiên (Random Seed):** `seed=42` (Đối chứng: `seed=99`, `seed=100`)
+**Dữ liệu chuẩn hóa (Phiên bản 2 — "Từ số 0"):** **25.225 ảnh độc bản** (sau lọc trùng 2 tầng MD5 + Perceptual Hash trước khi chia Stratified Split `80% Train – 10% Val – 10% Test`; tại Seed 999: `20.141 Train / 2.483 Val / 2.601 Test`).  
+**Hạt giống ngẫu nhiên (Random Seeds):** `99`, `123`, `999`.  
+**Đồng bộ 100% với:** Báo cáo chính thức `Bao_Cao_Nien_Luan_Nganh_HTTT_FloraBotanic_AI.docx` và phiên bản mã nguồn triển khai `ai-service/main.py`.
 
 ---
 
-## 📌 TÓM TẮT 4 VẤN ĐỀ TRỌNG TÂM CÔ ĐÃ HỎI & CÁCH TRẢ LỜI NGẮN GỌN
+## ⚠️ NGUYÊN TẮC VÀNG KHI TRÌNH BÀY: PHÂN BIỆT RÕ MÔ HÌNH THỰC NGHIỆM VS MÔ HÌNH TRIỂN KHAI
 
-| Vấn đề Cô hỏi | Câu trả lời cốt lõi của Bạn (Nói ngắn gọn, tự tin) |
+> **Đây là câu hỏi dễ bị hội đồng xoáy sâu nhất — tuyệt đối KHÔNG nói nhập nhằng!**
+
+| Tiêu chí | 🧪 Mô hình Thực nghiệm (Trong báo cáo đánh giá & ngoại tuyến) | 🚀 Mô hình Triển khai thực tế (Hệ thống Demo `ai-service/main.py`) |
+|---|---|---|
+| **Kiến trúc** | So sánh 4 kiến trúc (`Custom CNN`, `MobileNetV2`, `ResNet50`, `EfficientNetB0`) + cấu hình **Soft-Voting Ensemble 4 mô hình** (`0,34 EfficientNetB0 + 3×0,22 MobileNetV2`) + thực nghiệm ngoại tuyến tăng cường 48 loài yếu (`aug48`) | **Thuần `MobileNetV2-TuSo0-Seed999` (1 mô hình lõi)**: `mobilenetv2_tu_so_0_seed_999.keras` (`9,62 MB`, huấn luyện trên bộ **25.225 ảnh độc bản** gồm 212 ảnh chụp thực tế) + **8-Crop Foliage ROI TTA** + **OOD Lớp #91** + **YOLOv8n** + tự động **Online Active Learning hot-reload** (`best_model_online.keras`) khi Admin kích hoạt |
+| **Vai trò** | Đánh giá học thuật, đối chứng đa kiến trúc, đo chuẩn hiệu năng CPU (`5,13 giây` lõi / `5,78 giây` HTTP), kiểm chứng OOD Lớp #91 (`75,19%`) và đánh giá ngoại tuyến phương án `aug48` | Phục vụ suy luận trực tiếp trên Web/APK demo với độ trễ CPU nhanh, dung lượng gọn nhẹ (`9,62 MB`), đạt độ tin cậy cao (`93–97%`) trên ảnh chụp điện thoại thực tế nhờ bộ dữ liệu 25.225 ảnh có kèm ảnh thật |
+| **Cách nói chuẩn với hội đồng** | *"Trong thực nghiệm, em đánh giá 4 kiến trúc, cấu hình tổ hợp 4 mô hình Ensemble để phân tích đánh đổi độ chính xác–độ trễ và chạy thực nghiệm ngoại tuyến `aug48` trên Colab."* | *"Trên bản demo thực tế, em triển khai thuần mô hình lõi `MobileNetV2-TuSo0-Seed999` (`9,62 MB`, huấn luyện trên bộ 25.225 ảnh có kèm ảnh chụp thực tế), kết hợp 8-Crop Foliage ROI TTA, bộ lọc OOD Lớp #91, YOLOv8n đa cây và Online Active Learning hot-reload để đạt tốc độ nhanh trên CPU không GPU và ổn định trên ảnh điện thoại thật."* |
+| **Bằng chứng kiểm chứng ngay lúc demo** | Bảng 3.5, Bảng 3.6, Bảng 3.10 trong báo cáo Word & Excel 7 sheet (`aug48`) | Mở trực tiếp endpoint `GET /health` trả về `ensemble_count: 1` và `ensemble_members: ["MobileNetV2-TuSo0-Seed999-80.5"]` |
+
+---
+
+## 📌 1. TÓM TẮT 7 CÂU HỎI TRỌNG TÂM & CÁCH TRẢ LỜI NGẮN GỌN, TỰ TIN
+
+| Câu hỏi Hội đồng / GVHD | Câu trả lời cốt lõi (Khớp 100% báo cáo) |
 |---|---|
-| **1. Lọc trùng ảnh từ 30.000 xuống 23.850 ảnh bằng cách nào? Có bị trùng giữa Train/Val/Test không?** | Dùng thuật toán **Perceptual Hashing (pHash)** dựa trên biến đổi DCT kết hợp **MD5 Hash** với khoảng cách Hamming $\le 2$. **Tuyệt đối KHÔNG bị trùng lặp** giữa Train, Val và Test vì việc lọc trùng được làm **TRƯỚC KHI** phân chia tập dữ liệu bằng *Stratified Split*. |
-| **2. Tại sao tới 90 lớp mà độ chính xác (Accuracy) lại cao thế (73.76% Top-1, 88.11% Top-3)?** | Vì sử dụng **Transfer Learning** từ kiến trúc **MobileNetV2** đã được pre-trained trên tập dữ liệu chuẩn thế giới **ImageNet** (1.4 triệu ảnh, 1.000 lớp), kế thừa các bộ trích xuất đặc trưng hoa lá cực mạnh, kết hợp kỹ thuật **Data Augmentation** và phân bổ lớp cân bằng. Top-1 73.76% là thực tế (vẫn còn ~26% nhầm ở các cây cùng chi/họ). Top-3 88.11% cho thấy đáp án đúng gần như luôn nằm trong top 3 gợi ý. |
-| **3. Seed 42, Seed 100, Seed 99 là gì? Dùng để làm gì?** | Random Seed là hạt giống cố định bộ sinh số ngẫu nhiên (PRNG), dùng để đảm bảo **Tính Tái Lập (Reproducibility)** trong nghiên cứu khoa học. Người khác chạy lại mã nguồn với cùng Seed sẽ ra kết quả hoàn toàn giống nhau. Thực nghiệm trên 3 Seed cho thấy Accuracy dao động cực kỳ ổn định trong khoảng $73.4\% - 74.1\%$ (độ lệch $\Delta < 0.4\%$). |
-| **4. Các cây cụ thể cô chỉ trên màn hình (Violet châu Phi, Sanh bonsai, Tùng la hán, Kim ngân...)?** | Đã có công cụ Web Tra Cứu Từng Cây (Plant Inspector). Chiếu thẳng lên màn hình cho cô thấy từng phép tính: Ví dụ Violet: $28 / 34 = 82.35\%$; Sanh bonsai bị nhầm 9 ảnh sang Si do cùng chi *Ficus*. |
+| **1. Vì sao báo cáo có Ensemble 4 model (`EfficientNetB0 + 3×MNV2`) nhưng demo chạy thuần `MobileNetV2-TuSo0-Seed999`?** | Em phân tách rõ **cấu hình thực nghiệm** và **cấu hình triển khai**. Ensemble 4 model được dùng để đánh giá trần hiệu năng và đo độ trễ CPU (`5,78s`/ảnh đơn cây — hơi nặng trên CPU không GPU). Khi triển khai demo, em chọn **thuần `MobileNetV2-TuSo0-Seed999`** (`mobilenetv2_tu_so_0_seed_999.keras`, `9,62 MB`, huấn luyện trên bộ 25.225 ảnh) kèm **8-Crop Foliage ROI TTA + OOD Lớp #91 + YOLOv8n + Online Active Learning hot-reload** vì nhẹ, nhanh trên CPU và đồng nhất với mô hình lõi của đề tài. |
+| **2. Vì sao demo trực tiếp dùng thuần `MobileNetV2-TuSo0-Seed999` mà không trộn 50/50 với bản `aug48`?** | Có 2 lý do kỹ thuật rõ ràng: **(1) Domain gap trên ảnh điện thoại thật:** bản `aug48` là thực nghiệm ngoại tuyến huấn luyện trên tập nền **25.013 ảnh web** (không có 212 ảnh chụp thực tế từ điện thoại). Khi thử trộn 50/50 trên ảnh điện thoại thật, `aug48` kéo độ tin cậy xuống dưới ngưỡng OOD `0,55` gây từ chối nhầm sang Lớp #91; trong khi `MobileNetV2-TuSo0-Seed999` (học trên 25.225 ảnh có kèm ảnh thật) tự đạt **`93–97%`** trên ảnh điện thoại thật. **(2) Tốc độ CPU:** chạy 1 mô hình `9,62 MB` nhanh hơn hẳn chạy song song 2 mô hình trên CPU không GPU, còn các loài yếu ngoài thực tế được cải thiện tiếp qua vòng lặp **Online Active Learning** (`best_model_online.keras`). |
+| **3. Lọc trùng ảnh từ >30.000 xuống 25.225 ảnh bằng cách nào? Có rò rỉ dữ liệu (Data Leakage) không?** | Dùng quy trình lọc trùng **2 tầng**: (1) **MD5 Hash** loại ảnh trùng byte tuyệt đối; (2) **Perceptual Hash (pHash / DCT 64-bit)** loại ảnh gần trùng (khác nén/độ phân giải). Toàn bộ quá trình lọc trùng chạy **TRƯỚC KHI** chia `Stratified Split 80% – 10% – 10%`, đảm bảo tập Test (`2.601` ảnh tại Seed 999) không trùng lặp ảnh với Train/Val. |
+| **4. Kết quả chính xác nhất của các mô hình trên 25.225 ảnh là bao nhiêu?** | Trên tập Test độc lập (`2.601` ảnh), **MobileNetV2** đạt **80,86 ± 0,31% Top-1** và **91,22 ± 0,58% Top-3** qua 3 seeds (`99`, `123`, `999`), tăng **+9,84 điểm %** so với Phiên bản 1 (`71,02 ± 0,81%`). Đối chứng tại Seed 999: **EfficientNetB0** đạt **84,47% Top-1 / 93,89% Top-3**, **ResNet50** đạt **83,35%**, vượt xa **Custom CNN** huấn luyện từ đầu (**60,32%**). |
+| **5. Tại sao chạy 3 Random Seeds (`99`, `123`, `999`)? Ý nghĩa của `± 0,31%`?** | Cố định PRNG (`random`, `numpy`, `tensorflow`, `train_test_split`) để đảm bảo **tính tái lập (Reproducibility)** và chứng minh kết quả không phụ thuộc "may mắn" của một lần chia dữ liệu. Độ lệch chuẩn `± 0,31%` (`81,04%`, `81,04%`, `80,51%`) cho thấy MobileNetV2 hội tụ rất ổn định. |
+| **6. Giải pháp nâng cấp cho các loài yếu (`aug48`) và Active Learning hoạt động ra sao?** | Theo góp ý GVHD, em thực hiện **thực nghiệm ngoại tuyến tăng cường có mục tiêu cho 48 loài yếu — chỉ trên tập Train** (`19.919 → 26.057`, `+6.138` ảnh xoay `±25°`, lật, đổi sáng `0,70x–1,30x`, tương phản, zoom), giữ nguyên 100% Val (`2.492`) & Test (`2.534`). Kết quả thật trên Colab T4: **MobileNetV2 (`aug48`) đạt 79,16% Top-1 / 90,77% Top-3 / 79,28% Weighted F1** (**+8,77%** so với bản Mẫu `70,39%`, giảm loài F1 `< 60%` từ `28 → 11`, `40/48` loài ưu tiên tăng TB `+11,88%`); **EfficientNetB0 (`aug48`) đạt 81,69% Top-1 / 92,78% Top-3** (**+4,82%**, giảm loài `< 60%` từ `28 → 5`). Kèm vòng lặp **Human-in-the-Loop** trên hệ thống thật: người dùng chấm Đúng/Sai → Admin duyệt nhãn → huấn luyện tăng cường có Replay Buffer & Quality Gate và hot-reload `best_model_online.keras`. |
+| **7. Cơ chế phát hiện cây ngoài danh mục (Lớp #91 / OOD) đo được bao nhiêu? Hạn chế là gì?** | Áp dụng đồng thời ngưỡng `P_max < 0,55` hoặc Entropy chuẩn hóa `H_norm > 0,55` (`temp = 0,15`). Trên **129 ảnh độc lập thuộc 8 loài lạ**, hệ thống từ chối đúng **97/129 = 75,19%** (Hoa chiều tím `95,83%`, Hoa giấy `88,89%`, Trầu bà vàng `88,24%`). Tuy nhiên vẫn còn hạn chế ở các loài lá gần họ như **Cây lược vàng (`12/26 = 46,15%`)**, Cây nguyệt quế (`0/5`), Trầu tỉ phú Burle Marx (`0/3`), và tỷ lệ từ chối nhầm `FRR = 5/212 (2,36%)` hiện mới đo in-sample trên tập cục bộ. |
 
 ---
 
-## 1. GIẢI TRÌNH CHI TIẾT: PHƯƠNG PHÁP LỌC TRÙNG DỮ LIỆU (DEDUPLICATION)
+## 📊 2. BẢNG SỐ LIỆU CHUẨN (ĐỐI CHIẾU TRỰC TIẾP VỚI BÁO CÁO WORD)
 
-### 🗣️ Kịch bản bạn nói với Cô:
-> *"Dạ thưa cô, khi cào dữ liệu từ internet về với quy mô hơn 30.000 bức ảnh, có rất nhiều ảnh trùng lặp hoặc gần như giống hệt nhau (chỉ khác một chút về độ phân giải hoặc nén ảnh). Nếu để nguyên, mô hình sẽ bị học vẹt và đặc biệt là có nguy cơ rò rỉ dữ liệu (Data Leakage) giữa các tập.*  
-> *Vì vậy, em đã xây dựng quy trình tiền xử lý ảnh tự động gồm 2 tầng lọc:*  
-> *1. **MD5 Hashing:** Loại bỏ ngay lập tức các ảnh trùng lặp từng byte (Exact duplicates).*  
-> *2. **Perceptual Hashing (pHash):** Dùng biến đổi cosin rời rạc (DCT) để trích xuất vân tay cấu trúc tần số thấp của bức ảnh thành chuỗi mã nhị phân 64-bit. Những cặp ảnh có khoảng cách Hamming (Hamming distance) $\le 2$ được xác định là ảnh gần trùng (Near-duplicates) và loại bỏ.*  
-> *Sau khi lọc sạch, bộ dữ liệu còn lại **23.850 ảnh chất lượng cao**.*  
-> *Em xin khẳng định với cô: **Quy trình lọc trùng này được thực hiện trước khi chia tập dữ liệu**. Sau khi có 23.850 ảnh hoàn toàn độc lập, em mới dùng thuật toán Stratified Split chia ra 80% Train (19.080 ảnh), 10% Val (2.365 ảnh) và 10% Test (2.405 ảnh). Do đó, **tập Test hoàn toàn độc lập và không có bất kỳ ảnh nào bị trùng với tập Train hay Val**."*
+### 2.1. Độ ổn định MobileNetV2 qua 3 Random Seeds (Phiên bản 2 — 25.225 ảnh độc bản)
 
----
+| Chỉ số | Seed 99 (`2.600` test) | Seed 123 (`2.600` test) | Seed 999 (`2.601` test) | **Mean ± Std** |
+|---|---:|---:|---:|---:|
+| **Top-1 Accuracy (Weighted Recall)** | 81,04% | 81,04% | 80,51% | **80,86 ± 0,31%** |
+| **Top-3 Accuracy** | 91,77% | 90,62% | 91,27% | **91,22 ± 0,58%** |
+| **Weighted Precision** | 82,19% | 82,29% | 81,56% | **82,01 ± 0,40%** |
+| **Weighted F1-Score** | 80,84% | 80,98% | 80,36% | **80,73 ± 0,33%** |
+| **Macro F1-Score** | 80,02% | 80,40% | 79,60% | **80,01 ± 0,40%** |
+| **Ảnh thực tế độc lập (Real test)** | 23/23 (100,00%) | 22/23 (95,65%) | 21/24 (87,50%) | **94,38 ± 6,35%** |
 
-## 2. GIẢI TRÌNH VỀ ĐỘ ĐO & ĐỘ CHÍNH XÁC (TẠI SAO 90 LỚP MÀ ĐẠT 73.76% TOP-1 VÀ 88.11% TOP-3?)
+*(So với Phiên bản 1 — 3 seeds 99/123/999 đạt Top-1 `71,02 ± 0,81%`, Phiên bản 2 cải thiện **+9,84 điểm %**).*
 
-### 🗣️ Kịch bản bạn nói với Cô:
-> *"Dạ thưa cô, lúc đầu em cũng thắc mắc vì bài toán 90 lớp là phân loại ảnh dạng mịn (Fine-grained Classification) rất khó, thường nếu train từ đầu (from scratch) thì chỉ đạt khoảng 30 - 40%. Nhưng mô hình của em đạt **73.76% Top-1** và **88.11% Top-3** là hoàn toàn có cơ sở khoa học bởi 4 nguyên nhân:*
->
-> 1. ***Ứng dụng Transfer Learning từ MobileNetV2 (Pre-trained trên ImageNet 1.4 triệu ảnh):*** *Mô hình đã có sẵn các bộ lọc phát hiện cạnh, góc, đường gân, kết cấu bề mặt lá và hình dạng cánh hoa được học từ hàng triệu bức ảnh đa dạng của thế giới. Khi huấn luyện sang 90 loài cây, mô hình chỉ cần tinh chỉnh (Fine-tune) các tầng đặc trưng bậc cao và phân loại.*
-> 2. ***Kỹ thuật Data Augmentation (Tăng cường dữ liệu):*** *Áp dụng xoay ngẫu nhiên ($\pm 15^\circ$), lật ngang đối xứng (Horizontal Flip), điều chỉnh độ sáng ($\pm 10\%$) và co giãn tỷ lệ (Zoom $0.9 - 1.1$) trong quá trình huấn luyện giúp mô hình học được đặc trưng bất biến, không phụ thuộc vào góc chụp hay ánh sáng.*
-> 3. ***Tập dữ liệu phân chia Stratified đồng đều:*** *Mỗi lớp trong tập test đều có từ 7 đến 55 ảnh (trung bình ~26 ảnh/lớp), không có lớp nào bị bỏ trống, đảm bảo chỉ số phản ánh trung thực toàn cục.*
-> 4. ***Bản chất chỉ số Top-1 và Top-3:***  
->    - *Top-1 Accuracy = **73.76%**: Mô hình đoán đúng vị trí số 1 là 73.76% (vẫn còn 26.24% bị nhầm do các loài quá giống nhau như Sanh - Si, Kim ngân - Ngũ gia bì).*  
->    - *Top-3 Accuracy = **88.11%**: Trong 3 gợi ý có xác suất cao nhất của mô hình, đáp án đúng xuất hiện tới 88.11%. Trong ứng dụng thực tế trên điện thoại, hệ thống sẽ hiển thị Top 3 gợi ý kèm % tin cậy, giúp người dùng luôn nhận diện chính xác cây của mình."*
+### 2.2. Đối chứng 4 kiến trúc tại Seed 999 (Tập Test độc lập `2.601` ảnh — Bảng 3.5)
 
----
+| Mô hình | Tham số | Dung lượng | Độ trễ GPU T4 | Top-1 | Top-3 | Weighted F1 | Đúng / Sai (`2.601`) |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| **Custom CNN (Scratch)** | 1,88M | 7,26 MB | 0,98 ms | 60,32% | 78,74% | 59,45% | — |
+| **MobileNetV2 (Lõi)** | **2,37M** | **9,62 MB** | **5,04 ms** | **80,51%** | **91,27%** | **80,36%** | **2.094 / 507** |
+| **ResNet50 (Transfer)** | 23,77M | 91,31 MB | 7,10 ms | 83,35% | 93,19% | 83,21% | — |
+| **EfficientNetB0 (Bổ trợ)** | **4,16M** | **16,69 MB** | **9,61 ms** | **84,47%** | **93,89%** | **84,36%** | **2.197 / 404** |
 
-## 3. GIẢI TRÌNH VỀ RANDOM SEED & TÍNH TÁI LẬP (REPRODUCIBILITY)
+> **Lý do chọn MobileNetV2 làm mô hình lõi:** Đạt trên 80% Top-1 và 91% Top-3 nhưng chỉ nặng `9,62 MB` (nhỏ hơn `9,5×` so với ResNet50 và nhanh hơn `~1,79×` trên CPU 1-Crop so với EfficientNetB0: `605,62 ms` vs `1.081,38 ms`).
 
-### 🗣️ Kịch bản bạn nói với Cô:
-> *"Dạ thưa cô, em rất cảm ơn cô đã nhắc nhở về tính tái lập thực nghiệm. Em đã thiết lập cố định Random Seed trên toàn bộ quy trình:*
->
-> 1. ***Random Seed để làm gì?***  
->    *Random Seed là hạt giống cố định trạng thái của bộ sinh số ngẫu nhiên giả (PRNG) trong Python (`random.seed`), NumPy (`np.random.seed`), TensorFlow (`tf.random.set_seed`) và scikit-learn (`train_test_split(..., random_state=seed)`).*  
->    *Mục đích cốt lõi: Đảm bảo **Tính Tái Lập (Reproducibility)** theo chuẩn nghiên cứu khoa học. Bất kỳ nhà nghiên cứu nào khác tải mã nguồn này về và chạy lại với cùng Random Seed sẽ thu được tập Train/Val/Test giống hệt nhau 100% và kết quả huấn luyện tương đồng hoàn toàn.*
->
-> 2. ***Bảng kết quả đối chứng 3 lần chạy với 3 Random Seed (Seed 42, Seed 99, Seed 100):***
+### 2.3. Nâng cấp thực nghiệm ngoại tuyến theo góp ý GVHD: Tăng cường 48 loài yếu (`aug48` — Colab T4)
 
-| Cấu hình Thí nghiệm | Random Seed | Top-1 Accuracy | Top-3 Accuracy | Weighted Recall | Weighted Precision | Weighted F1-Score | Đánh giá tính ổn định |
-|---|:---:|:---:|:---:|:---:|:---:|:---:|---|
-| **Mô hình chính thức (Baseline)** | `seed = 42` | **73.76%** | **88.11%** | **73.76%** | **76.70%** | **73.76%** | Mô hình triển khai trên App/Web |
-| **Thí nghiệm đối chứng 1** | `seed = 99` | **73.43%** | **87.90%** | **73.43%** | **76.25%** | **73.51%** | Sai lệch cực nhỏ ($\Delta = -0.33\%$) |
-| **Thí nghiệm đối chứng 2** | `seed = 100` | **74.12%** | **88.35%** | **74.12%** | **77.08%** | **74.05%** | Sai lệch cực nhỏ ($\Delta = +0.36\%$) |
+*(Số liệu thực nghiệm ngoại tuyến nằm ở phần mở rộng GitHub / Excel tổng hợp 7 sheet `Bao_Cao_Tong_Hop_Mo_Hinh_AI_Day_Du.xlsx`, ngoài bảng gốc báo cáo Word; không trộn 50/50 vào luồng suy luận trực tiếp trên điện thoại)*
 
-> ***Kết luận:*** *Kết quả kiểm thử trên cả 3 seed đều hội tụ quanh mốc **73.4% - 74.1%** (độ lệch chuẩn $\sigma \approx 0.35\%$). Điều này chứng minh hiệu quả của mô hình là hoàn toàn ổn định và tin cậy, không phụ thuộc vào độ 'may mắn' của một lần chia tập cụ thể."*
+| Mô hình | Top-1 Trước | Top-1 Sau | Δ Top-1 | Top-3 Sau | Weighted F1 | Loài F1 < 60% | 48 loài ưu tiên |
+|---|---:|---:|---:|---:|---:|---:|---|
+| **MobileNetV2 (`aug48`)** | 70,39% | **79,16%** | **+8,77%** | **90,77%** | **79,28%** | 28 → **11** | **40/48** tăng F1 (TB **+11,88%**) |
+| **EfficientNetB0 (`aug48`)** | 76,87% | **81,69%** | **+4,82%** | **92,78%** | **81,57%** | 28 → **5** | **42/48** tăng F1 (TB **+14,57%**) |
 
 ---
 
-## 4. BẢNG TRA CỨU & ĐỐI CHIẾU CÁC CÂY CÔ ĐÃ CHỈ ĐIỂM TRÊN LỚP
+## 🔍 3. TRA CỨU NHANH CÁC LOÀI ĐỈNH & LOÀI DỄ NHẦM (BẢNG 3.7 — SEED 999, 2.601 ẢNH)
 
-Dưới đây là số liệu chính xác 100% từ tập Test để bạn trả lời ngay khi cô hỏi:
+### Nhóm nhận diện rất cao (Top F1)
+- **Hoa thủy tiên (*Daffodils*):** `41/43` (Recall `95,35%`, F1 **`96,47%`**) — hoa vàng hình kèn rất đặc trưng.
+- **Trường sinh dưa hấu (*Peperomia argyreia*):** `23/24` (F1 **`95,83%`**) — vân sọc bạc trên lá tròn ổn định.
+- **Trạng nguyên (*Poinsettia*):** `33/33` (Recall **`100,00%`**, F1 **`95,65%`**) — lá bắc đỏ nổi bật.
+- **Linh lan (*Lily of the valley*):** `41/42` (Recall `97,62%`, F1 **`95,35%`**).
 
-### 🌸 1. Violet châu Phi (Lớp 00 - African Violet)
-- **Tổng số ảnh Test ($Support$):** **34 ảnh**
-- **Số ảnh đoán ĐÚNG ($TP$):** **28 ảnh**
-- **Số ảnh đoán SAI ($FN$):** **6 ảnh**
-- **Công thức tính tỷ lệ nhận đúng (Recall / Độ phủ):**
-  $$\text{Recall} = \frac{TP}{\text{Tổng số ảnh thực tế}} = \frac{28}{34} = 82.35\%$$
-  *(Đúng y hệt phép tính cô trò chuyện: 28 chia 34 = 82.35%)*
-- **Khi mô hình đoán là Violet châu Phi (Precision):**
-  $$\text{Precision} = \frac{TP}{TP + FP} = \frac{28}{28 + 5} = \frac{28}{33} = 84.85\%$$
-- **Bị đoán nhầm sang cây nào?** Nhầm sang Hoa lan (3 ảnh), Đỗ quyên (1 ảnh), Cây sống đời (1 ảnh), Khác (1 ảnh).
-- **Lý do:** Hoa của Violet châu Phi có màu tím đậm và cánh tròn, góc chụp cận cảnh bông hoa dễ bị nhầm với Hoa lan tím hoặc Đỗ quyên.
-
----
-
-### 🌳 2. Sanh bonsai (Lớp 36) & Si (Lớp 83)
-- **Tổng số ảnh Test:** **25 ảnh**
-- **Số ảnh đoán ĐÚNG:** **7 ảnh** (28.0%)
-- **Số ảnh đoán SAI:** **18 ảnh** (72.0%)
-- **CÂY BỊ ĐOÁN NHẦM NHIỀU NHẤT:** **Bị đoán nhầm thành Si (Lớp 83) tới 9 ảnh!** (Chiếm 36.0% tổng số ảnh).
-- **Giải trình khoa học với cô:**
-  > *"Thưa cô, cây Sanh (*Ficus benjamina*) và cây Si (*Ficus microcarpa*) là hai loài cùng chi *Ficus* (chi Dâu tằm/Đa đề). Cả hai đều có lá hình bầu dục nhọn đầu, phiến lá bóng dày, và thân có rễ phụ buông rủ tạo thế bonsai. Ngay cả nghệ nhân cây cảnh nếu chỉ nhìn qua 1 bức ảnh chụp tán lá cũng rất dễ nhầm lẫn giữa Sanh và Si, do đó việc mô hình bị nhầm 9 ảnh giữa 2 loài này là hoàn toàn phù hợp với thực tế sinh học."*
+### Nhóm dễ nhầm lẫn hình thái (Loài yếu — cần biết cách giải thích sinh học)
+1. **Cây sống đời (*Kalanchoe*):** `7/16` đúng (Recall `43,75%`, F1 `51,85%`) — nhầm sang Ngọc bích (`2`), Hoa lan (`2`), Xương rồng Giáng sinh (`2`) do cùng đặc trưng lá mọng nước/cụm hoa nhỏ. *(Trên EfficientNetB0 cải thiện mạnh `+0,3847` F1).*
+2. **Sanh bonsai (*Ficus microcarpa*):** `13/26` đúng (Recall `50,00%`, F1 `57,78%`) — nhầm nhiều nhất sang **Si (`5`)**, Ngũ gia bì (`3`), Đa búp đỏ (`1`) vì Sanh và Si cùng chi *Ficus*, lá bầu dục bóng và thân bonsai rất giống nhau.
+3. **Ngân hậu Siam (*Aglaonema*):** `16/28` đúng (Recall `57,14%`, F1 `58,18%`) — nhầm sang Vạn niên thanh *Dieffenbachia* (`3`), Bàng Singapore (`2`) do họa tiết đốm lá tương đồng.
+4. **Trầu bà lỗ (*Monstera adansonii*):** `15/29` đúng (Recall `51,72%`, F1 `58,82%`) — nhầm nhiều nhất sang **Trầu bà đuôi rồng (`7`)** và *Monstera deliciosa* (`2`) do cùng họ Ráy (*Araceae*) có lá xẻ/đục lỗ.
+5. **Trúc đốm (*Dracaena surculosa*):** `12/23` đúng (Recall `52,17%`, F1 `61,54%`) — nhầm sang Ngũ gia bì (`3`), Si (`2`), Vạn niên thanh (`2`).
 
 ---
 
-### 🌲 3. Tùng la hán (Lớp 85)
-- **Tổng số ảnh Test:** **25 ảnh**
-- **Số ảnh đoán ĐÚNG:** **14 ảnh** (Đúng y như cô nhìn thấy trên bảng: đúng 14 ảnh!)
-- **Tỷ lệ đúng (Recall):** $14 / 25 = 56.0\%$
-- **Số ảnh đoán SAI:** **11 ảnh** (Bị nhầm sang Lẻ bạn 4 ảnh, Trúc mây 2 ảnh).
-- **Giải trình khoa học với cô:**
-  > *"Dạ thưa cô, cây Tùng la hán nhận đúng 14 trên 25 ảnh (56%). Lý do nhầm sang Lẻ bạn và Trúc mây là do các bức ảnh chụp cận cảnh phiến lá kim thuôn dài và mọc so le, kết cấu vân lá tương đồng."*
+## 🛡️ 4. TRẢ LỜI TRUNG THỰC VỀ HẠN CHẾ (KHỚP MỤC 4.1.2 BÁO CÁO)
+
+Khi hội đồng hỏi *"Đề tài em còn hạn chế gì?"*, trả lời thẳng thắn 4 điểm đúng như Mục 4.1.2 (tạo ấn tượng khoa học rất tốt):
+1. **Đa seed & đánh giá Ensemble trên tập Test chuẩn:** Do giới hạn GPU Colab và mỗi seed chia tập Train/Val/Test khác nhau, `EfficientNetB0`, `ResNet50` và `Custom CNN` mới chạy 1 lần tại Seed 999; tổ hợp Ensemble 3 seed MobileNetV2 chưa đánh giá sạch trên cùng một tập Test độc lập 2.601 ảnh (phép kiểm định McNemar và FRR `2,36%` hiện đo in-sample trên 212 ảnh cục bộ).
+2. **Phát hiện OOD Lớp #91 còn bỏ sót loài gần họ:** Tỷ lệ từ chối 129 ảnh lạ đạt `75,19%`, nhưng các loài có tán lá gần họ như **Cây lược vàng (`12/26 = 46,15%`)**, Cây nguyệt quế (`0/5`) hay Trầu tỉ phú Burle Marx (`0/3`) vẫn dễ rơi vào lớp gần nhất; ngưỡng `0,55` chọn theo khảo sát thực nghiệm chứ chưa tối ưu trên tập validation OOD tách biệt.
+3. **Độ trễ trên CPU & thiết bị thật:** Trên CPU không GPU, 4-Model Ensemble + 8-Crop TTA tốn `5,78 giây` (đơn cây) và `9,21 giây` (đa cây); đề tài chưa đo định lượng độ trễ end-to-end trực tiếp trên nhiều mẫu điện thoại Android (đó cũng là lý do bản demo triển khai thuần 1 mô hình lõi `MobileNetV2-TuSo0-Seed999` gọn nhẹ hơn trên CPU).
+4. **CSDL & triển khai thực tế:** Thiết kế chuẩn hóa **15 bảng PDM** (PowerDesigner / SQL Server 2017 — 1.438 dòng mẫu, 17 khóa ngoại) và runtime SQLite **16 bảng** (bổ sung bảng/cột cho Active Learning và vận hành ứng dụng); các phương thức thanh toán trực tuyến (MoMo/VietQR) ở mức mô phỏng quy trình nghiệp vụ.
 
 ---
 
-### 🌴 4. Kim ngân (Lớp 49) & Trúc mây (Lớp 31)
-- **Kim ngân (Lớp 49):** Tổng 36 ảnh test, đúng 26 ảnh (72.2%), sai 10 ảnh. Bị đoán nhầm thành **Ngũ gia bì (Lớp 71) 4 ảnh**.
-  - *Giải thích:* Cả Kim ngân và Ngũ gia bì đều có dạng **lá kép chân vịt** (5 lá chét mọc tỏa tròn từ cuống), mạng nơ-ron nhận diện dạng lá tỏa tròn nên dễ nhầm giữa 2 cây này.
-- **Trúc mây (Lớp 31):** Tổng 22 ảnh test, đúng 15 ảnh (68.18%), sai 7 ảnh (nhầm sang Kim ngân 2 ảnh, Thiên điểu trắng 2 ảnh).
+## 🎬 5. KỊCH BẢN DEMO AN TOÀN (5 PHÚT)
 
----
-
-### 🌵 5. Cây Yucca (Lớp 86)
-- **Tổng số ảnh Test:** Đúng **7 ảnh** (Lớp có ít ảnh test nhất mà cô thắc mắc: *"Nãy cô thấy có 7 không?"*).
-- **Đoán đúng:** **6 ảnh** (Tỷ lệ đúng Recall đạt **85.71%**), sai 1 ảnh sang Thiên điểu.
-- **Giải thích:** Do bộ dữ liệu thu thập của loài Yucca có số lượng ảnh gốc ít hơn các loài khác, sau khi chia 10% tập test thì thu được 7 ảnh. Tuy số lượng ít nhưng tỷ lệ nhận diện đúng đạt tới 85.7%.
-
----
-
-## 5. HƯỚNG DẪN MỞ VÀ TRÌNH DIỄN WEB APP MA TRẬN CHO CÔ XEM
-
-Bạn có thể mở trực tiếp file Web App tương tác đã được cập nhật hoàn chỉnh:
-- **Đường dẫn file:** [`E:\CNTT\NLCNHTTT\00_Tai_Lieu_Bao_Cao\Danh_Gia_Mo_Hinh\Ma_Tran_Nham_Lan_Tuong_Tac.html`](file:///E:/CNTT/NLCNHTTT/00_Tai_Lieu_Bao_Cao/Danh_Gia_Mo_Hinh/Ma_Tran_Nham_Lan_Tuong_Tac.html)
-
-### Các thao tác bạn biểu diễn trước mặt Cô:
-1. **Bấm vào nút chọn nhanh:** Bấm vào nút `Violet châu Phi (28/34 = 82.4%)` hoặc `Sanh bonsai (7/25, nhầm 9 sang Si)`.
-2. **Chỉ cho cô xem Thẻ Dashboard lớn:**
-   - Hộp số: Tổng số ảnh (34), Đoán đúng (28), Đoán sai (6).
-   - Thanh tỷ lệ màu xanh - đỏ.
-   - Bảng liệt kê: Cây bị đoán nhầm sang cây nào, bao nhiêu ảnh.
-   - Hộp công thức toán học có sẵn phép tính $28 / 34 = 82.35\%$.
-3. **Chuyển sang Tab 2 (Ma trận 90x90):**
-   - Di chuột qua các ô: Tooltip nổi lên giải thích rõ ô đó là đúng hay sai giữa 2 cây nào.
-   - Bấm vào tên bất kỳ cây nào ở cột đầu tiên $\rightarrow$ Tự động nhảy về Tab 1 để soi chi tiết cây đó!
-4. **Chuyển sang Tab 3 (Top cặp cây nhầm lẫn):**
-   - Chỉ cho cô thấy bảng 25 cặp cây nhầm nhiều nhất kèm cột "Nguyên nhân sinh học / hình thái".
-5. **Chuyển sang Tab 4 (Cẩm nang Q&A):**
-   - Bảng đối chứng 3 Random Seed (42, 99, 100) và lời giải trình phương pháp lọc trùng pHash.
+1. **Mở terminal / `/health` trước (30 giây):** Chứng minh Backend FastAPI sống và minh bạch mô hình triển khai (`ensemble_count: 1`, `MobileNetV2-TuSo0-Seed999-80.5`, hỗ trợ hot-reload `best_model_online.keras`).
+2. **Demo nhận diện Đơn cây (1 phút):** Chụp/tải ảnh 1 loài rõ nét (ví dụ Trạng nguyên, Trường sinh dưa hấu hoặc Lưỡi hổ) → cho thấy Top-3 gợi ý, độ tin cậy, đặc điểm nhận dạng & link mua chậu cây tương ứng.
+3. **Demo nhận diện Ngoài danh mục — Lớp #91 (45 giây):** Tải ảnh 1 vật/loài lạ (ví dụ Hoa chiều tím / vật dụng ngoài cây) → hệ thống cảnh báo ngoài 90 loài.
+4. **Demo Nhận diện Đa cây + Active Learning (1 phút 30 giây):** Tách nhiều chậu bằng `YOLOv8n + OpenCV`; nhấn chấm Đúng/Sai trên kết quả → chuyển sang tab **Admin → AI Vision** xem phản hồi vừa ghi nhận.
+5. **Demo Luồng E-Commerce + CSDL (1 phút 15 giây):** Đặt hàng (hỗ trợ cả khách vãng lai & tài khoản đăng nhập có xác thực JWT, kiểm tra tồn kho transaction rollback), quản trị đơn hàng & thống kê doanh thu.

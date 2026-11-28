@@ -701,7 +701,7 @@ export default function AiVisionModal({ onClose, onSelectProduct, onFilterBySpec
                       <div className="flex justify-between items-end">
                         <div className="w-7 h-7 border-b-3 border-l-3 border-emerald-400"></div>
                         <span className="px-2 py-0.5 rounded-full bg-black/70 text-emerald-400 text-[10px] font-mono">
-                          v2.0-TuSo0 • 4-Model 8-TTA • 90 Loài
+                          MobileNetV2 • 8-Crop TTA • 90 Loài
                         </span>
                         <div className="w-7 h-7 border-b-3 border-r-3 border-emerald-400"></div>
                       </div>

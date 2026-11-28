@@ -1374,7 +1374,7 @@ export default function AdminDashboardPage({ onBackToStore, onSelectProduct }) {
                       </div>
                       <span className="text-[11px] font-bold text-purple-700 flex items-center gap-1 mt-1">
                         <span className="material-symbols-outlined text-sm">auto_awesome</span>
-                        Ensemble v2.0-TuSo0 (90 Class)
+                        MobileNetV2 v2.0-TuSo0 (90 Class)
                       </span>
                     </div>
                   </div>
