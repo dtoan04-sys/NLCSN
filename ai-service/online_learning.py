@@ -43,6 +43,10 @@ ONLINE_BUFFER_DIR = DATASET_PIPELINE_DIR / "online_buffer"
 BUFFER_MANIFEST_PATH = ONLINE_BUFFER_DIR / "buffer_manifest.json"
 STATUS_FILE_PATH = ONLINE_BUFFER_DIR / "online_learning_status.json"
 ONLINE_MODEL_PATH = MODEL_DIR / "best_model_online.keras"
+EXPERIMENTAL_FORCE_SAVE_MODEL_PATH = MODEL_DIR / "experimental_online_force_save.keras"
+_DEFAULT_ONLINE_MODEL_PATH = ONLINE_MODEL_PATH
+_DEFAULT_EXPERIMENTAL_FORCE_SAVE_MODEL_PATH = EXPERIMENTAL_FORCE_SAVE_MODEL_PATH
+MIN_UNIQUE_GROUPS_FOR_VAL = 5
 
 PRIORITY_JSON_CANDIDATES = [
     MODEL_DIR / "priority_low_species.json",
@@ -415,7 +419,14 @@ def _load_status_file() -> Dict[str, Any]:
         "val_loss_before": None,
         "val_loss_after": None,
         "quality_gate_passed": None,
+        "saved_by_force": False,
+        "eligible_for_hot_reload": False,
+        "saved": False,
+        "model_saved_production": False,
+        "model_path": None,
+        "production_model_path": None,
         "saved_model_path": None,
+        "experimental_checkpoint_path": None,
         "trained_raw_count": 0,
     }
 
@@ -636,6 +647,17 @@ def _find_base_model_path() -> Optional[Path]:
         Path(r"e:\dowload\ai-service\model\mobilenetv2_tu_so_0_seed_999.keras"),
     ]
     return next((p for p in candidates if p.exists()), None)
+
+
+def _resolve_experimental_force_save_path() -> Path:
+    """Resolve isolated checkpoint path for unvalidated/force-saved models (never production)."""
+    if Path(EXPERIMENTAL_FORCE_SAVE_MODEL_PATH) != _DEFAULT_EXPERIMENTAL_FORCE_SAVE_MODEL_PATH:
+        return Path(EXPERIMENTAL_FORCE_SAVE_MODEL_PATH)
+    online_p = Path(ONLINE_MODEL_PATH)
+    suffix = online_p.suffix or ".keras"
+    if online_p.stem == "best_model_online":
+        return online_p.parent / f"experimental_online_force_save{suffix}"
+    return online_p.parent / f"experimental_{online_p.stem}_force_save{suffix}"
 
 
 def _load_image_tensor(path: Path, target_size: Tuple[int, int] = IMG_SIZE) -> np.ndarray:
@@ -885,7 +907,7 @@ def run_online_incremental_update(
 
         # Group-based Train/Validation split by original source image to prevent augmentation leakage
         unique_groups = sorted(set(grp_list))
-        if len(unique_groups) < 5 and not force_save:
+        if len(unique_groups) < MIN_UNIQUE_GROUPS_FOR_VAL and not force_save:
             res = {
                 **prev_status,
                 "status": "skipped",
@@ -893,28 +915,48 @@ def run_online_incremental_update(
                 "finished_at": datetime.now().isoformat(),
                 "samples_used": int(len(x_data)),
                 "unique_source_groups": len(unique_groups),
+                "val_split_skipped": True,
+                "has_independent_val": False,
                 "quality_gate_passed": False,
+                "saved_by_force": False,
+                "eligible_for_hot_reload": False,
+                "saved": False,
+                "model_saved_production": False,
+                "model_path": None,
+                "production_model_path": None,
+                "saved_model_path": None,
+                "experimental_checkpoint_path": None,
                 "message": (
                     f"Chưa đủ ảnh gốc độc lập để tách tập Validation chống rò rỉ dữ liệu "
-                    f"(hiện có {len(unique_groups)} nhóm ảnh gốc, cần tối thiểu 5)."
+                    f"(hiện có {len(unique_groups)} nhóm ảnh gốc, cần tối thiểu {MIN_UNIQUE_GROUPS_FOR_VAL})."
                 ),
             }
             _save_status_file(res)
             return res
 
         rng = np.random.default_rng(42)
-        shuffled_groups = list(unique_groups)
-        rng.shuffle(shuffled_groups)
-        val_group_n = max(1, int(round(len(shuffled_groups) * 0.2)))
-        val_groups = set(shuffled_groups[:val_group_n])
-
-        train_idx = [i for i, g in enumerate(grp_list) if g not in val_groups]
-        val_idx = [i for i, g in enumerate(grp_list) if g in val_groups]
-        has_independent_val = bool(train_idx and val_idx and set(train_idx).isdisjoint(val_idx))
-        if not train_idx:
+        if len(unique_groups) < MIN_UNIQUE_GROUPS_FOR_VAL:
+            # Even with force_save=True, fewer than MIN_UNIQUE_GROUPS_FOR_VAL source groups
+            # cannot form a reliable independent Validation split; quality gate must fail.
             train_idx = list(range(len(x_data)))
             val_idx = []
+            val_split_skipped = True
             has_independent_val = False
+        else:
+            shuffled_groups = list(unique_groups)
+            rng.shuffle(shuffled_groups)
+            val_group_n = max(1, int(round(len(shuffled_groups) * 0.2)))
+            val_groups = set(shuffled_groups[:val_group_n])
+
+            train_idx = [i for i, g in enumerate(grp_list) if g not in val_groups]
+            val_idx = [i for i, g in enumerate(grp_list) if g in val_groups]
+            has_independent_val = bool(train_idx and val_idx and set(train_idx).isdisjoint(val_idx))
+            val_split_skipped = not has_independent_val
+            if not train_idx:
+                train_idx = list(range(len(x_data)))
+                val_idx = []
+                val_split_skipped = True
+                has_independent_val = False
 
         rng.shuffle(train_idx)
         x_train, y_train, w_train = x_data[train_idx], y_data[train_idx], w_data[train_idx]
@@ -969,30 +1011,66 @@ def run_online_incremental_update(
             val_acc_after = None
             quality_gate_passed = False
 
-        saved_by_force = bool(force_save and not quality_gate_passed)
-        should_save = bool(quality_gate_passed or saved_by_force)
+        eligible_for_hot_reload = bool(quality_gate_passed and has_independent_val)
+        saved_by_force = bool(force_save and not eligible_for_hot_reload)
 
-        saved_path_str = None
-        if should_save:
-            MODEL_DIR.mkdir(parents=True, exist_ok=True)
-            model.save(str(ONLINE_MODEL_PATH))
-            saved_path_str = str(ONLINE_MODEL_PATH)
+        model_saved_production = False
+        production_model_path_str: Optional[str] = None
+        experimental_checkpoint_path_str: Optional[str] = None
+
+        if eligible_for_hot_reload:
+            target_prod_path = Path(ONLINE_MODEL_PATH)
+            target_prod_path.parent.mkdir(parents=True, exist_ok=True)
+            model.save(str(target_prod_path))
+            model_saved_production = True
+            production_model_path_str = str(target_prod_path)
             if on_model_saved is not None:
                 try:
-                    on_model_saved(saved_path_str)
+                    on_model_saved(production_model_path_str)
                 except Exception as reload_err:
                     print(f"[OnlineLearning] Warning hot-reloading model: {reload_err}")
+        elif saved_by_force:
+            # Never overwrite production hot-reload model path (best_model_online.keras) or invoke
+            # hot-reload callback when independent Validation is missing or Quality Gate failed.
+            exp_path = _resolve_experimental_force_save_path()
+            exp_path.parent.mkdir(parents=True, exist_ok=True)
+            model.save(str(exp_path))
+            experimental_checkpoint_path_str = str(exp_path)
+
+        if eligible_for_hot_reload:
+            status_val = "completed"
+            msg_val = (
+                f"Đã cập nhật model Online thành công! Val Acc: {val_acc_before*100:.2f}% -> {val_acc_after*100:.2f}%."
+            )
+        elif saved_by_force:
+            status_val = "completed_forced_experimental"
+            if not has_independent_val:
+                msg_val = (
+                    f"Đã chặn hot-reload vào production (best_model_online.keras) vì thiếu tập Validation độc lập "
+                    f"(chỉ có {len(unique_groups)} nhóm ảnh gốc, cần tối thiểu {MIN_UNIQUE_GROUPS_FOR_VAL}). "
+                    f"Checkpoint thực nghiệm được lưu riêng tại {experimental_checkpoint_path_str}."
+                )
+            else:
+                msg_val = (
+                    f"Đã chặn hot-reload vào production (best_model_online.keras) vì không vượt qua Quality Gate "
+                    f"(Val Acc: {val_acc_before*100:.2f}% -> {val_acc_after*100:.2f}%). "
+                    f"Checkpoint thực nghiệm được lưu riêng tại {experimental_checkpoint_path_str}."
+                )
+        else:
+            status_val = "rejected_by_quality_gate"
+            msg_val = (
+                f"Quality Gate từ chối bản cập nhật (Val Acc: {val_acc_before*100:.2f}% -> {val_acc_after*100:.2f}%). Giữ nguyên model hiện tại."
+                if has_independent_val
+                else "Chưa đủ tập Validation độc lập để đánh giá Quality Gate. Đã chặn hot-reload."
+            )
 
         res = {
-            "status": (
-                "completed"
-                if quality_gate_passed
-                else ("completed_forced" if saved_by_force else "rejected_by_quality_gate")
-            ),
+            "status": status_val,
             "started_at": started_at,
             "finished_at": datetime.now().isoformat(),
             "base_model": str(base_model_path.name),
             "samples_used": int(len(x_data)),
+            "unique_source_groups": len(unique_groups),
             "online_buffer_samples": int(len(ol_paths)),
             "priority_samples_used": int(prio_cnt),
             "replay_samples_used": int(len(rp_paths)),
@@ -1002,24 +1080,21 @@ def run_online_incremental_update(
             "val_acc_after": round(val_acc_after * 100.0, 2) if val_acc_after is not None else None,
             "val_loss_before": round(val_loss_before, 4) if val_loss_before is not None else None,
             "val_loss_after": round(val_loss_after, 4) if val_loss_after is not None else None,
+            "val_split_skipped": val_split_skipped,
             "has_independent_val": has_independent_val,
             "quality_gate_passed": quality_gate_passed,
             "saved_by_force": saved_by_force,
-            "saved_model_path": saved_path_str,
-            "trained_raw_count": int(raw_cnt) if should_save else int(prev_status.get("trained_raw_count") or 0),
-            "message": (
-                f"Đã cập nhật model Online thành công! Val Acc: {val_acc_before*100:.2f}% -> {val_acc_after*100:.2f}%."
-                if quality_gate_passed
-                else (
-                    "Đã ép lưu model Online (saved_by_force=True; chưa vượt qua Quality Gate độc lập)."
-                    if saved_by_force
-                    else (
-                        f"Quality Gate từ chối bản cập nhật (Val Acc: {val_acc_before*100:.2f}% -> {val_acc_after*100:.2f}%). Giữ nguyên model hiện tại."
-                        if has_independent_val
-                        else "Chưa đủ tập Validation độc lập để đánh giá Quality Gate."
-                    )
-                )
+            "eligible_for_hot_reload": eligible_for_hot_reload,
+            "saved": model_saved_production,
+            "model_saved_production": model_saved_production,
+            "model_path": production_model_path_str,
+            "production_model_path": production_model_path_str,
+            "saved_model_path": production_model_path_str,
+            "experimental_checkpoint_path": experimental_checkpoint_path_str,
+            "trained_raw_count": (
+                int(raw_cnt) if model_saved_production else int(prev_status.get("trained_raw_count") or 0)
             ),
+            "message": msg_val,
         }
         _save_status_file(res)
         return res
@@ -1030,6 +1105,14 @@ def run_online_incremental_update(
             "started_at": started_at,
             "finished_at": datetime.now().isoformat(),
             "quality_gate_passed": False,
+            "saved_by_force": False,
+            "eligible_for_hot_reload": False,
+            "saved": False,
+            "model_saved_production": False,
+            "model_path": None,
+            "production_model_path": None,
+            "saved_model_path": None,
+            "experimental_checkpoint_path": None,
             "message": f"Lỗi khi chạy học tăng cường Online: {e}",
         }
         _save_status_file(res)
@@ -1103,8 +1186,10 @@ def get_online_learning_status() -> Dict[str, Any]:
         "auto_trigger_threshold": AUTO_TRIGGER_THRESHOLD,
         "ready_for_update": total_buffered_samples > 0 and new_samples_since_last_train >= AUTO_TRIGGER_THRESHOLD,
         "is_running": _IS_TRAINING or last_run.get("status") == "running",
-        "online_model_exists": ONLINE_MODEL_PATH.exists(),
+        "online_model_exists": Path(ONLINE_MODEL_PATH).exists(),
         "online_model_path": str(ONLINE_MODEL_PATH),
+        "experimental_force_save_model_exists": _resolve_experimental_force_save_path().exists(),
+        "experimental_force_save_model_path": str(_resolve_experimental_force_save_path()),
         "buffer_dir": str(ONLINE_BUFFER_DIR),
         "last_run": last_run,
     }

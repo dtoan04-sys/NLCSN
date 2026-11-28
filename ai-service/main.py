@@ -34,7 +34,7 @@ try:
         import tensorflow as tf
 except ImportError:
     tf = None
-from fastapi import FastAPI, UploadFile, File, Form, HTTPException, Depends, Header, Query
+from fastapi import FastAPI, UploadFile, File, Form, HTTPException, Depends, Header, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import Response
 from fastapi.staticfiles import StaticFiles
@@ -48,10 +48,31 @@ if hasattr(sys.stdout, 'reconfigure'):
 
 app = FastAPI(title="Hệ Thống Thương Mại & Nhận Diện Cây Kiểng Lá AI")
 
+DEFAULT_CORS_ORIGINS = [
+    "http://localhost:5173",
+    "http://127.0.0.1:5173",
+    "http://localhost:4173",
+    "http://localhost:3000",
+    "capacitor://localhost",
+    "http://localhost",
+    "https://localhost",
+]
+_env_cors = os.getenv("CORS_ALLOW_ORIGINS", "").strip()
+CORS_ALLOW_ORIGINS = (
+    [o.strip() for o in _env_cors.split(",") if o.strip()]
+    if _env_cors
+    else DEFAULT_CORS_ORIGINS
+)
+CORS_ALLOW_ORIGIN_REGEX = (
+    r"^https://([a-z0-9-]+\.)?(vercel\.app|trycloudflare\.com)$"
+    r"|^http://192\.168\.\d+\.\d+(:\d+)?$"
+)
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
+    allow_origins=CORS_ALLOW_ORIGINS,
+    allow_origin_regex=CORS_ALLOW_ORIGIN_REGEX,
+    allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -65,27 +86,104 @@ if os.path.exists(PLANTS_DIR):
     app.mount("/plants", StaticFiles(directory=PLANTS_DIR), name="plants")
 
 ALLOWED_UPLOAD_EXTENSIONS = {".jpg", ".jpeg", ".png", ".webp", ".gif"}
+ALLOWED_IMAGE_FORMATS = {"JPEG", "PNG", "WEBP", "GIF"}
 MAX_UPLOAD_SIZE_BYTES = 10 * 1024 * 1024  # 10 MB
+MAX_IMAGE_PIXELS = 25_000_000
+MAX_IMAGE_DIM = 10_000
+UPLOAD_CHUNK_SIZE = 65536  # 64 KB
 
-@app.post("/api/upload")
-async def upload_image_file(file: UploadFile = File(...)):
+_AI_RATE_LOCK = threading.Lock()
+_AI_RATE_BUCKETS: Dict[str, List[float]] = defaultdict(list)
+
+
+def enforce_ai_rate_limit(request: Request) -> None:
+    """Giới hạn tần suất gọi API nhận diện AI theo IP (cửa sổ trượt 60s, cấu hình qua AI_RATE_LIMIT_PER_MIN)."""
+    try:
+        limit = int(os.getenv("AI_RATE_LIMIT_PER_MIN", "30"))
+    except ValueError:
+        limit = 30
+    if limit <= 0:
+        return
+
+    forwarded = request.headers.get("x-forwarded-for", "")
+    if forwarded:
+        client_ip = forwarded.split(",")[0].strip()
+    elif request.client and request.client.host:
+        client_ip = request.client.host
+    else:
+        client_ip = "unknown"
+
+    now = time.monotonic()
+    window_start = now - 60.0
+    with _AI_RATE_LOCK:
+        bucket = [ts for ts in _AI_RATE_BUCKETS[client_ip] if ts > window_start]
+        if len(bucket) >= limit:
+            _AI_RATE_BUCKETS[client_ip] = bucket
+            raise HTTPException(
+                status_code=429,
+                detail=f"Bạn thao tác quá nhanh (tối đa {limit} lượt nhận diện/phút). Vui lòng thử lại sau giây lát!",
+            )
+        bucket.append(now)
+        _AI_RATE_BUCKETS[client_ip] = bucket
+
+
+async def read_and_validate_image_upload(
+    file: UploadFile,
+    max_bytes: int = MAX_UPLOAD_SIZE_BYTES,
+    max_pixels: int = MAX_IMAGE_PIXELS,
+    max_dim: int = MAX_IMAGE_DIM,
+):
+    """Đọc file ảnh theo từng khối 64KB, kiểm tra đuôi file, giới hạn dung lượng, magic bytes và chống decompression bomb."""
     orig_name = file.filename or ""
     ext = os.path.splitext(orig_name)[1].lower()
     if ext not in ALLOWED_UPLOAD_EXTENSIONS:
         raise HTTPException(
             status_code=400,
-            detail=f"Định dạng ảnh không hợp lệ! Chỉ chấp nhận: {', '.join(sorted(ALLOWED_UPLOAD_EXTENSIONS))}"
+            detail=f"Định dạng ảnh không hợp lệ! Chỉ chấp nhận: {', '.join(sorted(ALLOWED_UPLOAD_EXTENSIONS))}",
         )
-    content = await file.read()
+
+    chunks = []
+    total_size = 0
+    while True:
+        chunk = await file.read(UPLOAD_CHUNK_SIZE)
+        if not chunk:
+            break
+        total_size += len(chunk)
+        if total_size > max_bytes:
+            raise HTTPException(
+                status_code=413,
+                detail=f"Kích thước ảnh vượt quá giới hạn tối đa {max_bytes // (1024 * 1024)}MB!",
+            )
+        chunks.append(chunk)
+
+    content = b"".join(chunks)
     if not content:
         raise HTTPException(status_code=400, detail="File tải lên rỗng!")
-    if len(content) > MAX_UPLOAD_SIZE_BYTES:
-        raise HTTPException(status_code=413, detail="Kích thước ảnh vượt quá giới hạn tối đa 10MB!")
-    filename = f"prod_{int(datetime.now().timestamp() * 1000)}_{secrets.token_hex(4)}{ext}"
-    filepath = os.path.join(UPLOAD_DIR, filename)
-    with open(filepath, "wb") as buffer:
-        buffer.write(content)
-    return {"url": f"/uploads/{filename}", "filename": filename, "size": len(content)}
+
+    try:
+        with Image.open(io.BytesIO(content)) as probe_img:
+            img_format = (probe_img.format or "").upper()
+            width, height = probe_img.size
+            if img_format not in ALLOWED_IMAGE_FORMATS:
+                raise HTTPException(
+                    status_code=400,
+                    detail="Nội dung file không phải định dạng ảnh hợp lệ (JPEG/PNG/WEBP/GIF)!",
+                )
+            if width <= 0 or height <= 0 or width > max_dim or height > max_dim or (width * height) > max_pixels:
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Kích thước ảnh ({width}x{height}) vượt quá giới hạn cho phép!",
+                )
+            probe_img.verify()
+    except HTTPException:
+        raise
+    except Exception:
+        raise HTTPException(
+            status_code=400,
+            detail="File tải lên không phải ảnh hợp lệ hoặc đã bị hỏng!",
+        )
+
+    return content, ext
 
 # =====================================================================
 # 1. KẾT NỐI SQL SERVER (DESKTOP-KTO6D9A\SQLEXPRESS)
@@ -333,6 +431,19 @@ def require_admin(current_user: Dict[str, Any] = Depends(get_current_user)) -> D
         raise HTTPException(status_code=403, detail="Chỉ quản trị viên (ADMIN) mới có quyền thực hiện thao tác này!")
     return current_user
 
+
+@app.post("/api/upload")
+async def upload_image_file(
+    file: UploadFile = File(...),
+    _admin: Dict[str, Any] = Depends(require_admin),
+):
+    content, ext = await read_and_validate_image_upload(file)
+    filename = f"prod_{int(datetime.now().timestamp() * 1000)}_{secrets.token_hex(4)}{ext}"
+    filepath = os.path.join(UPLOAD_DIR, filename)
+    with open(filepath, "wb") as buffer:
+        buffer.write(content)
+    return {"url": f"/uploads/{filename}", "filename": filename, "size": len(content)}
+
 def parse_db_datetime(val: Any) -> Optional[datetime]:
     if val is None:
         return None
@@ -358,8 +469,93 @@ def parse_db_datetime(val: Any) -> Optional[datetime]:
     except Exception:
         return None
 
+_SQLITE_ORDER_LOCK = threading.Lock()
+_SQLSERVER_SEQ_INITIALIZED = False
+_SQLSERVER_SEQ_LOCK = threading.Lock()
+
+
+def _ensure_sqlserver_order_sequences(cursor) -> None:
+    """Tạo/đồng bộ SEQUENCE dbo.SEQ_DON_HANG và dbo.SEQ_CHI_TIET_DON_HANG trên SQL Server (idempotent)."""
+    cursor.execute("""
+        DECLARE @next_dh INT;
+        SELECT @next_dh = ISNULL(MAX(MADONHANG), 0) + 1 FROM dbo.DON_HANG;
+        IF OBJECT_ID(N'dbo.SEQ_DON_HANG', N'SO') IS NULL
+        BEGIN
+            DECLARE @sql_create_dh NVARCHAR(300) = N'CREATE SEQUENCE dbo.SEQ_DON_HANG AS INT START WITH ' + CAST(@next_dh AS NVARCHAR(20)) + N' INCREMENT BY 1;';
+            EXEC sp_executesql @sql_create_dh;
+        END
+        ELSE
+        BEGIN
+            DECLARE @cur_dh BIGINT;
+            SELECT @cur_dh = CAST(current_value AS BIGINT) FROM sys.sequences WHERE object_id = OBJECT_ID(N'dbo.SEQ_DON_HANG');
+            IF @cur_dh IS NULL OR @cur_dh < @next_dh
+            BEGIN
+                DECLARE @sql_restart_dh NVARCHAR(300) = N'ALTER SEQUENCE dbo.SEQ_DON_HANG RESTART WITH ' + CAST(@next_dh AS NVARCHAR(20)) + N';';
+                EXEC sp_executesql @sql_restart_dh;
+            END
+        END
+    """)
+    cursor.execute("""
+        IF OBJECT_ID(N'dbo.CHI_TIET_DON_HANG', N'U') IS NOT NULL
+        BEGIN
+            DECLARE @next_ct INT;
+            SELECT @next_ct = ISNULL(MAX(MACHITIETDONHANG), 0) + 1 FROM dbo.CHI_TIET_DON_HANG;
+            IF OBJECT_ID(N'dbo.SEQ_CHI_TIET_DON_HANG', N'SO') IS NULL
+            BEGIN
+                DECLARE @sql_create_ct NVARCHAR(300) = N'CREATE SEQUENCE dbo.SEQ_CHI_TIET_DON_HANG AS INT START WITH ' + CAST(@next_ct AS NVARCHAR(20)) + N' INCREMENT BY 1;';
+                EXEC sp_executesql @sql_create_ct;
+            END
+            ELSE
+            BEGIN
+                DECLARE @cur_ct BIGINT;
+                SELECT @cur_ct = CAST(current_value AS BIGINT) FROM sys.sequences WHERE object_id = OBJECT_ID(N'dbo.SEQ_CHI_TIET_DON_HANG');
+                IF @cur_ct IS NULL OR @cur_ct < @next_ct
+                BEGIN
+                    DECLARE @sql_restart_ct NVARCHAR(300) = N'ALTER SEQUENCE dbo.SEQ_CHI_TIET_DON_HANG RESTART WITH ' + CAST(@next_ct AS NVARCHAR(20)) + N';';
+                    EXEC sp_executesql @sql_restart_ct;
+                END
+            END
+        END
+    """)
+
+
+def _ensure_sqlserver_sequences_once() -> None:
+    global _SQLSERVER_SEQ_INITIALIZED
+    if _SQLSERVER_SEQ_INITIALIZED:
+        return
+    with _SQLSERVER_SEQ_LOCK:
+        if _SQLSERVER_SEQ_INITIALIZED:
+            return
+        seq_conn = get_db_connection()
+        try:
+            if not isinstance(seq_conn, SQLiteConnectionWrapper):
+                seq_cur = seq_conn.cursor()
+                _ensure_sqlserver_order_sequences(seq_cur)
+                seq_conn.commit()
+            _SQLSERVER_SEQ_INITIALIZED = True
+        finally:
+            seq_conn.close()
+
+
+def _next_order_id(conn, cursor) -> int:
+    if isinstance(conn, SQLiteConnectionWrapper):
+        cursor.execute("SELECT ISNULL(MAX(MADONHANG), 0) + 1 FROM DON_HANG")
+        return int(cursor.fetchone()[0])
+    cursor.execute("SELECT NEXT VALUE FOR dbo.SEQ_DON_HANG")
+    return int(cursor.fetchone()[0])
+
+
+def _next_order_detail_id(conn, cursor) -> int:
+    if isinstance(conn, SQLiteConnectionWrapper):
+        cursor.execute("SELECT ISNULL(MAX(MACHITIETDONHANG), 0) + 1 FROM CHI_TIET_DON_HANG")
+        return int(cursor.fetchone()[0])
+    cursor.execute("SELECT NEXT VALUE FOR dbo.SEQ_CHI_TIET_DON_HANG")
+    return int(cursor.fetchone()[0])
+
+
 def ensure_db_schema():
-    """Tự động bổ sung cột SODIENTHOAI, DIACHI, AVATAR cho NGUOI_DUNG và bảng DIA_CHI_NGUOI_DUNG nếu thiếu."""
+    """Tự động bổ sung cột SODIENTHOAI, DIACHI, AVATAR cho NGUOI_DUNG, bảng DIA_CHI_NGUOI_DUNG và SEQUENCE đặt hàng nếu thiếu."""
+    global _SQLSERVER_SEQ_INITIALIZED
     try:
         conn = get_db_connection()
         try:
@@ -408,6 +604,8 @@ def ensure_db_schema():
                         SDTNGUOINHAN NVARCHAR(50)
                     )
                 """)
+                _ensure_sqlserver_order_sequences(cursor)
+                _SQLSERVER_SEQ_INITIALIZED = True
             conn.commit()
         finally:
             conn.close()
@@ -436,7 +634,10 @@ _MODEL_RELOAD_LOCK = threading.Lock()
 def hot_reload_online_model(model_path: str):
     """Hot-reload model/best_model_online.keras vào ensemble_models sau khi pass Quality Gate."""
     global model, ensemble_models
-    if os.getenv("SKIP_AI_LOAD", "0") == "1" or tf is None or not os.path.exists(model_path):
+    if os.getenv("SKIP_AI_LOAD", "0") == "1" or tf is None or not model_path or not os.path.exists(model_path):
+        return
+    if os.path.basename(str(model_path)).lower().startswith("experimental_"):
+        print(f"[AI][OnlineLearning] Blocked hot-reload of experimental checkpoint: {model_path}")
         return
     with _MODEL_RELOAD_LOCK:
         try:
@@ -843,20 +1044,23 @@ def get_san_pham(ma_danh_muc: Optional[int] = None, search: Optional[str] = None
 @app.post("/nhan-dien")
 @app.post("/api/nhan-dien-anh")
 async def nhan_dien_cay(
+    request: Request,
     file: UploadFile = File(...),
     user_id: Optional[int] = None,
     ma_nguoi_dung: Optional[int] = Form(None)
 ):
+    enforce_ai_rate_limit(request)
+    content, ext = await read_and_validate_image_upload(file)
+
     if model is None:
         raise HTTPException(status_code=500, detail="Model AI chưa được tải")
 
     user_id_val = user_id or ma_nguoi_dung
 
-    ext = os.path.splitext(file.filename)[1] or ".jpg"
-    filename = f"search_{int(datetime.now().timestamp() * 1000)}{ext}"
+    filename = f"search_{int(datetime.now().timestamp() * 1000)}_{secrets.token_hex(4)}{ext}"
     filepath = os.path.join(UPLOAD_DIR, filename)
     with open(filepath, "wb") as buffer:
-        shutil.copyfileobj(file.file, buffer)
+        buffer.write(content)
 
     input_shape = model.input_shape[1:3] if model.input_shape else (224, 224)
     with Image.open(filepath) as raw_img:
@@ -1421,21 +1625,24 @@ def classify_multi_plant_regions(orig_im: Image.Image, max_plants: int = 6) -> L
 @app.post("/nhan-dien-da-cay")
 @app.post("/api/nhan-dien-da-cay")
 async def nhan_dien_da_cay(
+    request: Request,
     file: UploadFile = File(...),
     user_id: Optional[int] = None,
     ma_nguoi_dung: Optional[int] = Form(None)
 ):
+    enforce_ai_rate_limit(request)
+    content, ext = await read_and_validate_image_upload(file)
+
     if model is None:
         raise HTTPException(status_code=500, detail="Model AI chưa được tải")
 
     user_id_val = user_id or ma_nguoi_dung
-    ext = os.path.splitext(file.filename)[1] or ".jpg"
     ts = int(datetime.now().timestamp() * 1000)
-    raw_filename = f"multi_raw_{ts}{ext}"
+    raw_filename = f"multi_raw_{ts}_{secrets.token_hex(4)}{ext}"
     raw_filepath = os.path.join(UPLOAD_DIR, raw_filename)
 
     with open(raw_filepath, "wb") as buffer:
-        shutil.copyfileobj(file.file, buffer)
+        buffer.write(content)
 
     try:
         orig_im = Image.open(raw_filepath)
@@ -1647,43 +1854,81 @@ def them_vao_gio(req: AddToCartRequest):
 
 @app.post("/api/dat-hang")
 def dat_hang(req: CheckoutRequest):
+    _ensure_sqlserver_sequences_once()
     conn = get_db_connection()
-    cursor = conn.cursor()
+    is_sqlite = isinstance(conn, SQLiteConnectionWrapper)
 
-    cursor.execute(
-        "SELECT MAGIOHANG FROM GIO_HANG WHERE MANGUOIDUNG = ? AND TRANGTHAIGIOHANG = N'Đang chọn hàng'",
-        (req.MaNguoiDung,)
-    )
-    gio = cursor.fetchone()
-    if not gio:
-        conn.close()
-        raise HTTPException(status_code=400, detail="Giỏ hàng trống!")
-    ma_gio_hang = gio[0]
+    def _run_checkout():
+        cursor = conn.cursor()
+        try:
+            if is_sqlite:
+                conn._conn.execute("PRAGMA busy_timeout = 10000")
+                conn._conn.execute("BEGIN IMMEDIATE")
+            else:
+                conn.autocommit = False
+        except Exception as tx_err:
+            raise HTTPException(status_code=500, detail=f"Không thể khởi tạo transaction đặt hàng an toàn: {tx_err}")
 
-    cursor.execute("SELECT SUM(SOLUONGCHON * DONGIABAN) FROM CHI_TIET_GIO_HANG WHERE MAGIOHANG = ?", (ma_gio_hang,))
-    tam_tinh = float(cursor.fetchone()[0] or 0)
-    phi_van_chuyen = 30000.0
-    tong_tien = tam_tinh + phi_van_chuyen
+        try:
+            cursor.execute(
+                "SELECT MAGIOHANG FROM GIO_HANG WHERE MANGUOIDUNG = ? AND TRANGTHAIGIOHANG = N'Đang chọn hàng'",
+                (req.MaNguoiDung,)
+            )
+            gio = cursor.fetchone()
+            if not gio:
+                raise HTTPException(status_code=400, detail="Giỏ hàng trống!")
+            ma_gio_hang = gio[0]
 
-    cursor.execute("SELECT ISNULL(MAX(MADONHANG), 0) + 1 FROM DON_HANG")
-    ma_don_hang = cursor.fetchone()[0]
+            cursor.execute("SELECT SUM(SOLUONGCHON * DONGIABAN) FROM CHI_TIET_GIO_HANG WHERE MAGIOHANG = ?", (ma_gio_hang,))
+            tam_tinh = float(cursor.fetchone()[0] or 0)
+            phi_van_chuyen = 30000.0
+            tong_tien = tam_tinh + phi_van_chuyen
 
-    cursor.execute("""
-        INSERT INTO DON_HANG (
-            MADONHANG, MACHUONGTRINHGIAMGIA, MANGUOIDUNG, MAGIOHANG,
-            NGAYDATHANG, TAMTINH, SOTIENGIAM, PHIVANCHUYEN, TONGTIEN,
-            DIACHINHANHANG, SDTNHANHANG, PHUONGTHUCTHANHTOAN, TRANGTHAITHANHTOAN, TRANGTHAIDONHANG
-        ) VALUES (?, ?, ?, ?, GETDATE(), ?, 0, ?, ?, ?, ?, ?, N'Chưa thanh toán', N'Chờ xử lý')
-    """, (
-        ma_don_hang, req.MaChuongTrinhGiamGia, req.MaNguoiDung, ma_gio_hang,
-        tam_tinh, phi_van_chuyen, tong_tien,
-        req.DiaChiNhanHang, req.SDTNhanHang, req.PhuongThucThanhToan
-    ))
+            if req.MaChuongTrinhGiamGia:
+                cursor.execute("""
+                    UPDATE CHUONG_TRINH_GIAM_GIA
+                    SET SOLUONGDADUNG = ISNULL(SOLUONGDADUNG, 0) + 1
+                    WHERE MACHUONGTRINHGIAMGIA = ?
+                      AND (SOLUONGPHIEU IS NULL OR ISNULL(SOLUONGDADUNG, 0) < SOLUONGPHIEU)
+                """, (req.MaChuongTrinhGiamGia,))
+                if cursor.rowcount != 1:
+                    raise HTTPException(status_code=400, detail="Mã giảm giá đã hết lượt sử dụng")
 
-    cursor.execute("UPDATE GIO_HANG SET TRANGTHAIGIOHANG = N'Đã đặt hàng', NGAYCAPNHAT = GETDATE() WHERE MAGIOHANG = ?", (ma_gio_hang,))
-    conn.commit()
-    conn.close()
-    return {"message": "Đặt hàng thành công!", "MaDonHang": ma_don_hang, "TongTien": tong_tien}
+            ma_don_hang = _next_order_id(conn, cursor)
+
+            cursor.execute("""
+                INSERT INTO DON_HANG (
+                    MADONHANG, MACHUONGTRINHGIAMGIA, MANGUOIDUNG, MAGIOHANG,
+                    NGAYDATHANG, TAMTINH, SOTIENGIAM, PHIVANCHUYEN, TONGTIEN,
+                    DIACHINHANHANG, SDTNHANHANG, PHUONGTHUCTHANHTOAN, TRANGTHAITHANHTOAN, TRANGTHAIDONHANG
+                ) VALUES (?, ?, ?, ?, GETDATE(), ?, 0, ?, ?, ?, ?, ?, N'Chưa thanh toán', N'Chờ xử lý')
+            """, (
+                ma_don_hang, req.MaChuongTrinhGiamGia, req.MaNguoiDung, ma_gio_hang,
+                tam_tinh, phi_van_chuyen, tong_tien,
+                req.DiaChiNhanHang, req.SDTNhanHang, req.PhuongThucThanhToan
+            ))
+
+            cursor.execute("UPDATE GIO_HANG SET TRANGTHAIGIOHANG = N'Đã đặt hàng', NGAYCAPNHAT = GETDATE() WHERE MAGIOHANG = ?", (ma_gio_hang,))
+            conn.commit()
+            return {"message": "Đặt hàng thành công!", "MaDonHang": ma_don_hang, "TongTien": tong_tien}
+        except HTTPException:
+            conn.rollback()
+            raise
+        except Exception as e:
+            conn.rollback()
+            raise HTTPException(status_code=500, detail=f"Lỗi khi đặt hàng: {str(e)}")
+
+    if is_sqlite:
+        with _SQLITE_ORDER_LOCK:
+            try:
+                return _run_checkout()
+            finally:
+                conn.close()
+    else:
+        try:
+            return _run_checkout()
+        finally:
+            conn.close()
 
 # =====================================================================
 # 4. CÁC API DÀNH RIÊNG CHO QUẢN TRỊ VIÊN (ADMIN DASHBOARD)
@@ -2369,12 +2614,12 @@ def _validate_and_calc_voucher(v: Dict[str, Any], tam_tinh: float, code_label: O
         raise HTTPException(status_code=400, detail=f"Mã giảm giá '{code}' đã hết hạn sử dụng!")
 
     qty = v.get("SoLuongPhieu")
-    if qty is None:
-        qty = v.get("SOLUONGPHIEU") or 0
+    if qty is None and "SOLUONGPHIEU" in v:
+        qty = v.get("SOLUONGPHIEU")
     used = v.get("SoLuongDaDung")
     if used is None:
         used = v.get("SOLUONGDADUNG") or 0
-    if int(qty or 0) > 0 and int(used or 0) >= int(qty):
+    if qty is not None and int(used or 0) >= int(qty):
         raise HTTPException(status_code=400, detail=f"Mã giảm giá '{code}' đã hết lượt sử dụng!")
 
     min_order = float(v.get("ToiThieu") or v.get("TOITHIEU") or 0)
@@ -2615,144 +2860,154 @@ def create_customer_order(
     # Chỉ lấy MaNguoiDung từ token đã xác thực; khách vãng lai lưu None (tuyệt đối không tin ID client gửi)
     ma_nguoi_dung = int(current_user["sub"]) if current_user else None
 
+    _ensure_sqlserver_sequences_once()
     conn = get_db_connection()
-    cursor = conn.cursor()
+    is_sqlite = isinstance(conn, SQLiteConnectionWrapper)
 
-    # Bắt buộc mở transaction tường minh; nếu khởi tạo thất bại phải dừng ngay để bảo toàn dữ liệu
-    try:
-        if hasattr(conn, "_conn"):
-            conn._conn.execute("BEGIN")
-        else:
-            conn.autocommit = False
-    except Exception as tx_err:
-        conn.close()
-        raise HTTPException(status_code=500, detail=f"Không thể khởi tạo transaction đặt hàng an toàn: {tx_err}")
+    def _run_create_order():
+        cursor = conn.cursor()
 
-    try:
-        # 1. Tính lại đơn giá & kiểm tra tồn kho trực tiếp từ DB (không tin giá client gửi)
-        verified_items = []
-        tam_tinh = 0.0
-        for sp_id, total_qty in qty_by_product.items():
+        # Bắt buộc mở transaction tường minh; trên SQLite dùng BEGIN IMMEDIATE trong _SQLITE_ORDER_LOCK chống race/lock
+        try:
+            if is_sqlite:
+                conn._conn.execute("PRAGMA busy_timeout = 10000")
+                conn._conn.execute("BEGIN IMMEDIATE")
+            else:
+                conn.autocommit = False
+        except Exception as tx_err:
+            raise HTTPException(status_code=500, detail=f"Không thể khởi tạo transaction đặt hàng an toàn: {tx_err}")
+
+        try:
+            # 1. Tính lại đơn giá & kiểm tra tồn kho trực tiếp từ DB (không tin giá client gửi)
+            verified_items = []
+            tam_tinh = 0.0
+            for sp_id, total_qty in qty_by_product.items():
+                cursor.execute("""
+                    SELECT sp.MASANPHAM, sp.TENSANPHAM, sp.SOLUONGTONKHO,
+                           ISNULL(
+                               (SELECT TOP 1 GIABAN FROM LICH_SU_GIA_SAN_PHAM lsg WHERE lsg.MASANPHAM = sp.MASANPHAM ORDER BY MALICHSUGIA DESC),
+                               lc.GIATHAMKHAO
+                           ) AS GIABAN
+                    FROM SAN_PHAM sp
+                    LEFT JOIN LOAI_CAY lc ON sp.MALOAICAY = lc.MALOAICAY
+                    WHERE sp.MASANPHAM = ?
+                """, (sp_id,))
+                sp_row = cursor.fetchone()
+                if not sp_row:
+                    raise HTTPException(status_code=404, detail=f"Sản phẩm #{sp_id} không tồn tại!")
+                sp_name = sp_row[1] or f"Sản phẩm #{sp_id}"
+                ton_kho = int(sp_row[2] or 0)
+                don_gia_db = float(sp_row[3] or 0.0)
+                if ton_kho < total_qty:
+                    raise HTTPException(
+                        status_code=400,
+                        detail=f"Sản phẩm '{sp_name}' không đủ tồn kho (còn {ton_kho}, yêu cầu {total_qty})!",
+                    )
+                tam_tinh += don_gia_db * total_qty
+                verified_items.append((sp_id, total_qty, don_gia_db))
+
+            tam_tinh = round(tam_tinh, 2)
+
+            # 2. Kiểm tra & tính toán lại voucher từ DB nếu có
+            so_tien_giam = 0.0
+            voucher_id = req.MaChuongTrinhGiamGia
+            if voucher_id:
+                cursor.execute("""
+                    SELECT MACHUONGTRINHGIAMGIA, TENMAGIAMGIA, TENCHUONGTRINHGIAMGIA,
+                           LOAIGIAMGIA, GIATRIGIAM, TOIDA, TOITHIEU, SOLUONGPHIEU,
+                           SOLUONGDADUNG, MOTA, NGAYBATDAU, NGAYKETTHUC
+                    FROM CHUONG_TRINH_GIAM_GIA
+                    WHERE MACHUONGTRINHGIAMGIA = ?
+                """, (voucher_id,))
+                v_row = cursor.fetchone()
+                if not v_row:
+                    raise HTTPException(status_code=404, detail="Mã giảm giá không tồn tại!")
+                v_cols = [c[0] for c in cursor.description]
+                v_dict = normalize_row(v_cols, v_row)
+                so_tien_giam = _validate_and_calc_voucher(v_dict, tam_tinh)
+
+                # Tăng lượt dùng voucher nguyên tử (chống vượt SOLUONGPHIEU khi nhiều request đồng thời)
+                cursor.execute("""
+                    UPDATE CHUONG_TRINH_GIAM_GIA
+                    SET SOLUONGDADUNG = ISNULL(SOLUONGDADUNG, 0) + 1
+                    WHERE MACHUONGTRINHGIAMGIA = ?
+                      AND (SOLUONGPHIEU IS NULL OR ISNULL(SOLUONGDADUNG, 0) < SOLUONGPHIEU)
+                """, (voucher_id,))
+                if cursor.rowcount != 1:
+                    raise HTTPException(status_code=400, detail="Mã giảm giá đã hết lượt sử dụng")
+
+            # Tính phí vận chuyển hoàn toàn tại Backend (miễn phí đơn >= 500.000đ, mặc định 30.000đ)
+            phi_van_chuyen = 0.0 if tam_tinh >= 500000.0 else 30000.0
+            tong_tien = round(max(0.0, tam_tinh - so_tien_giam + phi_van_chuyen), 2)
+
+            # 3. Trừ tồn kho an toàn (kiểm tra lại điều kiện SOLUONGTONKHO >= qty)
+            for sp_id, total_qty, _ in verified_items:
+                cursor.execute("""
+                    UPDATE SAN_PHAM
+                    SET SOLUONGTONKHO = SOLUONGTONKHO - ?
+                    WHERE MASANPHAM = ? AND SOLUONGTONKHO >= ?
+                """, (total_qty, sp_id, total_qty))
+                if cursor.rowcount == 0:
+                    raise HTTPException(status_code=400, detail=f"Sản phẩm #{sp_id} vừa hết hàng, vui lòng kiểm tra lại!")
+
+            # 4. Cấp phát ID an toàn (SQL Server SEQUENCE / SQLite BEGIN IMMEDIATE + Lock) & lưu đơn hàng
+            next_dh = _next_order_id(conn, cursor)
+
+            payment_status = "Chưa thanh toán"
+            if req.PhuongThucThanhToan in ["BANK_QR", "MOMO"]:
+                payment_status = "Đã thanh toán (Mô phỏng QR)"
+
             cursor.execute("""
-                SELECT sp.MASANPHAM, sp.TENSANPHAM, sp.SOLUONGTONKHO,
-                       ISNULL(
-                           (SELECT TOP 1 GIABAN FROM LICH_SU_GIA_SAN_PHAM lsg WHERE lsg.MASANPHAM = sp.MASANPHAM ORDER BY MALICHSUGIA DESC),
-                           lc.GIATHAMKHAO
-                       ) AS GIABAN
-                FROM SAN_PHAM sp
-                LEFT JOIN LOAI_CAY lc ON sp.MALOAICAY = lc.MALOAICAY
-                WHERE sp.MASANPHAM = ?
-            """, (sp_id,))
-            sp_row = cursor.fetchone()
-            if not sp_row:
-                raise HTTPException(status_code=404, detail=f"Sản phẩm #{sp_id} không tồn tại!")
-            sp_name = sp_row[1] or f"Sản phẩm #{sp_id}"
-            ton_kho = int(sp_row[2] or 0)
-            don_gia_db = float(sp_row[3] or 0.0)
-            if ton_kho < total_qty:
-                raise HTTPException(
-                    status_code=400,
-                    detail=f"Sản phẩm '{sp_name}' không đủ tồn kho (còn {ton_kho}, yêu cầu {total_qty})!",
+                INSERT INTO DON_HANG (
+                    MADONHANG, MANGUOIDUNG, NGAYDATHANG, TAMTINH, SOTIENGIAM,
+                    PHIVANCHUYEN, TONGTIEN, DIACHINHANHANG, SDTNHANHANG,
+                    PHUONGTHUCTHANHTOAN, TRANGTHAITHANHTOAN, TRANGTHAIDONHANG,
+                    MACHUONGTRINHGIAMGIA
                 )
-            tam_tinh += don_gia_db * total_qty
-            verified_items.append((sp_id, total_qty, don_gia_db))
+                VALUES (?, ?, GETDATE(), ?, ?, ?, ?, ?, ?, ?, ?, N'Chờ xử lý', ?)
+            """, (
+                next_dh, ma_nguoi_dung, tam_tinh, so_tien_giam, phi_van_chuyen,
+                tong_tien, req.DiaChiNhanHang, req.SdtNhanHang,
+                req.PhuongThucThanhToan or "COD", payment_status, voucher_id
+            ))
 
-        tam_tinh = round(tam_tinh, 2)
+            for sp_id, total_qty, don_gia_db in verified_items:
+                curr_ct_id = _next_order_detail_id(conn, cursor)
+                cursor.execute("""
+                    INSERT INTO CHI_TIET_DON_HANG (
+                        MADONHANG, MASANPHAM, MACHITIETDONHANG, SOLUONGMUA, DONGIAMUA
+                    )
+                    VALUES (?, ?, ?, ?, ?)
+                """, (next_dh, sp_id, curr_ct_id, total_qty, don_gia_db))
 
-        # 2. Kiểm tra & tính toán lại voucher từ DB nếu có
-        so_tien_giam = 0.0
-        voucher_id = req.MaChuongTrinhGiamGia
-        if voucher_id:
-            cursor.execute("""
-                SELECT MACHUONGTRINHGIAMGIA, TENMAGIAMGIA, TENCHUONGTRINHGIAMGIA,
-                       LOAIGIAMGIA, GIATRIGIAM, TOIDA, TOITHIEU, SOLUONGPHIEU,
-                       SOLUONGDADUNG, MOTA, NGAYBATDAU, NGAYKETTHUC
-                FROM CHUONG_TRINH_GIAM_GIA
-                WHERE MACHUONGTRINHGIAMGIA = ?
-            """, (voucher_id,))
-            v_row = cursor.fetchone()
-            if not v_row:
-                raise HTTPException(status_code=404, detail="Mã giảm giá không tồn tại!")
-            v_cols = [c[0] for c in cursor.description]
-            v_dict = normalize_row(v_cols, v_row)
-            so_tien_giam = _validate_and_calc_voucher(v_dict, tam_tinh)
+            conn.commit()
+            return {
+                "message": "Đặt hàng thành công!",
+                "MaDonHang": next_dh,
+                "TamTinh": tam_tinh,
+                "SoTienGiam": so_tien_giam,
+                "PhiVanChuyen": phi_van_chuyen,
+                "TongTien": tong_tien,
+                "TrangThai": "Chờ xử lý"
+            }
+        except HTTPException:
+            conn.rollback()
+            raise
+        except Exception as e:
+            conn.rollback()
+            raise HTTPException(status_code=500, detail=f"Lỗi khi lưu đơn hàng: {str(e)}")
 
-            # Tăng lượt dùng voucher an toàn (tránh vượt SOLUONGPHIEU)
-            cursor.execute("""
-                UPDATE CHUONG_TRINH_GIAM_GIA
-                SET SOLUONGDADUNG = ISNULL(SOLUONGDADUNG, 0) + 1
-                WHERE MACHUONGTRINHGIAMGIA = ?
-                  AND (SOLUONGPHIEU IS NULL OR SOLUONGPHIEU <= 0 OR ISNULL(SOLUONGDADUNG, 0) < SOLUONGPHIEU)
-            """, (voucher_id,))
-            if cursor.rowcount == 0:
-                raise HTTPException(status_code=400, detail="Mã giảm giá đã hết lượt sử dụng!")
-
-        # Tính phí vận chuyển hoàn toàn tại Backend (miễn phí đơn >= 500.000đ, mặc định 30.000đ)
-        phi_van_chuyen = 0.0 if tam_tinh >= 500000.0 else 30000.0
-        tong_tien = round(max(0.0, tam_tinh - so_tien_giam + phi_van_chuyen), 2)
-
-        # 3. Trừ tồn kho an toàn (kiểm tra lại điều kiện SOLUONGTONKHO >= qty)
-        for sp_id, total_qty, _ in verified_items:
-            cursor.execute("""
-                UPDATE SAN_PHAM
-                SET SOLUONGTONKHO = SOLUONGTONKHO - ?
-                WHERE MASANPHAM = ? AND SOLUONGTONKHO >= ?
-            """, (total_qty, sp_id, total_qty))
-            if cursor.rowcount == 0:
-                raise HTTPException(status_code=400, detail=f"Sản phẩm #{sp_id} vừa hết hàng, vui lòng kiểm tra lại!")
-
-        # 4. Lưu đơn hàng & chi tiết đơn hàng với đơn giá chuẩn từ DB
-        cursor.execute("SELECT ISNULL(MAX(MADONHANG), 0) + 1 FROM DON_HANG")
-        next_dh = cursor.fetchone()[0]
-
-        payment_status = "Chưa thanh toán"
-        if req.PhuongThucThanhToan in ["BANK_QR", "MOMO"]:
-            payment_status = "Đã thanh toán (Mô phỏng QR)"
-
-        cursor.execute("""
-            INSERT INTO DON_HANG (
-                MADONHANG, MANGUOIDUNG, NGAYDATHANG, TAMTINH, SOTIENGIAM,
-                PHIVANCHUYEN, TONGTIEN, DIACHINHANHANG, SDTNHANHANG,
-                PHUONGTHUCTHANHTOAN, TRANGTHAITHANHTOAN, TRANGTHAIDONHANG,
-                MACHUONGTRINHGIAMGIA
-            )
-            VALUES (?, ?, GETDATE(), ?, ?, ?, ?, ?, ?, ?, ?, N'Chờ xử lý', ?)
-        """, (
-            next_dh, ma_nguoi_dung, tam_tinh, so_tien_giam, phi_van_chuyen,
-            tong_tien, req.DiaChiNhanHang, req.SdtNhanHang,
-            req.PhuongThucThanhToan or "COD", payment_status, voucher_id
-        ))
-
-        cursor.execute("SELECT ISNULL(MAX(MACHITIETDONHANG), 0) FROM CHI_TIET_DON_HANG")
-        curr_ct_id = cursor.fetchone()[0]
-
-        for sp_id, total_qty, don_gia_db in verified_items:
-            curr_ct_id += 1
-            cursor.execute("""
-                INSERT INTO CHI_TIET_DON_HANG (
-                    MADONHANG, MASANPHAM, MACHITIETDONHANG, SOLUONGMUA, DONGIAMUA
-                )
-                VALUES (?, ?, ?, ?, ?)
-            """, (next_dh, sp_id, curr_ct_id, total_qty, don_gia_db))
-
-        conn.commit()
-        return {
-            "message": "Đặt hàng thành công!",
-            "MaDonHang": next_dh,
-            "TamTinh": tam_tinh,
-            "SoTienGiam": so_tien_giam,
-            "PhiVanChuyen": phi_van_chuyen,
-            "TongTien": tong_tien,
-            "TrangThai": "Chờ xử lý"
-        }
-    except HTTPException:
-        conn.rollback()
-        raise
-    except Exception as e:
-        conn.rollback()
-        raise HTTPException(status_code=500, detail=f"Lỗi khi lưu đơn hàng: {str(e)}")
-    finally:
-        conn.close()
+    if is_sqlite:
+        with _SQLITE_ORDER_LOCK:
+            try:
+                return _run_create_order()
+            finally:
+                conn.close()
+    else:
+        try:
+            return _run_create_order()
+        finally:
+            conn.close()
 
 @app.get("/api/nguoi-dung/{ma_nguoi_dung}/don-hang")
 def get_user_orders(
@@ -2925,14 +3180,15 @@ def get_danh_gia_noi_bat():
 @app.post("/api/danh-gia")
 def create_danh_gia(
     req: CreateReviewRequest,
-    current_user: Optional[Dict[str, Any]] = Depends(get_optional_user),
+    current_user: Dict[str, Any] = Depends(get_current_user),
 ):
     if not req.NoiDungBinhLuan or not req.NoiDungBinhLuan.strip():
         raise HTTPException(status_code=400, detail="Vui lòng nhập nội dung đánh giá sản phẩm!")
     if req.SoSao < 1 or req.SoSao > 5:
         raise HTTPException(status_code=400, detail="Số sao đánh giá phải từ 1 đến 5 sao!")
 
-    uid = current_user["sub"] if current_user else req.MaNguoiDung
+    # Tuyệt đối chỉ lấy danh tính từ JWT đã xác thực; không bao giờ tin req.MaNguoiDung
+    uid = int(current_user["sub"])
 
     conn = get_db_connection()
     try:
@@ -4085,14 +4341,28 @@ def trigger_admin_online_learning(
     params = req or OnlineLearningTriggerRequest()
 
     def _bg_worker():
-        online_learning.run_online_incremental_update(
+        result = online_learning.run_online_incremental_update(
             epochs=params.epochs,
             batch_size=params.batch_size,
             lr=params.lr,
             replay_per_class=params.replay_per_class,
             force_save=params.force_save,
-            on_model_saved=hot_reload_online_model,
+            on_model_saved=None,
         )
+        # Chỉ hot-reload vào production khi thực sự vượt qua Quality Gate độc lập & đủ điều kiện hot-reload
+        if (
+            isinstance(result, dict)
+            and result.get("quality_gate_passed") is True
+            and result.get("eligible_for_hot_reload", False) is True
+            and not result.get("saved_by_force", False)
+        ):
+            prod_model_path = (
+                result.get("production_model_path")
+                or result.get("saved_model_path")
+                or result.get("model_path")
+            )
+            if prod_model_path and os.path.exists(prod_model_path):
+                hot_reload_online_model(prod_model_path)
 
     worker = threading.Thread(target=_bg_worker, name="online-learning-worker", daemon=True)
     worker.start()
